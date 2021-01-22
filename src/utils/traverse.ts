@@ -13,9 +13,9 @@ const traverse = (
   // start path, an absolute path is recommended
   startPath: string,
   // a RegExp param, passed to match a file to invoke callback
-  callbackReg?: RegExp,
+  callbackReg: RegExp,
   // callback function
-  callback?: (pathname: string) => void
+  callback?: (pathname: string, entity?: string) => void
 ) => {
   // all the entities for current path, including directories and files
   const currentEntities = fs.readdirSync(startPath);
@@ -30,11 +30,11 @@ const traverse = (
       if (
         callbackReg &&
         callbackReg instanceof RegExp &&
-        callbackReg.test(currentEntityPath) &&
+        callbackReg.test(entity) &&
         callback &&
         typeof callback === 'function'
       ) {
-        callback(currentEntityPath);
+        callback(currentEntityPath, entity);
       }
     } else if (stat.isDirectory()) {
       // if it is a directory, then traverse its contained entities, its pathname

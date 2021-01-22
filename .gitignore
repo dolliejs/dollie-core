@@ -18,6 +18,5 @@ package-lock.json
 # macOS file
 .DS_Store
 
-dist
-generators
-generators/**/*
+# dist files
+lib

@@ -35,8 +35,8 @@ jobs:
           key: v1-dependencies-{{ checksum "package.json" }}
       - save_cache:
           paths:
-            - generators
-          key: generators-{{ checksum "package.json" }}
+            - lib
+          key: dollie-cli-{{ checksum "package.json" }}
   deploy:
     <<: *defaults
     steps:
@@ -44,7 +44,7 @@ jobs:
           at: ~/repo
       - restore_cache:
           keys:
-            - generators-{{ checksum "package.json" }}
+            - dollie-cli-{{ checksum "package.json" }}
             - v1-dependencies-{{ checksum "package.json" }}
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
       - run: ls -al

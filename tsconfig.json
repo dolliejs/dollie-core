@@ -14,8 +14,8 @@
     "resolveJsonModule": true,
     "target": "es2017",
     "incremental": true,
-    "tsBuildInfoFile": "./generators/.tsbuildinfo",
-    "outDir": "./generators",
+    "tsBuildInfoFile": "./lib/.tsbuildinfo",
+    "outDir": "./lib",
     "rootDir": "./src",
     "lib": [
       "es5",
@@ -28,10 +28,9 @@
   },
   "exclude": [
     "node_modules/**/*",
-    "dist/**/*",
+    "lib/**/*",
     "scripts/**/*",
     "__tests__/**/*",
     "src/**/*.js",
-    "generators/**/*"
   ]
 }
