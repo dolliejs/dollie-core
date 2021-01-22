@@ -39,19 +39,17 @@ class DollieGenerator extends Generator {
   private props: AppGeneratorAnswer;
 
   initializing() {
+    this.log(figlet.textSync('DOLLIE'));
+    if (fs.existsSync(TEMPLATE_DIR) && fs.readdirSync(TEMPLATE_DIR).length !== 0) {
+      this.log.info(`Cleaning template dir (${TEMPLATE_DIR})...`);
+      fs.removeSync(TEMPLATE_DIR);
+    }
     if (!fs.existsSync(TEMPLATE_DIR)) {
       fs.mkdirpSync(TEMPLATE_DIR);
-    }
-
-    if (fs.existsSync(TEMPLATE_DIR) && fs.readdirSync(TEMPLATE_DIR).length !== 0) {
-      this.log.error(`Template dir (${TEMPLATE_DIR}) is not clear to initialize, please clear it first`);
-      process.exit(1);
     }
   }
 
   async prompting() {
-    this.log(figlet.textSync('DOLLIE'));
-
     try {
       // default and essential questions
       // it is hard-coded in the generator, DO NOT MODIFY IT
