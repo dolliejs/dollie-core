@@ -34,7 +34,7 @@ Go to <https://github.com/dolliejs?tab=repositories&q=scaffold->, find an approp
 ### Create a Template
 
 - Create all of the essential files for your scaffold
-- Rename file starts with `__` when you want to get the props from CLI's prompt to inject into it. For example, if you want to make `package.json` as a customizable file, you should rename it as `__package.json`
+- Rename file starts with `__template.` when you want to get the props from CLI's prompt to inject into it. For example, if you want to make `package.json` as a customizable file, you should rename it as `__template.package.json`
 - Create a file named `.dollie.json`, put your questions in the `questions` param
 - Contact [i@lenconda.top](mailto:i@lenconda.top), then we will fork your GitHub repository into our organization
 

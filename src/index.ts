@@ -125,20 +125,11 @@ class DollieGenerator extends Generator {
       this.log.info('Writing template...');
       traverse(TEMPLATE_DIR, /^((?!(\.dollie\.json)).)+$/, (pathname: string, entity: string) => {
         const relativePath = path.relative(TEMPLATE_DIR, pathname);
-        const entityHeadUnderscoreCounter = entity.split('').reduce((counter, currentCharacter) => {
-          if (currentCharacter === '_' && counter.flag) {
-            counter.count = counter.count + 1;
-          }
-          if (currentCharacter !== '_' && counter.flag) {
-            counter.flag = false;
-          }
-          return counter;
-        }, { count: 0, flag: true } as { count: number, flag: boolean });
 
-        if (entity.startsWith('__') && entityHeadUnderscoreCounter.count >= 2) {
+        if (entity.startsWith('__template.')) {
           this.fs.copyTpl(
             pathname,
-            this.destinationPath(`${relativePath.slice(0, 0 - entity.length)}${entity.slice(2)}`),
+            this.destinationPath(`${relativePath.slice(0, 0 - entity.length)}${entity.slice(11)}`),
             this.props,
           );
         } else {
