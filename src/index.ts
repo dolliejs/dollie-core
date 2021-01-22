@@ -157,6 +157,7 @@ class DollieGenerator extends Generator {
   }
 
   end() {
+    this.log.info('Cleaning template cache...');
     fs.removeSync(TEMPLATE_DIR);
   }
 }
