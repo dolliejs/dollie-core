@@ -15,7 +15,7 @@
 
 import path from 'path';
 import os from 'os';
-import Generator, { Questions } from 'yeoman-generator';
+import Generator, { Questions, Question } from 'yeoman-generator';
 import Environment from 'yeoman-environment';
 import figlet from 'figlet';
 import fs from 'fs-extra';
@@ -34,9 +34,19 @@ interface AppGeneratorAnswer {
   [key: string]: string;
 }
 
+interface DollieScaffoldConfiguration {
+  questions: Array<Question<AppGeneratorAnswer>>;
+  installers: string[];
+}
+
 class DollieGenerator extends Generator {
   // eslint-disable-next-line prettier/prettier
   private props: AppGeneratorAnswer;
+  // eslint-disable-next-line prettier/prettier
+  private scaffoldConfiguration: DollieScaffoldConfiguration = {
+    questions: [],
+    installers: ['npm'],
+  };
 
   initializing() {
     this.log(figlet.textSync('DOLLIE'));
@@ -80,11 +90,18 @@ class DollieGenerator extends Generator {
 
       // read remote scaffold's .dollie.json
       this.log.info('Reading template configuration...');
-      const scaffoldConfiguration = readJson(path.resolve(TEMPLATE_DIR, '.dollie.json'));
+      const customScaffoldConfiguration: DollieScaffoldConfiguration =
+        (readJson(path.resolve(TEMPLATE_DIR, '.dollie.json')) || {}) as DollieScaffoldConfiguration;
+      const scaffoldConfiguration: DollieScaffoldConfiguration = {
+        ..._.merge(
+          this.scaffoldConfiguration,
+          (customScaffoldConfiguration)
+        ),
+        installers: customScaffoldConfiguration.installers,
+      };
+      this.scaffoldConfiguration = scaffoldConfiguration;
 
-      const scaffoldQuestions = scaffoldConfiguration
-        ? scaffoldConfiguration.questions || []
-        : [];
+      const scaffoldQuestions = scaffoldConfiguration.questions || [];
 
       // if there is a questions param available in .dollie.json
       // then put the questions and get the answers
@@ -125,7 +142,8 @@ class DollieGenerator extends Generator {
       this.log.info('Writing template...');
       traverse(TEMPLATE_DIR, /^((?!(\.dollie\.json)).)+$/, (pathname: string, entity: string) => {
         const relativePath = path.relative(TEMPLATE_DIR, pathname);
-
+        // match the files with `__template.`, which means it is a template file
+        // so we should invoke this.fs.copyTpl to inject the props into the file
         if (entity.startsWith('__template.')) {
           this.fs.copyTpl(
             pathname,
@@ -133,6 +151,7 @@ class DollieGenerator extends Generator {
             this.props,
           );
         } else {
+          // otherwise, we should also copy the file, but just simple this.fs.copy
           this.fs.copy(pathname, this.destinationPath(relativePath));
         }
       });
@@ -143,12 +162,32 @@ class DollieGenerator extends Generator {
   }
 
   install() {
-    this.log.info('Installing NPM dependencies...');
-    this.npmInstall();
+    // define installers map
+    // only support npm, yarn and bower currently
+    const installerMap = {
+      npm: this.npmInstall,
+      yarn: this.yarnInstall,
+      bower: this.bowerInstall,
+    };
+
+    // traverse installers in this.scaffoldConfiguration.installers
+    // get the installer from installerMap
+    // when the installer is available, then invoke it
+    this.scaffoldConfiguration.installers.forEach((installerName) => {
+      const currentInstaller = installerMap[installerName.toLocaleLowerCase()];
+      if (currentInstaller && typeof currentInstaller === 'function') {
+        this.log.info(`Installing ${installerName.toUpperCase()} dependencies...`);
+        currentInstaller.call(this);
+      }
+    });
   }
 
   end() {
     this.log.info('Cleaning template cache...');
+    // clean up template directory
+    // if the generator exits before invoking end() method,
+    // the content inside template directory might not be cleaned, but
+    // it would be cleaned when next generator is initializing
     fs.removeSync(TEMPLATE_DIR);
   }
 }

@@ -73,6 +73,34 @@ and Dollie CLI will get a data structure like:
 
 which will be used by Dollie CLI to inject the templates starts with `__` in your scaffold.
 
+#### `installers`
+
+There are three installer methods in original Yeoman:
+
+- `generator.npmInstall`
+- `generator.yarnInstall`
+- `generator.bowerInstall`
+
+in Dollie CLI, we also provide a configuration param to describe the installers you want to use. Dollie CLI will traverse the installers array to map the installer:
+
+```javascript
+{
+  npm: npmInstall,
+  yarn: yarnInstall,
+  bower: bowerInstall
+}
+```
+
+example:
+
+```json
+{
+  "installers": ["npm", "bower"]
+}
+```
+
+and Dollie CLI will run `npmInstall` and `bowerInstall` when invoking `install` context method.
+
 ## License
 
 MIT © [Lenconda](https://lenconda.top) & [Dollie.js](https://github.com/dolliejs)

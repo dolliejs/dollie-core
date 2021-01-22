@@ -1,6 +1,6 @@
 {
   "name": "@dollie/cli",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A generator for generating everything",
   "homepage": "https://github.com/dolliejs/dollie-cli#readme",
   "author": {
