@@ -1,16 +1,16 @@
 /**
  * @file src/app/index.ts
  * @author lenconda <i@lenconda.top>
- * @description this is the entry file for @lenconda/generator-react-app scaffold
+ * @description this is the entry file for @dollies/cli generator
  *
  * For many reasons, the generator will be able to access all of the react boilerplate
- * at https://github.com/lenconda?q=yo-boilerplate-react&tab=repositories, otherwise we can
+ * at https://github.com/dollies?q=scaffold-&tab=repositories, otherwise we can
  * make the most little modification to this generator itself.
  *
  * So we made decisions to ask users to enter their favorite boilerplate's name, and then
  * download it form GitHub.
  *
- * For details, please read https://github.com/lenconda/generator-react-app#readme
+ * For details, please read https://github.com/dollies/dollies-cli#readme
  */
 
 import path from 'path';
