@@ -1,16 +1,16 @@
 /**
  * @file src/app/index.ts
  * @author lenconda <i@lenconda.top>
- * @description this is the entry file for @dollies/cli generator
+ * @description this is the entry file for @dollie/cli generator
  *
  * For many reasons, the generator will be able to access all of the react boilerplate
- * at https://github.com/dollies?q=scaffold-&tab=repositories, otherwise we can
+ * at https://github.com/dolliejs?q=scaffold-&tab=repositories, otherwise we can
  * make the most little modification to this generator itself.
  *
  * So we made decisions to ask users to enter their favorite boilerplate's name, and then
  * download it form GitHub.
  *
- * For details, please read https://github.com/dollies/dollies-cli#readme
+ * For details, please read https://github.com/dolliejs/dollie-cli#readme
  */
 
 import path from 'path';
@@ -64,7 +64,7 @@ class DollieGenerator extends Generator {
           type: 'input',
           name: 'template',
           message:
-            'Enter the template name from https://github.com/dolliejs?q=scaffold-&tab=repositories',
+            'Enter the scaffold name from https://github.com/dolliejs?q=scaffold-&tab=repositories',
           default: 'react-typescript-sass',
         },
       ];
