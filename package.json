@@ -1,8 +1,8 @@
 {
-  "name": "@dollie/cli",
-  "version": "0.3.1",
+  "name": "@dollie/core",
+  "version": "0.1.0",
   "description": "A generator for generating everything",
-  "homepage": "https://github.com/dolliejs/dollie-cli#readme",
+  "homepage": "https://github.com/dolliejs/dollie-core#readme",
   "author": {
     "name": "lenconda",
     "email": "i@lenconda.top",
@@ -19,9 +19,7 @@
     "LICENSE"
   ],
   "main": "lib/index.js",
-  "bin": {
-    "dollie": "bin/dollie.js"
-  },
+  "typings": "lib/index.d.ts",
   "keywords": [
     "Webpack",
     "React.js",
@@ -32,7 +30,6 @@
     "@types/figlet": "^1.2.1",
     "@types/fs-extra": "^9.0.6",
     "@types/lodash": "^4.14.168",
-    "@types/yeoman-environment": "^2.10.2",
     "@types/yeoman-generator": "^4.11.3",
     "@typescript-eslint/eslint-plugin": "^4.11.1",
     "@typescript-eslint/parser": "^4.11.1",
@@ -59,7 +56,6 @@
     "figlet": "^1.5.0",
     "fs-extra": "^9.1.0",
     "lodash": "^4.17.20",
-    "yeoman-environment": "^2.10.3",
     "yeoman-generator": "^2.0.1"
   },
   "jest": {
@@ -97,6 +93,6 @@
     "clean:build": "rimraf lib",
     "build": "npm run clean:build && tsc"
   },
-  "repository": "https://github.com/dolliejs/dollie-cli.git",
+  "repository": "https://github.com/dolliejs/dollie-core.git",
   "license": "MIT"
 }

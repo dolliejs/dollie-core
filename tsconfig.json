@@ -11,6 +11,7 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "declaration": true,
     "resolveJsonModule": true,
     "target": "es2017",
     "incremental": true,
