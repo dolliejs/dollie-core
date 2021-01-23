@@ -1,105 +1,42 @@
-# Dollie CLI
+# Dollie Core
 
-![Shields Build Status](https://img.shields.io/circleci/build/github/dolliejs/dollie-cli/master)
-![Circle CI Build](https://circleci.com/gh/dolliejs/dollie-cli.svg?style=svg)
-![License](https://img.shields.io/github/license/dolliejs/dollie-cli)
-![GitHub Version](https://img.shields.io/github/package-json/v/dolliejs/dollie-cli)
+![Shields Build Status](https://img.shields.io/circleci/build/github/dolliejs/dollie-core/master)
+![Circle CI Build](https://circleci.com/gh/dolliejs/dollie-core.svg?style=svg)
+![License](https://img.shields.io/github/license/dolliejs/dollie-core)
+![GitHub Version](https://img.shields.io/github/package-json/v/dolliejs/dollie-core)
 
-Dollie.js is a generator for generating everything, based on [Yeoman](http://yeoman.io). Dollie CLI is the command line interface for Dollie.js.
+Dollie.js is a generator for generating everything, based on [Yeoman](http://yeoman.io). Dollie core is the essential components for Dollie.js.
 
 ## Installation
 
 ```bash
-npm install -g @dollie/cli
+npm install -g @dollie/core
 ```
 
-and then it will create a binary link to `dollie`.
+## Usage
 
-## Create Project
+```javascript
+const dollie = require('@dollie/core');
+```
 
-Just run:
+### Dollie Generator
+
+`@dollie/core` exposes generator configuration for Yeoman, you can install `yeoman-environment` and run this generator:
 
 ```bash
-dollie
+npm i yeoman-environment -S
 ```
-
-then follow the prompt.
-
-## Scaffolds
-
-### Find a Template
-
-Go to <https://github.com/dolliejs?tab=repositories&q=scaffold->, find an appropriate template, and get the name without `scaffold-` prefix, and input into the CLI interface.
-
-### Create a Template
-
-- Create all of the essential files for your scaffold
-- Rename file starts with `__template.` when you want to get the props from CLI's prompt to inject into it. For example, if you want to make `package.json` as a customizable file, you should rename it as `__template.package.json`
-- Create a file named `.dollie.json`, put your questions in the `questions` param
-- Contact [i@lenconda.top](mailto:i@lenconda.top), then we will fork your GitHub repository into our organization
-
-### `.dollie.json`
-
-`.dollie.json` is the configuration file for Dollie.js, the configuration params are shown as below:
-
-#### `questions`
-
-It will be used by CLI's prompt. You can get the format schema from <https://github.com/SBoudrias/Inquirer.js/#documentation>
-
-example:
-
-```json
-{
-  "questions": [
-    {
-      "type": "input",
-      "name": "key1",
-      "message": "Enter the key1"
-    },
-    {
-      "type": "input",
-      "name": "key2",
-      "message": "Enter the key2"
-    }
-  ]
-}
-```
-
-and Dollie CLI will get a data structure like:
 
 ```javascript
-{ key1: 'xxx', key2: 'xxx' }
+const { DollieGenerator } = require('@dollie/core');
+const Environment = require('yeoman-environment');
+
+const env = Environment.createEnv();
+env.registerStub(DollieGenerator, 'dollie');
+env.run('dollie', () => console.log('dollie generator started'));
 ```
 
-which will be used by Dollie CLI to inject the templates starts with `__` in your scaffold.
-
-#### `installers`
-
-There are three installer methods in original Yeoman:
-
-- `generator.npmInstall`
-- `generator.yarnInstall`
-- `generator.bowerInstall`
-
-in Dollie CLI, we also provide a configuration param to describe the installers you want to use. Dollie CLI will traverse the installers array to map the installer:
-
-```javascript
-{
-  npm: npmInstall,
-  yarn: yarnInstall,
-  bower: bowerInstall
-}
-```
-
-example:
-
-```json
-{
-  "installers": ["npm", "bower"]
-}
-```
-
-and Dollie CLI will run `npmInstall` and `bowerInstall` when invoking `install` context method.
+see <https://github.com/dolliejs/dollie-core#readme> for details.
 
 ## License
 
