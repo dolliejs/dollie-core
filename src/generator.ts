@@ -95,8 +95,14 @@ class DollieGenerator extends Generator {
           this.scaffoldConfiguration,
           (customScaffoldConfiguration)
         ),
-        installers: customScaffoldConfiguration.installers,
       };
+      if (
+        customScaffoldConfiguration.installers &&
+        Array.isArray(customScaffoldConfiguration.installers) &&
+        customScaffoldConfiguration.installers.length === 0
+      ) {
+        scaffoldConfiguration.installers = [];
+      }
       this.scaffoldConfiguration = scaffoldConfiguration;
 
       const scaffoldQuestions = scaffoldConfiguration.questions || [];
