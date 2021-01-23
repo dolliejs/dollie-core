@@ -22,6 +22,7 @@ import _ from 'lodash';
 import download from './utils/download';
 import traverse from './utils/traverse';
 import readJson from './utils/read-json';
+import { parseTemplateName } from './utils/template';
 
 const HOME_DIR = os.homedir();
 const TEMPLATE_DIR = path.resolve(HOME_DIR, '.dollie/template');
@@ -76,7 +77,7 @@ class DollieGenerator extends Generator {
           type: 'input',
           name: 'template',
           message:
-            'Enter the scaffold name from https://github.com/dolliejs?q=scaffold-&tab=repositories',
+            'Enter the scaffold id',
           default: 'react-typescript-sass',
         },
       ];
@@ -84,9 +85,10 @@ class DollieGenerator extends Generator {
       // get props from user's input
       const props = await this.prompt(defaultQuestions) as AppGeneratorAnswer;
       const { template } = props;
-      const GITHUB_REPOSITORY_ID = `github:dolliejs/scaffold-${template}#master`;
+      const templateId = parseTemplateName(template);
+      const GITHUB_REPOSITORY_ID = `github:${templateId}#master`;
 
-      this.log.info(`Downloading template: ${GITHUB_REPOSITORY_ID}`);
+      this.log.info(`Downloading template: https://github.com/${templateId}.git`);
       const duration = await download(GITHUB_REPOSITORY_ID, TEMPLATE_DIR);
       this.log.info(`Template downloaded at ${TEMPLATE_DIR} in ${duration}ms`);
 

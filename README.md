@@ -36,7 +36,7 @@ env.registerStub(DollieGenerator, 'dollie');
 env.run('dollie', () => console.log('dollie generator started'));
 ```
 
-see <https://github.com/dolliejs/dollie-core#readme> for details.
+see <https://github.com/dolliejs/dollie-cli#readme> for details.
 
 ## License
 
