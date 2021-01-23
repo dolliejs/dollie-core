@@ -48,6 +48,10 @@ class DollieGenerator extends Generator {
 
   initializing() {
     this.log(figlet.textSync('DOLLIE'));
+    const packageJson = readJson(path.resolve(__dirname, '../package.json')) || {};
+    if (packageJson.version && packageJson.name) {
+      this.log(`Dollie CLI with ${packageJson.name}@${packageJson.version}`);
+    }
     if (fs.existsSync(TEMPLATE_DIR) && fs.readdirSync(TEMPLATE_DIR).length !== 0) {
       this.log.info(`Cleaning template dir (${TEMPLATE_DIR})...`);
       fs.removeSync(TEMPLATE_DIR);
