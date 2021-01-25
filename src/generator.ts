@@ -42,6 +42,7 @@ export interface DollieScaffoldConfiguration {
   installers?: string[];
   extends?: Record<string, string>;
   bases?: Array<string>;
+  deletions?: Array<string>;
 }
 
 export interface DollieDependence {
@@ -58,7 +59,7 @@ export interface DollieScaffold {
   props?: DollieScaffoldProps;
 }
 
-const recursivelyWrite = (scaffold: DollieScaffold, context: DollieGenerator) => {
+export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieGenerator) => {
   const scaffoldDir = path.resolve(context.appBasePath, scaffold.uuid);
   traverse(path.resolve(scaffoldDir), /^((?!(\.dollie\.json)).)+$/, (pathname: string, entity: string) => {
     const relativePath = path.relative(scaffoldDir, pathname);
@@ -79,94 +80,115 @@ const recursivelyWrite = (scaffold: DollieScaffold, context: DollieGenerator) =>
   for (const dependence of scaffold.dependencies) {
     recursivelyWrite(dependence, context);
   }
+
+  if (scaffold.configuration && scaffold.configuration.deletions) {
+    for (const deletion of scaffold.configuration.deletions) {
+      fs.removeSync(context.destinationPath(deletion));
+    }
+  }
+};
+
+export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieGenerator) => {
+  fs.removeSync(path.resolve(context.appBasePath, scaffold.uuid));
+  if (scaffold.dependencies && scaffold.dependencies.length > 0) {
+    scaffold.dependencies.forEach((dependence) => {
+      recursivelyRemove(dependence, context);
+    });
+  }
+};
+
+export const parseScaffolds = async (scaffold: DollieScaffold, context: DollieGenerator) => {
+  if (!scaffold) { return; }
+  const { uuid: scaffoldUuid, scaffoldName, isMainScaffold } = scaffold;
+  const scaffoldDir = path.resolve(context.appBasePath, scaffoldUuid);
+  const GITHUB_REPOSITORY_ID = `github:${scaffoldName}#master`;
+
+  context.log.info(`Downloading scaffold: https://github.com/${scaffoldName}.git`);
+  const duration = await download(GITHUB_REPOSITORY_ID, scaffoldDir);
+  context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
+
+  // read remote scaffold's .dollie.json
+  context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
+  const customScaffoldConfiguration: DollieScaffoldConfiguration =
+    // eslint-disable-next-line prettier/prettier
+    (readJson(path.resolve(scaffoldDir, '.dollie.json')) || {}) as DollieScaffoldConfiguration;
+  const defaultConfiguration = {
+    questions: [],
+    installers: ['npm'],
+  };
+  const scaffoldConfiguration: DollieScaffoldConfiguration = {
+    ..._.merge(
+      defaultConfiguration,
+      customScaffoldConfiguration
+    ),
+  };
+
+  if (
+    isMainScaffold &&
+    customScaffoldConfiguration.installers &&
+    Array.isArray(customScaffoldConfiguration.installers) &&
+    customScaffoldConfiguration.installers.length === 0
+  ) {
+    scaffoldConfiguration.installers = [];
+  }
+
+  if (!customScaffoldConfiguration.installers) {
+    scaffoldConfiguration.installers = ['npm'];
+  }
+
+  if (!customScaffoldConfiguration.questions) {
+    scaffoldConfiguration.questions = [];
+  }
+
+  scaffold.configuration = scaffoldConfiguration;
+
+  const scaffoldQuestions = scaffoldConfiguration.questions || [];
+
+  // if there is a questions param available in .dollie.json
+  // then put the questions and get the answers
+  const scaffoldProps = scaffoldQuestions.length > 0
+    ? await context.prompt(scaffoldQuestions)
+    : {};
+
+  // merge default answers and scaffold answers
+  // make them to a resultProps and inject to context.props
+  const resultProps = _.merge({ name: context.projectName }, scaffoldProps);
+  const dependenceKeyRegex = /^\$.*\$$/;
+  scaffold.props = _.omitBy(resultProps, (value, key) => dependenceKeyRegex.test(key)) as DollieScaffoldProps;
+
+  const dependencies = _.pickBy(resultProps, (value, key) => dependenceKeyRegex.test(key) && value !== 'null');
+  for (const dependenceKey of Object.keys(dependencies)) {
+    const dependenceUuid = uuid();
+    const currentDependence: DollieScaffold = {
+      uuid: dependenceUuid,
+      scaffoldName: parseExtendScaffoldName(dependencies[dependenceKey]),
+      dependencies: [],
+    };
+    scaffold.dependencies.push(currentDependence);
+    await parseScaffolds(currentDependence, context);
+  }
+};
+
+export const getInstallers = (scaffold: DollieScaffold): Array<string> => {
+  let installers = scaffold.configuration &&
+    Array.isArray(scaffold.configuration.installers) &&
+    Array.from(scaffold.configuration.installers);
+  scaffold.dependencies && Array.isArray(scaffold.dependencies) &&
+    scaffold.dependencies.forEach((dependence) => {
+      installers = installers.concat(getInstallers(dependence));
+    });
+  return installers;
 };
 
 class DollieGenerator extends Generator {
   // eslint-disable-next-line prettier/prettier
-  public appBasePath: string;
-  // eslint-disable-next-line prettier/prettier
-  public scaffoldDir: string;
-  // eslint-disable-next-line prettier/prettier
-  public scaffold: DollieScaffold;
-  // eslint-disable-next-line prettier/prettier
   public projectName: string;
-
-  // eslint-disable-next-line prettier/prettier
-  private async parseScaffolds(scaffold: DollieScaffold) {
-    if (!scaffold) { return; }
-    const { uuid: scaffoldUuid, scaffoldName, isMainScaffold } = scaffold;
-    const scaffoldDir = path.resolve(this.appBasePath, scaffoldUuid);
-    const GITHUB_REPOSITORY_ID = `github:${scaffoldName}#master`;
-
-    this.log.info(`Downloading scaffold: https://github.com/${scaffoldName}.git`);
-    const duration = await download(GITHUB_REPOSITORY_ID, scaffoldDir);
-    this.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
-
-    // read remote scaffold's .dollie.json
-    this.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
-    const customScaffoldConfiguration: DollieScaffoldConfiguration =
-      (readJson(path.resolve(scaffoldDir, '.dollie.json')) || {}) as DollieScaffoldConfiguration;
-    const defaultConfiguration = {
-      questions: [],
-      installers: ['npm'],
-    };
-    const scaffoldConfiguration: DollieScaffoldConfiguration = {
-      ..._.merge(
-        defaultConfiguration,
-        customScaffoldConfiguration
-      ),
-    };
-
-    if (
-      isMainScaffold &&
-      customScaffoldConfiguration.installers &&
-      Array.isArray(customScaffoldConfiguration.installers) &&
-      customScaffoldConfiguration.installers.length === 0
-    ) {
-      scaffoldConfiguration.installers = [];
-    }
-
-    if (isMainScaffold && !customScaffoldConfiguration.installers) {
-      scaffoldConfiguration.installers = ['npm'];
-    }
-
-    if (!customScaffoldConfiguration.questions) {
-      scaffoldConfiguration.questions = [];
-    }
-
-    scaffold.configuration = scaffoldConfiguration;
-
-    const scaffoldQuestions = scaffoldConfiguration.questions || [];
-
-    // if there is a questions param available in .dollie.json
-    // then put the questions and get the answers
-    const scaffoldProps = scaffoldQuestions.length > 0
-      ? await this.prompt(scaffoldQuestions)
-      : {};
-
-    // merge default answers and scaffold answers
-    // make them to a resultProps and inject to this.props
-    const resultProps = _.merge({ name: this.projectName }, scaffoldProps);
-    const dependenceKeyRegex = /^\$.*\$$/;
-    scaffold.props = _.omitBy(resultProps, (value, key) => dependenceKeyRegex.test(key)) as DollieScaffoldProps;
-
-    const dependencies = _.pickBy(resultProps, (value, key) => dependenceKeyRegex.test(key));
-    for (const dependenceKey of Object.keys(dependencies)) {
-      const dependenceUuid = uuid();
-      const currentDependence: DollieScaffold = {
-        uuid: dependenceUuid,
-        scaffoldName: parseExtendScaffoldName(dependencies[dependenceKey]),
-        dependencies: [],
-      };
-      scaffold.dependencies.push(currentDependence);
-      await this.parseScaffolds(currentDependence);
-    }
-  }
+  public appBasePath: string;
+  public scaffold: DollieScaffold;
 
   initializing() {
     this.log(figlet.textSync('DOLLIE'));
     this.appBasePath = path.resolve(HOME_DIR, '.dollie/cache');
-    this.scaffoldDir = path.resolve(this.appBasePath, 'main_scaffold');
     const packageJson = readJson(path.resolve(__dirname, '../package.json')) || {};
     if (packageJson.version && packageJson.name) {
       this.log(`Dollie CLI with ${packageJson.name}@${packageJson.version}`);
@@ -175,8 +197,8 @@ class DollieGenerator extends Generator {
       this.log.info(`Cleaning cache dir (${this.appBasePath})...`);
       fs.removeSync(this.appBasePath);
     }
-    if (!fs.existsSync(this.scaffoldDir)) {
-      fs.mkdirpSync(this.scaffoldDir);
+    if (!fs.existsSync(this.appBasePath)) {
+      fs.mkdirpSync(this.appBasePath);
     }
   }
 
@@ -209,7 +231,7 @@ class DollieGenerator extends Generator {
         dependencies: [],
         isMainScaffold: true,
       };
-      await this.parseScaffolds(scaffold);
+      await parseScaffolds(scaffold, this);
       this.scaffold = scaffold;
     } catch (e) {
       this.log.error(e.message || e.toString());
@@ -251,7 +273,7 @@ class DollieGenerator extends Generator {
     // traverse installers in this.scaffold.configuration.installers
     // get the installer from installerMap
     // when the installer is available, then invoke it
-    const installers = this.scaffold.configuration.installers || ['npm'];
+    const installers = _.uniq(getInstallers(this.scaffold));
     installers.forEach((installerName) => {
       const currentInstaller = installerMap[installerName.toLocaleLowerCase()];
       if (currentInstaller && typeof currentInstaller === 'function') {
@@ -267,7 +289,7 @@ class DollieGenerator extends Generator {
     // if the generator exits before invoking end() method,
     // the content inside scaffold directory might not be cleaned, but
     // it would be cleaned when next generator is initializing
-    fs.removeSync(this.scaffoldDir);
+    recursivelyRemove(this.scaffold, this);
   }
 }
 
