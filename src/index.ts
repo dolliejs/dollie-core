@@ -3,7 +3,11 @@ import downloadGitRepo from './utils/download';
 import readJson from './utils/read-json';
 import traverse from './utils/traverse';
 import { parseScaffoldName, parseExtendScaffoldName } from './utils/scaffold';
-import { DollieScaffoldConfiguration, DollieScaffoldProps } from './generator';
+import {
+  DollieScaffoldConfiguration,
+  DollieScaffoldProps,
+  getInstallers,
+} from './generator';
 
 export {
   // functions
@@ -12,6 +16,7 @@ export {
   traverse,
   parseScaffoldName,
   parseExtendScaffoldName,
+  getInstallers,
   // classes
   DollieGenerator,
   // interfaces and types
@@ -25,5 +30,6 @@ export default {
   traverse,
   parseScaffoldName,
   parseExtendScaffoldName,
+  getInstallers,
   DollieGenerator,
 };
