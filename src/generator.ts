@@ -41,7 +41,6 @@ export interface DollieScaffoldConfiguration {
   questions: Array<Question<DollieScaffoldProps>>;
   installers?: string[];
   extends?: Record<string, string>;
-  bases?: Array<string>;
   deletions?: Array<string>;
 }
 
@@ -54,7 +53,6 @@ export interface DollieScaffold {
   uuid: string;
   scaffoldName: string;
   dependencies: Array<DollieScaffold>;
-  isMainScaffold?: boolean;
   configuration?: DollieScaffoldConfiguration;
   props?: DollieScaffoldProps;
 }
@@ -99,7 +97,7 @@ export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieGener
 
 export const parseScaffolds = async (scaffold: DollieScaffold, context: DollieGenerator) => {
   if (!scaffold) { return; }
-  const { uuid: scaffoldUuid, scaffoldName, isMainScaffold } = scaffold;
+  const { uuid: scaffoldUuid, scaffoldName } = scaffold;
   const scaffoldDir = path.resolve(context.appBasePath, scaffoldUuid);
   const GITHUB_REPOSITORY_ID = `github:${scaffoldName}#master`;
 
@@ -228,7 +226,6 @@ class DollieGenerator extends Generator {
         uuid: uuid(),
         scaffoldName: parseScaffoldName(props.scaffold),
         dependencies: [],
-        isMainScaffold: true,
       };
       await parseScaffolds(scaffold, this);
       this.scaffold = scaffold;
