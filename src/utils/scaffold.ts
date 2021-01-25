@@ -3,7 +3,7 @@
  * @param name string
  * @returns string
  */
-const parseTemplateName = (name: string): string => {
+const parseScaffoldName = (name: string): string => {
   if (/\//.test(name)) {
     const templateNameChunks = name.split('/');
     return templateNameChunks.reduce((result, currentValue, currentIndex) => {
@@ -22,4 +22,4 @@ const parseTemplateName = (name: string): string => {
   }
 };
 
-export { parseTemplateName };
+export { parseScaffoldName };

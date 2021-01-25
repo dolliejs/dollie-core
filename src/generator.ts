@@ -22,20 +22,22 @@ import _ from 'lodash';
 import download from './utils/download';
 import traverse from './utils/traverse';
 import readJson from './utils/read-json';
-import { parseTemplateName } from './utils/template';
+import { parseScaffoldName } from './utils/scaffold';
 
 const HOME_DIR = os.homedir();
-const TEMPLATE_DIR = path.resolve(HOME_DIR, '.dollie/template');
+const SCAFFOLD_DIR = path.resolve(HOME_DIR, '.dollie/scaffold');
 
-interface AppGeneratorAnswer {
+export interface AppGeneratorAnswer {
   name: string;
-  template: string;
+  scaffold: string;
   [key: string]: string;
 }
 
-interface DollieScaffoldConfiguration {
+export interface DollieScaffoldConfiguration {
   questions: Array<Question<AppGeneratorAnswer>>;
   installers: string[];
+  extends?: Record<string, string>;
+  bases?: Array<string>;
 }
 
 class DollieGenerator extends Generator {
@@ -53,12 +55,12 @@ class DollieGenerator extends Generator {
     if (packageJson.version && packageJson.name) {
       this.log(`Dollie CLI with ${packageJson.name}@${packageJson.version}`);
     }
-    if (fs.existsSync(TEMPLATE_DIR) && fs.readdirSync(TEMPLATE_DIR).length !== 0) {
-      this.log.info(`Cleaning template dir (${TEMPLATE_DIR})...`);
-      fs.removeSync(TEMPLATE_DIR);
+    if (fs.existsSync(SCAFFOLD_DIR) && fs.readdirSync(SCAFFOLD_DIR).length !== 0) {
+      this.log.info(`Cleaning scaffold dir (${SCAFFOLD_DIR})...`);
+      fs.removeSync(SCAFFOLD_DIR);
     }
-    if (!fs.existsSync(TEMPLATE_DIR)) {
-      fs.mkdirpSync(TEMPLATE_DIR);
+    if (!fs.existsSync(SCAFFOLD_DIR)) {
+      fs.mkdirpSync(SCAFFOLD_DIR);
     }
   }
 
@@ -75,7 +77,7 @@ class DollieGenerator extends Generator {
         },
         {
           type: 'input',
-          name: 'template',
+          name: 'scaffold',
           message:
             'Enter the scaffold id',
           default: 'react-typescript-sass',
@@ -84,18 +86,18 @@ class DollieGenerator extends Generator {
 
       // get props from user's input
       const props = await this.prompt(defaultQuestions) as AppGeneratorAnswer;
-      const { template } = props;
-      const templateId = parseTemplateName(template);
-      const GITHUB_REPOSITORY_ID = `github:${templateId}#master`;
+      const { scaffold } = props;
+      const scaffoldId = parseScaffoldName(scaffold);
+      const GITHUB_REPOSITORY_ID = `github:${scaffoldId}#master`;
 
-      this.log.info(`Downloading template: https://github.com/${templateId}.git`);
-      const duration = await download(GITHUB_REPOSITORY_ID, TEMPLATE_DIR);
-      this.log.info(`Template downloaded at ${TEMPLATE_DIR} in ${duration}ms`);
+      this.log.info(`Downloading scaffold: https://github.com/${scaffoldId}.git`);
+      const duration = await download(GITHUB_REPOSITORY_ID, SCAFFOLD_DIR);
+      this.log.info(`Template downloaded at ${SCAFFOLD_DIR} in ${duration}ms`);
 
       // read remote scaffold's .dollie.json
-      this.log.info('Reading template configuration...');
+      this.log.info('Reading scaffold configuration...');
       const customScaffoldConfiguration: DollieScaffoldConfiguration =
-        (readJson(path.resolve(TEMPLATE_DIR, '.dollie.json')) || {}) as DollieScaffoldConfiguration;
+        (readJson(path.resolve(SCAFFOLD_DIR, '.dollie.json')) || {}) as DollieScaffoldConfiguration;
       const scaffoldConfiguration: DollieScaffoldConfiguration = {
         ..._.merge(
           this.scaffoldConfiguration,
@@ -130,11 +132,11 @@ class DollieGenerator extends Generator {
   }
 
   default() {
-    const { name, template } = this.props;
+    const { name, scaffold } = this.props;
     const DESTINATION_PATH = path.resolve(process.cwd(), name);
 
     // check if default params are completed or not
-    if (!name || !template) {
+    if (!name || !scaffold) {
       this.log.error('Lost some parameters, please check');
       process.exit(1);
     }
@@ -149,10 +151,10 @@ class DollieGenerator extends Generator {
 
   async writing() {
     try {
-      this.log.info('Writing template...');
-      traverse(TEMPLATE_DIR, /^((?!(\.dollie\.json)).)+$/, (pathname: string, entity: string) => {
-        const relativePath = path.relative(TEMPLATE_DIR, pathname);
-        // match the files with `__template.`, which means it is a template file
+      this.log.info('Writing scaffold...');
+      traverse(SCAFFOLD_DIR, /^((?!(\.dollie\.json)).)+$/, (pathname: string, entity: string) => {
+        const relativePath = path.relative(SCAFFOLD_DIR, pathname);
+        // match the files with `__template.`, which means it is a scaffold file
         // so we should invoke this.fs.copyTpl to inject the props into the file
         if (entity.startsWith('__template.')) {
           this.fs.copyTpl(
@@ -193,12 +195,12 @@ class DollieGenerator extends Generator {
   }
 
   end() {
-    this.log.info('Cleaning template cache...');
-    // clean up template directory
+    this.log.info('Cleaning scaffold cache...');
+    // clean up scaffold directory
     // if the generator exits before invoking end() method,
-    // the content inside template directory might not be cleaned, but
+    // the content inside scaffold directory might not be cleaned, but
     // it would be cleaned when next generator is initializing
-    fs.removeSync(TEMPLATE_DIR);
+    fs.removeSync(SCAFFOLD_DIR);
   }
 }
 
