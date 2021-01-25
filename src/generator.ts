@@ -124,7 +124,6 @@ export const parseScaffolds = async (scaffold: DollieScaffold, context: DollieGe
   };
 
   if (
-    isMainScaffold &&
     customScaffoldConfiguration.installers &&
     Array.isArray(customScaffoldConfiguration.installers) &&
     customScaffoldConfiguration.installers.length === 0
