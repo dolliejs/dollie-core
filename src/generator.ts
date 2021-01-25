@@ -80,12 +80,6 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieGenera
   for (const dependence of scaffold.dependencies) {
     recursivelyWrite(dependence, context);
   }
-
-  if (scaffold.configuration && scaffold.configuration.deletions) {
-    for (const deletion of scaffold.configuration.deletions) {
-      fs.removeSync(context.destinationPath(deletion));
-    }
-  }
 };
 
 export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieGenerator) => {
@@ -94,6 +88,12 @@ export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieGener
     scaffold.dependencies.forEach((dependence) => {
       recursivelyRemove(dependence, context);
     });
+  }
+
+  if (scaffold.configuration && scaffold.configuration.deletions) {
+    for (const deletion of scaffold.configuration.deletions) {
+      fs.removeSync(context.destinationPath(deletion));
+    }
   }
 };
 
