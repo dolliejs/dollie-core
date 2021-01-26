@@ -10,11 +10,16 @@ jobs:
     <<: *defaults
     steps:
       - checkout
+      - run: npm run checksum
       - run: npm install
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+          key: v1-dependencies-{{ checksum "checksum.txt" }}
+      - save_cache:
+          paths:
+            - checksum.txt
+          key: v1-checksum-{{ checksum "checksum.txt" }}
       - persist_to_workspace:
           root: ~/repo
           paths: .
@@ -25,18 +30,23 @@ jobs:
           at: ~/repo
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "package.json" }}
+            - v1-dependencies-{{ checksum "checksum.txt" }}
+            - v1-checksum-{{ checksum "checksum.txt" }}
       - run: ls -al
       - run: npm run build
       - run: ls -al
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+          key: v1-dependencies-{{ checksum "checksum.txt" }}
       - save_cache:
           paths:
             - lib
-          key: dollie-core-{{ checksum "package.json" }}
+          key: dollie-core-{{ checksum "checksum.txt" }}
+      - save_cache:
+          paths:
+            - checksum.txt
+          key: v1-checksum-{{ checksum "checksum.txt" }}
   deploy:
     <<: *defaults
     steps:
@@ -44,8 +54,9 @@ jobs:
           at: ~/repo
       - restore_cache:
           keys:
-            - dollie-core-{{ checksum "package.json" }}
-            - v1-dependencies-{{ checksum "package.json" }}
+            - v1-checksum-{{ checksum "checksum.txt" }}
+            - dollie-core-{{ checksum "checksum.txt" }}
+            - v1-dependencies-{{ checksum "checksum.txt" }}
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
       - run: ls -al
       - run: npm publish --access public
