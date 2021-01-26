@@ -19,7 +19,9 @@ jobs:
       - save_cache:
           paths:
             - checksum.txt
-          key: v1-checksum-{{ checksum "checksum.txt" }}
+          keys:
+            - v1-checksum-{{ checksum "checksum.txt" }}
+            - v1-checksum-
       - persist_to_workspace:
           root: ~/repo
           paths: .
@@ -30,8 +32,9 @@ jobs:
           at: ~/repo
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "checksum.txt" }}
             - v1-checksum-{{ checksum "checksum.txt" }}
+            - vi-checksum-
+            - v1-dependencies-{{ checksum "checksum.txt" }}
       - run: ls -al
       - run: npm run build
       - run: ls -al
@@ -42,7 +45,7 @@ jobs:
       - save_cache:
           paths:
             - lib
-          key: dollie-core-{{ checksum "checksum.txt" }}
+          key: v1-dist-{{ checksum "checksum.txt" }}
       - save_cache:
           paths:
             - checksum.txt
@@ -55,7 +58,8 @@ jobs:
       - restore_cache:
           keys:
             - v1-checksum-{{ checksum "checksum.txt" }}
-            - dollie-core-{{ checksum "checksum.txt" }}
+            - vi-checksum-
+            - v1-dist-{{ checksum "checksum.txt" }}
             - v1-dependencies-{{ checksum "checksum.txt" }}
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
       - run: ls -al
