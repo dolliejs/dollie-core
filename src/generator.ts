@@ -20,6 +20,7 @@ import figlet from 'figlet';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import { v4 as uuid } from 'uuid';
+import { execSync } from 'child_process';
 import download from './utils/download';
 import traverse from './utils/traverse';
 import readJson from './utils/read-json';
@@ -186,12 +187,17 @@ class DollieGenerator extends Generator {
           name: 'scaffold',
           message:
             'Enter the scaffold id',
-          default: 'react-typescript-sass',
+          default: 'react-ts-sass',
         },
       ];
 
       // get props from user's input
       const props = await this.prompt(defaultQuestions) as DollieScaffoldProps;
+
+      if (!props.name || !props.scaffold) {
+        this.log.error('There are essential params lost');
+      }
+
       this.projectName = props.name;
       const scaffold: DollieScaffold = {
         uuid: uuid(),
@@ -246,6 +252,12 @@ class DollieGenerator extends Generator {
       if (currentInstaller && typeof currentInstaller === 'function') {
         this.log.info(`Installing ${installerName.toUpperCase()} dependencies...`);
         currentInstaller.call(this);
+      } else {
+        try {
+          execSync(installerName);
+        } catch (e) {
+          this.log.error(e.message || e.toString());
+        }
       }
     });
   }
