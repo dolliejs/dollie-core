@@ -33,6 +33,7 @@ jobs:
             - v1-checksum-{{ checksum "checksum.txt" }}
             - vi-checksum-
             - v1-dependencies-{{ checksum "checksum.txt" }}
+            - v1-dependencies-
       - run: ls -al
       - run: npm run build
       - run: ls -al
@@ -58,7 +59,9 @@ jobs:
             - v1-checksum-{{ checksum "checksum.txt" }}
             - vi-checksum-
             - v1-dist-{{ checksum "checksum.txt" }}
+            - v1-dist-
             - v1-dependencies-{{ checksum "checksum.txt" }}
+            - v1-dependencies-
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
       - run: ls -al
       - run: npm publish --access public
