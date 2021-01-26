@@ -19,9 +19,7 @@ jobs:
       - save_cache:
           paths:
             - checksum.txt
-          key:
-            - v1-checksum-{{ checksum "checksum.txt" }}
-            - v1-checksum-
+          key: v1-checksum-{{ checksum "checksum.txt" }}
       - persist_to_workspace:
           root: ~/repo
           paths: .
