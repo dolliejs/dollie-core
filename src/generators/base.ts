@@ -20,7 +20,7 @@ import figlet from 'figlet';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import { execSync } from 'child_process';
-import { recursivelyRemove, recursivelyWrite, getInstallers } from '../utils/generator';
+import { recursivelyRemove, recursivelyWrite, getComposedArrayValue } from '../utils/generator';
 import { DollieScaffold } from '../interfaces';
 
 const HOME_DIR = os.homedir();
@@ -77,34 +77,35 @@ class DollieGeneratorBase extends Generator {
     // traverse installers in this.scaffold.configuration.installers
     // get the installer from installerMap
     // when the installer is available, then invoke it
-    const installers = _.uniq(getInstallers(this.scaffold));
-    installers.forEach((installerName) => {
+    const installers = _.uniq(getComposedArrayValue<string>(this.scaffold, 'installers'));
+    for (const installerName of installers) {
       const currentInstaller = installerMap[installerName.toLocaleLowerCase()];
       if (currentInstaller && typeof currentInstaller === 'function') {
         this.log.info(`Installing ${installerName.toUpperCase()} dependencies...`);
         currentInstaller.call(this);
       }
-    });
-
-    const endScripts = this.scaffold.configuration?.endScripts || [];
-    endScripts.forEach((endScript) => {
-      if (typeof endScript !== 'string') {
-        try {
-          execSync(endScript);
-        } catch (e) {
-          this.log.error(e.message || e.toString());
-        }
-      }
-    });
+    }
   }
 
   end() {
-    this.log.info('Cleaning scaffold cache...');
     // clean up scaffold directory
     // if the generator exits before invoking end() method,
     // the content inside scaffold directory might not be cleaned, but
     // it would be cleaned when next generator is initializing
+    this.log.info('Cleaning scaffold cache...');
     recursivelyRemove(this.scaffold, this);
+
+    const endScripts = getComposedArrayValue<string>(this.scaffold, 'endScripts');
+    for (const endScript of endScripts) {
+      if (typeof endScript === 'string') {
+        try {
+          this.log.info(`Executing end script: \`${endScript}\``);
+          this.log(Buffer.from(execSync(endScript)).toString());
+        } catch (e) {
+          this.log.error(e.message || e.toString());
+        }
+      }
+    }
   }
 }
 

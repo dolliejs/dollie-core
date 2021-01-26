@@ -118,13 +118,13 @@ export const parseScaffolds = async (scaffold: DollieScaffold, context: DollieBa
   }
 };
 
-export const getInstallers = (scaffold: DollieScaffold): Array<string> => {
-  let installers = scaffold.configuration &&
-    Array.isArray(scaffold.configuration.installers) &&
-    Array.from(scaffold.configuration.installers);
+export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string): Array<T> => {
+  let result = scaffold.configuration &&
+    Array.isArray(scaffold.configuration[key]) &&
+    Array.from(scaffold.configuration[key]);
   scaffold.dependencies && Array.isArray(scaffold.dependencies) &&
     scaffold.dependencies.forEach((dependence) => {
-      installers = installers.concat(getInstallers(dependence));
+      result = result.concat(getComposedArrayValue(dependence, key));
     });
-  return installers;
+  return result as Array<T>;
 };

@@ -2,7 +2,7 @@ import downloadGitRepo from './utils/download';
 import readJson from './utils/read-json';
 import traverse from './utils/traverse';
 import { parseScaffoldName, parseExtendScaffoldName } from './utils/scaffold';
-import { getInstallers } from './utils/generator';
+import { getComposedArrayValue } from './utils/generator';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
 import {
@@ -19,7 +19,7 @@ export {
   traverse,
   parseScaffoldName,
   parseExtendScaffoldName,
-  getInstallers,
+  getComposedArrayValue,
   // classes
   DollieInteractiveGenerator,
   DollieComposeGenerator,
@@ -36,7 +36,7 @@ export default {
   traverse,
   parseScaffoldName,
   parseExtendScaffoldName,
-  getInstallers,
+  getComposedArrayValue,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
 };
