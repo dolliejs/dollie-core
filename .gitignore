@@ -20,3 +20,6 @@ package-lock.json
 
 # dist files
 lib
+
+# checksum file for Circle CI
+checksum.txt
