@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import Environment from 'yeoman-environment';
-import DollieGenerator from '../generator';
+const Environment = require('yeoman-environment');
+const DollieGenerator = require('../src/generator').default;
 
 const env = Environment.createEnv();
 env.registerStub(DollieGenerator, 'dollie');
