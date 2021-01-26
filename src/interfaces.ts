@@ -15,6 +15,7 @@ export interface DollieScaffoldConfiguration {
   installers?: string[];
   extends?: Record<string, string>;
   deletions?: Array<string>;
+  endScripts?: Array<string>;
 }
 
 export interface DollieScaffold {

@@ -83,9 +83,14 @@ class DollieGeneratorBase extends Generator {
       if (currentInstaller && typeof currentInstaller === 'function') {
         this.log.info(`Installing ${installerName.toUpperCase()} dependencies...`);
         currentInstaller.call(this);
-      } else {
+      }
+    });
+
+    const endScripts = this.scaffold.configuration?.endScripts || [];
+    endScripts.forEach((endScript) => {
+      if (typeof endScript !== 'string') {
         try {
-          execSync(installerName);
+          execSync(endScript);
         } catch (e) {
           this.log.error(e.message || e.toString());
         }
