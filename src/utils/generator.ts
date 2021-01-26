@@ -9,12 +9,46 @@ import readJson from '../utils/read-json';
 import { parseExtendScaffoldName } from '../utils/scaffold';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
 
+/**
+ * write file to destination recursively
+ * @param scaffold DollieScaffold
+ * @param context DollieBaseGenerator
+ *
+ * gives a scaffold configuration with tree data structure
+ * and traverse all of the nodes in this tree recursively and process them
+ * with `Generator#fs#copyTpl` and `Generator#fs#copy`
+ * it will ignore `.dollie.json`, and inject props into the files
+ * which contain `__template.` as their filename at the beginning
+ */
 export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+  /**
+   * `context.appBasePath` usually is $HOME/.dollie/cache
+   * `scaffold.uuid` is the UUID for current scaffold, e.g. 3f74b271-04ac-4e7b-a5c1-b24894c529d2
+   *
+   * @example
+   * the `scaffoldDir` would probably be $HOME/.dollie/cache/3f74b271-04ac-4e7b-a5c1-b24894c529d2
+   */
   const scaffoldDir = path.resolve(context.appBasePath, scaffold.uuid);
+
+  /**
+   * invoke `traverse` function in `src/utils/traverse.ts`, set the ignore pattern
+   * to avoid copying `.dollie.json` to destination path.
+   */
   traverse(path.resolve(scaffoldDir), /^((?!(\.dollie\.json)).)+$/, (pathname: string, entity: string) => {
+    /**
+     * `pathname` is an absolute pathname of file against `scaffoldDir` as above
+     * we should get the relate pathname to concat with destination pathname
+     *
+     * @example
+     * if a `pathname` equals to `/home/lenconda/.dollie/cache/3f74b271-04ac-4e7b-a5c1-b24894c529d2/src/index.js`
+     * the `relativePath` would become as `src/index.js`
+     */
     const relativePath = path.relative(scaffoldDir, pathname);
-    // match the files with `__template.`, which means it is a scaffold file
-    // so we should invoke this.fs.copyTpl to inject the props into the file
+
+    /**
+     * match the files with `__template.`, which means it is a scaffold file
+     * so we should invoke this.fs.copyTpl to inject the props into the file
+     */
     if (entity.startsWith('__template.')) {
       context.fs.copyTpl(
         pathname,
@@ -27,11 +61,20 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
     }
   });
 
+  /**
+   * if there are dependencies in current scaffold, then we should traverse the array
+   * and call `recursivelyWrite` to process array items
+   */
   for (const dependence of scaffold.dependencies) {
     recursivelyWrite(dependence, context);
   }
 };
 
+/**
+ * remove file from destination recursively
+ * @param scaffold DollieScaffold
+ * @param context DollieBaseGenerator
+ */
 export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
   fs.removeSync(path.resolve(context.appBasePath, scaffold.uuid));
   if (scaffold.dependencies && scaffold.dependencies.length > 0) {

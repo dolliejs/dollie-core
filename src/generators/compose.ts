@@ -23,6 +23,10 @@ class DollieComposeGenerator extends DollieGeneratorBase {
 
     // eslint-disable-next-line prettier/prettier
     const scaffold = (this.options && this.options.dollieScaffoldConfig as DollieScaffold) || undefined;
+    if (!scaffold) {
+      this.log.error('Cannot read configuration for Dollie Compose');
+      process.exit(1);
+    }
     const projectName = scaffold?.props?.name;
     if (!projectName) {
       this.log.error('A value of `string` must be assigned to `name`');
@@ -37,28 +41,23 @@ class DollieComposeGenerator extends DollieGeneratorBase {
 
   async writing() {
     // eslint-disable-next-line prettier/prettier
-    const scaffold = (this.options && this.options.dollieScaffoldConfig as DollieScaffold) || undefined;
-    if (!scaffold) {
-      this.log.error('Cannot read configuration for Dollie Compose');
-      process.exit(1);
-    } else {
-      const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
-        const result: DollieScaffold = scaffold;
-        const currentUuid = uuid();
-        result.uuid = currentUuid;
-        await parseScaffolds(result, this, true);
-        if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
-          const dependencies = Array.from(result.dependencies);
-          result.dependencies = [];
-          for (const currentDependence of dependencies) {
-            result.dependencies.push(await createDetailedScaffold(currentDependence));
-          }
+    const scaffold = this.options.dollieScaffoldConfig as DollieScaffold;
+    const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
+      const result: DollieScaffold = scaffold;
+      const currentUuid = uuid();
+      result.uuid = currentUuid;
+      await parseScaffolds(result, this, true);
+      if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
+        const dependencies = Array.from(result.dependencies);
+        result.dependencies = [];
+        for (const currentDependence of dependencies) {
+          result.dependencies.push(await createDetailedScaffold(currentDependence));
         }
-        return result;
-      };
+      }
+      return result;
+    };
 
-      this.scaffold = await createDetailedScaffold(scaffold);
-    }
+    this.scaffold = await createDetailedScaffold(scaffold);
 
     await super.writing.call(this);
   }
