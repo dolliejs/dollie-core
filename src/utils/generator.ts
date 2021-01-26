@@ -47,7 +47,7 @@ export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieBaseG
   }
 };
 
-export const parseScaffolds = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+export const parseScaffolds = async (scaffold: DollieScaffold, context: DollieBaseGenerator, isCompose = false) => {
   if (!scaffold) { return; }
   const { uuid: scaffoldUuid, scaffoldName } = scaffold;
   const scaffoldDir = path.resolve(context.appBasePath, scaffoldUuid);
@@ -90,6 +90,17 @@ export const parseScaffolds = async (scaffold: DollieScaffold, context: DollieBa
   }
 
   scaffold.configuration = scaffoldConfiguration;
+
+  if (isCompose) {
+    scaffold.props = _.merge(
+      {
+        name: context.projectName,
+        scaffold: scaffold.scaffoldName,
+      },
+      (scaffold.props || {})
+    );
+    return;
+  }
 
   const scaffoldQuestions = scaffoldConfiguration.questions || [];
 

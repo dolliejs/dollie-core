@@ -15,7 +15,7 @@ import { DollieScaffold, DollieScaffoldProps } from '../interfaces';
 class DollieInteractiveGenerator extends DollieGeneratorBase {
   initializing() {
     super.initializing();
-    const packageJson = readJson(path.resolve(__dirname, '../package.json')) || {};
+    const packageJson = readJson(path.resolve(__dirname, '../../package.json')) || {};
     if (packageJson.version && packageJson.name) {
       this.log(`Dollie CLI with ${packageJson.name}@${packageJson.version}`);
     }
