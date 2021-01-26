@@ -15,7 +15,7 @@
 
 import path from 'path';
 import os from 'os';
-import Generator, { Questions, Question } from 'yeoman-generator';
+import Generator, { Questions } from 'yeoman-generator';
 import figlet from 'figlet';
 import fs from 'fs-extra';
 import _ from 'lodash';
@@ -24,38 +24,9 @@ import download from './utils/download';
 import traverse from './utils/traverse';
 import readJson from './utils/read-json';
 import { parseExtendScaffoldName, parseScaffoldName } from './utils/scaffold';
+import { DollieScaffold, DollieScaffoldProps, DollieScaffoldConfiguration } from './interfaces';
 
 const HOME_DIR = os.homedir();
-
-export interface DollieScaffoldBaseProps {
-  name: string;
-}
-
-export interface DollieScaffoldProps extends DollieScaffoldBaseProps {
-  name: string;
-  scaffold: string;
-  [key: string]: string;
-}
-
-export interface DollieScaffoldConfiguration {
-  questions: Array<Question<DollieScaffoldProps>>;
-  installers?: string[];
-  extends?: Record<string, string>;
-  deletions?: Array<string>;
-}
-
-export interface DollieDependence {
-  scaffold: string;
-  config?: DollieScaffoldConfiguration;
-}
-
-export interface DollieScaffold {
-  uuid: string;
-  scaffoldName: string;
-  dependencies: Array<DollieScaffold>;
-  configuration?: DollieScaffoldConfiguration;
-  props?: DollieScaffoldProps;
-}
 
 export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieGenerator) => {
   const scaffoldDir = path.resolve(context.appBasePath, scaffold.uuid);
