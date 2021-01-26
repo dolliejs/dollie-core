@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 
 const Environment = require('yeoman-environment');
-const DollieGenerator = require('../src/generator').default;
+const InteractiveGenerator = require('../src/generators/interactive').default;
+const ComposeGenerator = require('../src/generators/compose').default;
 
+const type = process.argv[2];
 const env = Environment.createEnv();
-env.registerStub(DollieGenerator, 'dollie');
-env.run('dollie', null);
+
+env.registerStub(InteractiveGenerator, 'dollie:interactive');
+env.registerStub(ComposeGenerator, 'dollie:compose');
+env.run(`dollie:${type}`, null);

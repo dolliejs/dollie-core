@@ -1,5 +1,5 @@
 /**
- * @file src/app/index.ts
+ * @file src/generator.ts
  * @author lenconda <i@lenconda.top>
  * @description this is the entry file for @dollie/cli generator
  *
