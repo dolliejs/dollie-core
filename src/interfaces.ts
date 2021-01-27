@@ -27,3 +27,5 @@ export interface DollieScaffold {
   props?: DollieScaffoldProps;
   parent?: DollieScaffold;
 }
+
+export type DollieScaffoldNameParser = (name: string) => string;

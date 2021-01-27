@@ -14,16 +14,14 @@
  */
 
 import path from 'path';
-import os from 'os';
 import Generator from 'yeoman-generator';
 import figlet from 'figlet';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import { execSync } from 'child_process';
 import { recursivelyRemove, recursivelyWrite, getComposedArrayValue } from '../utils/generator';
+import { HOME_DIR, CACHE_DIR } from '../constants';
 import { DollieScaffold } from '../interfaces';
-
-const HOME_DIR = os.homedir();
 
 class DollieGeneratorBase extends Generator {
   /**
@@ -44,7 +42,7 @@ class DollieGeneratorBase extends Generator {
 
   initializing() {
     this.log(figlet.textSync('DOLLIE'));
-    this.appBasePath = path.resolve(HOME_DIR, '.dollie/cache');
+    this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
     if (fs.existsSync(this.appBasePath) && fs.readdirSync(this.appBasePath).length !== 0) {
       this.log.info(`Cleaning cache dir (${this.appBasePath})...`);
       fs.removeSync(this.appBasePath);

@@ -7,6 +7,7 @@ import traverse from '../utils/traverse';
 import download from '../utils/download';
 import readJson from '../utils/read-json';
 import { parseExtendScaffoldName } from '../utils/scaffold';
+import { TRAVERSE_IGNORE_REGEXP } from '../constants';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
 
 /**
@@ -34,7 +35,7 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
    * invoke `traverse` function in `src/utils/traverse.ts`, set the ignore pattern
    * to avoid copying `.dollie.json` to destination path.
    */
-  traverse(path.resolve(scaffoldDir), /^((?!(\.dollie\.json)).)+$/, (pathname: string, entity: string) => {
+  traverse(path.resolve(scaffoldDir), TRAVERSE_IGNORE_REGEXP, (pathname: string, entity: string) => {
     /**
      * `pathname` is an absolute pathname of file against `scaffoldDir` as above
      * we should get the relate pathname to concat with destination pathname

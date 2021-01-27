@@ -10,7 +10,17 @@ import {
   DollieScaffoldBaseProps,
   DollieScaffoldProps,
   DollieScaffoldConfiguration,
+  DollieScaffoldNameParser,
 } from './interfaces';
+import {
+  APP_NAME,
+  HOME_DIR,
+  CACHE_DIR,
+  TRAVERSE_IGNORE_REGEXP,
+  APP_SCAFFOLD_PREFIX,
+  APP_EXTEND_SCAFFOLD_PREFIX,
+  APP_SCAFFOLD_NAMESPACE,
+} from './constants';
 
 export {
   // functions
@@ -28,6 +38,15 @@ export {
   DollieScaffoldProps,
   DollieScaffold,
   DollieScaffoldBaseProps,
+  DollieScaffoldNameParser,
+  // constants
+  APP_NAME,
+  HOME_DIR,
+  CACHE_DIR,
+  TRAVERSE_IGNORE_REGEXP,
+  APP_SCAFFOLD_PREFIX,
+  APP_EXTEND_SCAFFOLD_PREFIX,
+  APP_SCAFFOLD_NAMESPACE,
 };
 
 export default {
@@ -39,4 +58,11 @@ export default {
   getComposedArrayValue,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
+  APP_NAME,
+  HOME_DIR,
+  CACHE_DIR,
+  TRAVERSE_IGNORE_REGEXP,
+  APP_SCAFFOLD_PREFIX,
+  APP_EXTEND_SCAFFOLD_PREFIX,
+  APP_SCAFFOLD_NAMESPACE,
 };

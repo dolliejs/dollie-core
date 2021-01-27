@@ -1,4 +1,9 @@
-export type ScaffoldNameParser = (name: string) => string;
+import { DollieScaffoldNameParser } from '../interfaces';
+import {
+  APP_SCAFFOLD_NAMESPACE,
+  APP_SCAFFOLD_PREFIX,
+  APP_EXTEND_SCAFFOLD_PREFIX,
+} from '../constants';
 
 /**
  * parse scaffold name and return a function as parser, which can return a string that
@@ -16,8 +21,8 @@ export type ScaffoldNameParser = (name: string) => string;
  */
 const createParser = (
   scaffoldPrefix: string,
-  defaultNamespace = 'dolliejs'
-): ScaffoldNameParser => {
+  defaultNamespace = APP_SCAFFOLD_NAMESPACE
+): DollieScaffoldNameParser => {
   return (name: string) => {
     if (/\//.test(name)) {
       const templateNameChunks = name.split('/');
@@ -38,7 +43,7 @@ const createParser = (
   };
 };
 
-const parseScaffoldName = createParser('scaffold-');
-const parseExtendScaffoldName = createParser('extend-scaffold-');
+const parseScaffoldName = createParser(APP_SCAFFOLD_PREFIX);
+const parseExtendScaffoldName = createParser(APP_EXTEND_SCAFFOLD_PREFIX);
 
 export { parseScaffoldName, parseExtendScaffoldName };
