@@ -7,6 +7,7 @@
       "node_modules/@types/**/*",
       "typings/**/*.d.ts"
     ],
+    "types": ["node"],
     "allowJs": false,
     "esModuleInterop": true,
     "experimentalDecorators": true,

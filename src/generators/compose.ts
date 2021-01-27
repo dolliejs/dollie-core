@@ -5,11 +5,13 @@
 
 import path from 'path';
 import { v4 as uuid } from 'uuid';
+import _ from 'lodash';
 import readJson from '../utils/read-json';
 import DollieGeneratorBase from './base';
 import { DollieScaffold } from '../interfaces';
 import { parseScaffolds } from '../utils/generator';
 import { parseScaffoldName } from '../utils/scaffold';
+import { APP_COMPOSE_CONFIG_MAP } from '../constants';
 
 class DollieComposeGenerator extends DollieGeneratorBase {
   initializing() {
@@ -42,7 +44,7 @@ class DollieComposeGenerator extends DollieGeneratorBase {
 
   async writing() {
     // eslint-disable-next-line prettier/prettier
-    const scaffold = this.options.dollieScaffoldConfig as DollieScaffold;
+    const scaffold = _.get(this.options, APP_COMPOSE_CONFIG_MAP.dollie_scaffold_config) as DollieScaffold;
     scaffold.scaffoldName = parseScaffoldName(scaffold.scaffoldName);
     const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
       const result: DollieScaffold = scaffold;
