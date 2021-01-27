@@ -1,5 +1,4 @@
 import YAML from 'yaml';
-import _ from 'lodash';
 import { APP_COMPOSE_CONFIG_MAP } from '../constants';
 
 /**
