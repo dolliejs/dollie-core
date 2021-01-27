@@ -9,6 +9,7 @@ import readJson from '../utils/read-json';
 import DollieGeneratorBase from './base';
 import { DollieScaffold } from '../interfaces';
 import { parseScaffolds } from '../utils/generator';
+import { parseScaffoldName } from '../utils/scaffold';
 
 class DollieComposeGenerator extends DollieGeneratorBase {
   initializing() {
@@ -42,6 +43,7 @@ class DollieComposeGenerator extends DollieGeneratorBase {
   async writing() {
     // eslint-disable-next-line prettier/prettier
     const scaffold = this.options.dollieScaffoldConfig as DollieScaffold;
+    scaffold.scaffoldName = parseScaffoldName(scaffold.scaffoldName);
     const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
       const result: DollieScaffold = scaffold;
       const currentUuid = uuid();

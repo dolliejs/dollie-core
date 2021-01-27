@@ -19,11 +19,11 @@ switch (type) {
       'dollie:compose',
       {
         dollieScaffoldConfig: {
-          scaffoldName: 'dolliejs/scaffold-test',
+          scaffoldName: 'test',
           props: { name: 'project', test: 'exit 0' },
           dependencies: [
             {
-              scaffoldName: 'dolliejs/extend-scaffold-less',
+              scaffoldName: 'less',
               dependencies: [],
               props: { example: 'lenconda', test: 'jest' },
             },

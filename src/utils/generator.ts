@@ -47,7 +47,7 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
 
     /**
      * match the files with `__template.`, which means it is a scaffold file
-     * so we should invoke this.fs.copyTpl to inject the props into the file
+     * so we should invoke this.fs.copyTpl to inject the props into that file
      */
     if (entity.startsWith('__template.')) {
       const extendedPropKeys = scaffold?.configuration?.extendProps || [];
@@ -87,22 +87,45 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
  * remove file from destination recursively
  * @param scaffold DollieScaffold
  * @param context DollieBaseGenerator
+ *
+ * gives a scaffold configuration with tree data structure
+ * and traverse all of the nodes on it and remove the cache paths
+ * of them from file system
  */
 export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+  /**
+   * remove current scaffold node's cache path
+   * `context.appBasePath` and `scaffold.uuid` is mentioned above
+   * use `path#resolve` combined with them would become the cache pathname for
+   * current scaffold.
+   */
   fs.removeSync(path.resolve(context.appBasePath, scaffold.uuid));
-  if (scaffold.dependencies && scaffold.dependencies.length > 0) {
-    scaffold.dependencies.forEach((dependence) => {
+  /**
+   * if there are dependencies depended by current scaffold, we should traverse
+   * and invoke `recursivelyRemove` recursively to deal with them
+   */
+  if (
+    scaffold.dependencies &&
+    Array.isArray(scaffold.dependencies) &&
+    scaffold.dependencies.length > 0
+  ) {
+    for (const dependence of scaffold.dependencies) {
+      // invoke `recursivelyRemove` to deal with each dependence
       recursivelyRemove(dependence, context);
-    });
-  }
-
-  if (scaffold.configuration && scaffold.configuration.deletions) {
-    for (const deletion of scaffold.configuration.deletions) {
-      fs.removeSync(context.destinationPath(deletion));
     }
   }
 };
 
+/**
+ * parse scaffold tree structure as a program-readable structure
+ * @param scaffold DollieScaffold
+ * @param context DollieBaseGenerator
+ * @param parentScaffold DollieScaffold
+ * @param isCompose boolean
+ *
+ * this function will download the scaffold with scaffold id from github.com
+ * and prompt out the questions in each scaffold
+ */
 export const parseScaffolds = async (
   scaffold: DollieScaffold,
   context: DollieBaseGenerator,
@@ -111,18 +134,32 @@ export const parseScaffolds = async (
 ) => {
   if (!scaffold) { return; }
   const { uuid: scaffoldUuid, scaffoldName } = scaffold;
+  // `scaffoldDir` is mentioned above
   const scaffoldDir = path.resolve(context.appBasePath, scaffoldUuid);
-  const GITHUB_REPOSITORY_ID = `github:${scaffoldName}#master`;
+  /**
+   * `scaffoldName` is supposed to be suitable to the standardized schema of
+   * Dollie's scaffold, e.g. `test` will become `dolliejs/scaffold-test` while
+   * in depended scaffolds, it will become as `dolliejs/extend-scaffold-test`
+   */
+  const githubRepositoryId = `github:${scaffoldName}#master`;
 
   context.log.info(`Downloading scaffold: https://github.com/${scaffoldName}.git`);
-  const duration = await download(GITHUB_REPOSITORY_ID, scaffoldDir);
+  /**
+   * download scaffold from GitHub repository and count the duration
+   */
+  const duration = await download(githubRepositoryId, scaffoldDir);
   context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
-
-  // read remote scaffold's .dollie.json
   context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
   const customScaffoldConfiguration: DollieScaffoldConfiguration =
+    /**
+     * after downloading scaffold, then we should read `.dollie.json` from its
+     * local template directory if it exist
+     */
     // eslint-disable-next-line prettier/prettier
     (readJson(path.resolve(scaffoldDir, '.dollie.json')) || {}) as DollieScaffoldConfiguration;
+  /**
+   * set default configuration to merge with current scaffold's configuration
+   */
   const defaultConfiguration = {
     questions: [],
     installers: ['npm'],
@@ -134,6 +171,12 @@ export const parseScaffolds = async (
     ),
   };
 
+  /**
+   * users can determine whether their scaffolds should use Yeoman's installers or not
+   * if do not want to execute any installer, then set the `installers` option as `[]`
+   * in .dollie.json
+   * Currently, installers from Yeoman could be `npm`, `bower` and `yarn`
+   */
   if (
     customScaffoldConfiguration.installers &&
     Array.isArray(customScaffoldConfiguration.installers) &&
@@ -142,6 +185,10 @@ export const parseScaffolds = async (
     scaffoldConfiguration.installers = [];
   }
 
+  /**
+   * if there is not an `installer` option in .dollie.json, we should set the default value
+   * as `["npm"]` to configuration
+   */
   if (!customScaffoldConfiguration.installers) {
     scaffoldConfiguration.installers = ['npm'];
   }
@@ -152,10 +199,19 @@ export const parseScaffolds = async (
 
   scaffold.configuration = scaffoldConfiguration;
 
+  /**
+   * if there is parent scaffold passed as `parseScaffolds`'s parameter
+   * then set the `scaffold.parent` as `parentScaffold`'s value
+   */
   if (parentScaffold) {
     scaffold.parent = parentScaffold;
   }
 
+  /**
+   * if current mode is `compose` (using `dollie-compose`), then we should not
+   * prompt question to users, just resolve the dependencies, invoke `parseScaffolds`
+   * recursively and return back to the generator directly
+   */
   if (isCompose) {
     scaffold.props = _.merge(
       {
@@ -168,6 +224,11 @@ export const parseScaffolds = async (
       for (const dependence of scaffold.dependencies) {
         const dependenceUuid = uuid();
         dependence.uuid = dependenceUuid;
+        /**
+         * cause current scaffold is a dependency, so we should invoke `parseExtendScaffoldName`
+         * to parse the scaffold's name
+         */
+        dependence.scaffoldName = parseExtendScaffoldName(dependence.scaffoldName);
         await parseScaffolds(dependence, context, scaffold, true);
       }
     }
@@ -176,18 +237,33 @@ export const parseScaffolds = async (
 
   const scaffoldQuestions = scaffoldConfiguration.questions || [];
 
-  // if there is a questions param available in .dollie.json
-  // then put the questions and get the answers
+  /**
+   * if there is a questions param available in .dollie.json, then we should
+   * put the questions and make prompts to users to get the answers
+   * this answers will be assigned to `scaffold.props`
+   */
   const scaffoldProps = scaffoldQuestions.length > 0
     ? await context.prompt(scaffoldQuestions)
     : {};
 
-  // merge default answers and scaffold answers
-  // make them to a resultProps and inject to context.props
+  /**
+   * merge default answers and scaffold answers as `resultProps`, and then
+   * assign to `scaffold.props`
+   */
   const resultProps = _.merge({ name: context.projectName }, scaffoldProps);
   const dependenceKeyRegex = /^\$.*\$$/;
+  /**
+   * omit those slot question key-value pairs, cause they are only used by `parseScaffolds`
+   *
+   * @example
+   * it will ignore a key-value pair like `{ $CSS_PREPROCESSOR$: 'less' }`
+   */
   scaffold.props = _.omitBy(resultProps, (value, key) => dependenceKeyRegex.test(key)) as DollieScaffoldProps;
 
+  /**
+   * get the slot question key-value pairs and parse them as dependencies of
+   * current scaffold, and put them to `scaffold.dependencies`
+   */
   const dependencies = _.pickBy(resultProps, (value, key) => dependenceKeyRegex.test(key) && value !== 'null');
   for (const dependenceKey of Object.keys(dependencies)) {
     const dependenceUuid = uuid();
@@ -201,10 +277,16 @@ export const parseScaffolds = async (
   }
 };
 
+/**
+ *
+ * @param scaffold DollieScaffold
+ * @param key string
+ * @returns Array
+ */
 export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string): Array<T> => {
   let result = scaffold.configuration &&
     Array.isArray(scaffold.configuration[key]) &&
-    Array.from(scaffold.configuration[key]);
+    Array.from(scaffold.configuration[key]) || [];
   scaffold.dependencies && Array.isArray(scaffold.dependencies) &&
     scaffold.dependencies.forEach((dependence) => {
       result = result.concat(getComposedArrayValue(dependence, key));

@@ -95,6 +95,22 @@ class DollieGeneratorBase extends Generator {
     this.log.info('Cleaning scaffold cache...');
     recursivelyRemove(this.scaffold, this);
 
+    /**
+     * if there are items in `config.deletions` options, then we should traverse
+     * it and remove the items
+     */
+    const deletions = getComposedArrayValue<string>(this.scaffold, 'deletions');
+    for (const deletion of deletions) {
+      if (typeof deletion === 'string') {
+        try {
+          this.log.info(`Deleting scaffold deletion item: ${deletion}`);
+          fs.removeSync(this.destinationPath(deletion));
+        } catch (e) {
+          this.log.error(e.message || e.toString());
+        }
+      }
+    }
+
     const endScripts = getComposedArrayValue<string>(this.scaffold, 'endScripts');
     for (const endScript of endScripts) {
       if (typeof endScript === 'string') {
