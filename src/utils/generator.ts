@@ -135,6 +135,9 @@ export const parseScaffolds = async (
 ) => {
   if (!scaffold) { return; }
   const { uuid: scaffoldUuid, scaffoldName } = scaffold;
+  if (!scaffold.dependencies) {
+    scaffold.dependencies = [];
+  }
   // `scaffoldDir` is mentioned above
   const scaffoldDir = path.resolve(context.appBasePath, scaffoldUuid);
   /**

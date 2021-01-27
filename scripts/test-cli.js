@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 
+const fs = require('fs');
+const path = require('path');
 const Environment = require('yeoman-environment');
 const InteractiveGenerator = require('../src/generators/interactive').default;
 const ComposeGenerator = require('../src/generators/compose').default;
+const { parseComposeConfig } = require('../src/utils/compose');
 
 const type = process.argv[2];
 const env = Environment.createEnv();
@@ -15,23 +18,11 @@ switch (type) {
     env.run('dollie:interactive', null);
     break;
   case 'compose':
-    env.run(
-      'dollie:compose',
-      {
-        dollieScaffoldConfig: {
-          scaffoldName: 'test',
-          props: { name: 'project', test: 'exit 0' },
-          dependencies: [
-            {
-              scaffoldName: 'less',
-              dependencies: [],
-              props: { example: 'lenconda', test: 'jest' },
-            },
-          ],
-        },
-      },
-      null
-    );
+    const content = fs.readFileSync(path.resolve(__dirname, './test.yml'), {
+      encoding: 'utf-8',
+    });
+    const config = parseComposeConfig(content);
+    env.run('dollie:compose', config, null);
     break;
   default:
     break;

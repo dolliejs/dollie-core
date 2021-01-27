@@ -3,6 +3,7 @@ import readJson from './utils/read-json';
 import traverse from './utils/traverse';
 import { parseScaffoldName, parseExtendScaffoldName } from './utils/scaffold';
 import { getComposedArrayValue } from './utils/generator';
+import { parseComposeConfig, stringifyComposeConfig } from './utils/compose';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
 import {
@@ -20,6 +21,7 @@ import {
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   APP_SCAFFOLD_NAMESPACE,
+  APP_COMPOSE_CONFIG_MAP,
 } from './constants';
 
 export {
@@ -30,6 +32,8 @@ export {
   parseScaffoldName,
   parseExtendScaffoldName,
   getComposedArrayValue,
+  parseComposeConfig,
+  stringifyComposeConfig,
   // classes
   DollieInteractiveGenerator,
   DollieComposeGenerator,
@@ -47,6 +51,7 @@ export {
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   APP_SCAFFOLD_NAMESPACE,
+  APP_COMPOSE_CONFIG_MAP,
 };
 
 export default {
@@ -56,6 +61,8 @@ export default {
   parseScaffoldName,
   parseExtendScaffoldName,
   getComposedArrayValue,
+  parseComposeConfig,
+  stringifyComposeConfig,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
   APP_NAME,
@@ -65,4 +72,5 @@ export default {
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   APP_SCAFFOLD_NAMESPACE,
+  APP_COMPOSE_CONFIG_MAP,
 };

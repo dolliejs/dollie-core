@@ -36,3 +36,12 @@ export const APP_EXTEND_SCAFFOLD_PREFIX = 'extend-scaffold-';
  * - `src/utils/scaffold.ts`
  */
 export const APP_SCAFFOLD_NAMESPACE = `${APP_NAME}js`;
+/**
+ * configuration map under `compose` mode, used by:
+ * - `src/utils/compose.ts`
+ * - `src/generators/compose.ts`
+ */
+export const APP_COMPOSE_CONFIG_MAP = {
+  dollie_scaffold_config: 'dollieScaffoldConfig',
+  scaffold_name: 'scaffoldName',
+};
