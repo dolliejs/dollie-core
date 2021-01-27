@@ -46,14 +46,7 @@ class DollieComposeGenerator extends DollieGeneratorBase {
       const result: DollieScaffold = scaffold;
       const currentUuid = uuid();
       result.uuid = currentUuid;
-      await parseScaffolds(result, this, true);
-      if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
-        const dependencies = Array.from(result.dependencies);
-        result.dependencies = [];
-        for (const currentDependence of dependencies) {
-          result.dependencies.push(await createDetailedScaffold(currentDependence));
-        }
-      }
+      await parseScaffolds(result, this, null, true);
       return result;
     };
 

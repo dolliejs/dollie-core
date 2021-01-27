@@ -16,6 +16,7 @@ export interface DollieScaffoldConfiguration {
   extends?: Record<string, string>;
   deletions?: Array<string>;
   endScripts?: Array<string>;
+  extendProps?: Array<string>;
 }
 
 export interface DollieScaffold {
@@ -24,4 +25,5 @@ export interface DollieScaffold {
   dependencies: Array<DollieScaffold>;
   configuration?: DollieScaffoldConfiguration;
   props?: DollieScaffoldProps;
+  parent?: DollieScaffold;
 }

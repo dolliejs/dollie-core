@@ -50,10 +50,23 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
      * so we should invoke this.fs.copyTpl to inject the props into the file
      */
     if (entity.startsWith('__template.')) {
+      const extendedPropKeys = scaffold?.configuration?.extendProps || [];
+      let extendedProps = {};
+      if (extendedPropKeys.length > 0 && scaffold?.parent) {
+        extendedProps = _.merge(extendedPropKeys.reduce((result, currentKey) => {
+          const currentValue = scaffold.parent.props[currentKey];
+          if (currentValue) {
+            result[currentKey] = currentValue;
+          }
+          return result;
+        }, {}), scaffold.props);
+      } else {
+        extendedProps = scaffold?.props || {};
+      }
       context.fs.copyTpl(
         pathname,
         context.destinationPath(`${relativePath.slice(0, 0 - entity.length)}${entity.slice(11)}`),
-        scaffold.props,
+        extendedProps
       );
     } else {
       // otherwise, we should also copy the file, but just simple this.fs.copy
@@ -90,7 +103,12 @@ export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieBaseG
   }
 };
 
-export const parseScaffolds = async (scaffold: DollieScaffold, context: DollieBaseGenerator, isCompose = false) => {
+export const parseScaffolds = async (
+  scaffold: DollieScaffold,
+  context: DollieBaseGenerator,
+  parentScaffold?: DollieScaffold,
+  isCompose = false
+) => {
   if (!scaffold) { return; }
   const { uuid: scaffoldUuid, scaffoldName } = scaffold;
   const scaffoldDir = path.resolve(context.appBasePath, scaffoldUuid);
@@ -134,6 +152,10 @@ export const parseScaffolds = async (scaffold: DollieScaffold, context: DollieBa
 
   scaffold.configuration = scaffoldConfiguration;
 
+  if (parentScaffold) {
+    scaffold.parent = parentScaffold;
+  }
+
   if (isCompose) {
     scaffold.props = _.merge(
       {
@@ -142,6 +164,13 @@ export const parseScaffolds = async (scaffold: DollieScaffold, context: DollieBa
       },
       (scaffold.props || {})
     );
+    if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
+      for (const dependence of scaffold.dependencies) {
+        const dependenceUuid = uuid();
+        dependence.uuid = dependenceUuid;
+        await parseScaffolds(dependence, context, scaffold, true);
+      }
+    }
     return;
   }
 
@@ -168,7 +197,7 @@ export const parseScaffolds = async (scaffold: DollieScaffold, context: DollieBa
       dependencies: [],
     };
     scaffold.dependencies.push(currentDependence);
-    await parseScaffolds(currentDependence, context);
+    await parseScaffolds(currentDependence, context, scaffold);
   }
 };
 
