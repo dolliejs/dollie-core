@@ -278,10 +278,32 @@ export const parseScaffolds = async (
 };
 
 /**
- *
+ * get configuration values from scaffold tree structure, compose recursively as
+ * an array and returns it
  * @param scaffold DollieScaffold
  * @param key string
  * @returns Array
+ *
+ * since the `scaffold` is a nested structure, and every node could have its own configuration
+ * value, but we supposed to get all of the values and make a aggregation (something just like
+ * a flatten), for example: `installers`, `deletions`, `endScripts` and so on
+ *
+ * @example
+ * image there is a `scaffold` like:
+ * ```
+ * {
+ *   ...,
+ *   "installers": ["npm"],
+ *   ...,
+ *   "dependencies": [
+ *     {
+ *       "installers": ["yarn"]
+ *     }
+ *   ]
+ * }
+ * ```
+ * then invoke `getComposedArrayValue<string>(scaffold, 'installers')`,
+ * it will return `["npm", "yarn"]`
  */
 export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string): Array<T> => {
   let result = scaffold.configuration &&

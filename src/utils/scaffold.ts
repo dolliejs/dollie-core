@@ -1,9 +1,18 @@
 export type ScaffoldNameParser = (name: string) => string;
 
 /**
- * parser generator
+ * parse scaffold name and return a function as parser, which can return a string that
+ * matches the pattern of Dollie scaffold's standard
  * @param scaffoldPrefix string
  * @param defaultNamespace string
+ *
+ * @example
+ * ```
+ * const parse = createParser('scaffold-', 'dolliejs');
+ * parse('test'); -> dolliejs/scaffold-test
+ * parse('lenconda/test') -> lenconda/scaffold-test
+ * parse('lenconda/scaffold-test') -> lenconda/scaffold-test
+ * ```
  */
 const createParser = (
   scaffoldPrefix: string,

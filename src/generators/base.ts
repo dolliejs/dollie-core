@@ -26,10 +26,21 @@ import { DollieScaffold } from '../interfaces';
 const HOME_DIR = os.homedir();
 
 class DollieGeneratorBase extends Generator {
+  /**
+   * the name of the project, decides write scaffold contents into which directory
+   */
   // eslint-disable-next-line prettier/prettier
   public projectName: string;
+  /**
+   * the absolute pathname for storing scaffold contents temporarily
+   * it is a composed pathname with `HOME_DIR` and `CACHE_DIR`
+   */
   public appBasePath: string;
-  public scaffold: DollieScaffold;
+  /**
+   * the nested tree structure of all scaffolds used during one lifecycle
+   * the main scaffold is on the top level, which is supposed to be unique
+   */
+  protected scaffold: DollieScaffold;
 
   initializing() {
     this.log(figlet.textSync('DOLLIE'));
@@ -51,13 +62,20 @@ class DollieGeneratorBase extends Generator {
       process.exit(1);
     }
 
+    /**
+     * set destination pathname with `this.projectName`
+     * it is an alias to `path.resolve(process.cwd(), this.projectName)`
+     */
     this.destinationRoot(DESTINATION_PATH);
   }
 
   async writing() {
     try {
       this.log.info('Writing main scaffold...');
-      // this.recursivelyWrite(this.scaffold);
+      /**
+       * invoke `recursiveWrite` function to deal with scaffolds and write
+       * scaffold contents into the destination directory
+       */
       recursivelyWrite(this.scaffold, this);
     } catch (e) {
       this.log.error(e.message || e.toString());
@@ -66,17 +84,21 @@ class DollieGeneratorBase extends Generator {
   }
 
   install() {
-    // define installers map
-    // only support npm, yarn and bower currently
+    /**
+     * define installers map
+     * only support npm, yarn and bower currently
+     */
     const installerMap = {
       npm: this.npmInstall,
       yarn: this.yarnInstall,
       bower: this.bowerInstall,
     };
 
-    // traverse installers in this.scaffold.configuration.installers
-    // get the installer from installerMap
-    // when the installer is available, then invoke it
+    /**
+     * traverse installers in this.scaffold.configuration.installers
+     * get the installer from installerMap
+     * when the installer is available, then invoke it
+     */
     const installers = _.uniq(getComposedArrayValue<string>(this.scaffold, 'installers'));
     for (const installerName of installers) {
       const currentInstaller = installerMap[installerName.toLocaleLowerCase()];
@@ -88,10 +110,12 @@ class DollieGeneratorBase extends Generator {
   }
 
   end() {
-    // clean up scaffold directory
-    // if the generator exits before invoking end() method,
-    // the content inside scaffold directory might not be cleaned, but
-    // it would be cleaned when next generator is initializing
+    /**
+     * clean up scaffold directory
+     * if the generator exits before invoking end() method,
+     * the content inside scaffold directory might not be cleaned, but
+     * it would be cleaned when next generator is initializing
+     */
     this.log.info('Cleaning scaffold cache...');
     recursivelyRemove(this.scaffold, this);
 
@@ -111,6 +135,10 @@ class DollieGeneratorBase extends Generator {
       }
     }
 
+    /**
+     * if there are items in `config.endScripts` options, then we should traverse
+     * it and remove the items
+     */
     const endScripts = getComposedArrayValue<string>(this.scaffold, 'endScripts');
     for (const endScript of endScripts) {
       if (typeof endScript === 'string') {
