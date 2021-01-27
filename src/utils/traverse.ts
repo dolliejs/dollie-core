@@ -3,11 +3,12 @@ import path from 'path';
 
 /**
  * @author lenconda <i@lenconda.top>
- * traverse a specified directory, and invoke callback when
- * current entity is a file and matches regexp
  * @param startPath string
  * @param callback Function
  * @param callbackReg Regexp
+ *
+ * traverse a specified directory, and invoke callback when
+ * current entity is a file and matches regexp
  */
 const traverse = (
   // start path, an absolute path is recommended

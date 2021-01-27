@@ -1,15 +1,26 @@
-import DollieGenerator from './generator';
 import downloadGitRepo from './utils/download';
 import readJson from './utils/read-json';
 import traverse from './utils/traverse';
 import { parseScaffoldName, parseExtendScaffoldName } from './utils/scaffold';
-import { getInstallers } from './generator';
+import { getComposedArrayValue } from './utils/generator';
+import DollieInteractiveGenerator from './generators/interactive';
+import DollieComposeGenerator from './generators/compose';
 import {
   DollieScaffold,
   DollieScaffoldBaseProps,
   DollieScaffoldProps,
   DollieScaffoldConfiguration,
+  DollieScaffoldNameParser,
 } from './interfaces';
+import {
+  APP_NAME,
+  HOME_DIR,
+  CACHE_DIR,
+  TRAVERSE_IGNORE_REGEXP,
+  APP_SCAFFOLD_PREFIX,
+  APP_EXTEND_SCAFFOLD_PREFIX,
+  APP_SCAFFOLD_NAMESPACE,
+} from './constants';
 
 export {
   // functions
@@ -18,14 +29,24 @@ export {
   traverse,
   parseScaffoldName,
   parseExtendScaffoldName,
-  getInstallers,
+  getComposedArrayValue,
   // classes
-  DollieGenerator,
+  DollieInteractiveGenerator,
+  DollieComposeGenerator,
   // interfaces and types
   DollieScaffoldConfiguration,
   DollieScaffoldProps,
   DollieScaffold,
   DollieScaffoldBaseProps,
+  DollieScaffoldNameParser,
+  // constants
+  APP_NAME,
+  HOME_DIR,
+  CACHE_DIR,
+  TRAVERSE_IGNORE_REGEXP,
+  APP_SCAFFOLD_PREFIX,
+  APP_EXTEND_SCAFFOLD_PREFIX,
+  APP_SCAFFOLD_NAMESPACE,
 };
 
 export default {
@@ -34,6 +55,14 @@ export default {
   traverse,
   parseScaffoldName,
   parseExtendScaffoldName,
-  getInstallers,
-  DollieGenerator,
+  getComposedArrayValue,
+  DollieInteractiveGenerator,
+  DollieComposeGenerator,
+  APP_NAME,
+  HOME_DIR,
+  CACHE_DIR,
+  TRAVERSE_IGNORE_REGEXP,
+  APP_SCAFFOLD_PREFIX,
+  APP_EXTEND_SCAFFOLD_PREFIX,
+  APP_SCAFFOLD_NAMESPACE,
 };
