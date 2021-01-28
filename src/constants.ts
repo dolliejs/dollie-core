@@ -16,7 +16,6 @@ export const HOME_DIR = os.homedir();
  * - `src/generator/base.ts`
  */
 export const CACHE_DIR = `.${APP_NAME}/cache`;
-export const TEMP_DIR = `.${APP_NAME}/temp`;
 /**
  * the ignore pattern when traversing files to copy, used by:
  * - `src/utils/generators`

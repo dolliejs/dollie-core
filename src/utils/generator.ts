@@ -8,7 +8,7 @@ import traverse from '../utils/traverse';
 import download from '../utils/download';
 import readJson from '../utils/read-json';
 import { parseExtendScaffoldName } from '../utils/scaffold';
-import { TRAVERSE_IGNORE_REGEXP, HOME_DIR } from '../constants';
+import { TRAVERSE_IGNORE_REGEXP } from '../constants';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
 
 /**
@@ -71,8 +71,7 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
     const relativePath = entity.startsWith('__template.')
       ? path.relative(scaffoldDir, pathname)
       : `${path.relative(scaffoldDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`;
-    const tempPath = path.resolve(HOME_DIR, context.appTempPath, scaffold.uuid);
-    const destinationPathname = path.resolve(tempPath, relativePath);
+    const destinationPathname = context.destinationPath(relativePath);
 
     const isMatchOverwrite = (pathname: string, patterns: Array<string>): boolean => {
       for (const pattern of patterns) {
@@ -92,12 +91,12 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
       if (entity.startsWith('__template.')) {
         context.fs.copyTpl(
           pathname,
-          `${destinationPathname}${postfix}`,
+          context.destinationPath(`${relativePath}${postfix}`),
           scaffold.props || {}
         );
       } else {
         // otherwise, we should also copy the file, but just simple this.fs.copy
-        context.fs.copy(pathname, `${destinationPathname}${postfix}`);
+        context.fs.copy(pathname, context.destinationPath(`${relativePath}${postfix}`));
       }
     };
 
