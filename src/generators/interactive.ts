@@ -3,10 +3,8 @@
  * @author lenconda <i@lenconda.top>
  */
 
-import path from 'path';
 import { Questions } from 'yeoman-generator';
 import { v4 as uuid } from 'uuid';
-import readJson from '../utils/read-json';
 import { parseScaffoldName } from '../utils/scaffold';
 import { parseScaffolds } from '../utils/generator';
 import DollieGeneratorBase from './base';
@@ -14,11 +12,8 @@ import { DollieScaffold, DollieScaffoldProps } from '../interfaces';
 
 class DollieInteractiveGenerator extends DollieGeneratorBase {
   initializing() {
-    super.initializing();
-    const packageJson = readJson(path.resolve(__dirname, '../../package.json')) || {};
-    if (packageJson.version && packageJson.name) {
-      this.log(`Dollie CLI with ${packageJson.name}@${packageJson.version}`);
-    }
+    this.cliName = 'Dollie';
+    super.initializing.call(this);
   }
 
   async prompting() {
