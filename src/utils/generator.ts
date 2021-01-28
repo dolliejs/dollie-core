@@ -2,12 +2,13 @@ import path from 'path';
 import fs from 'fs-extra';
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
+import diff from 'fast-diff';
 import DollieBaseGenerator from '../generators/base';
 import traverse from '../utils/traverse';
 import download from '../utils/download';
 import readJson from '../utils/read-json';
 import { parseExtendScaffoldName } from '../utils/scaffold';
-import { TRAVERSE_IGNORE_REGEXP } from '../constants';
+import { TRAVERSE_IGNORE_REGEXP, HOME_DIR } from '../constants';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
 
 /**
@@ -67,21 +68,57 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
      * if a `pathname` equals to `/home/lenconda/.dollie/cache/3f74b271-04ac-4e7b-a5c1-b24894c529d2/src/index.js`
      * the `relativePath` would become as `src/index.js`
      */
-    const relativePath = path.relative(scaffoldDir, pathname);
+    const relativePath = entity.startsWith('__template.')
+      ? path.relative(scaffoldDir, pathname)
+      : `${path.relative(scaffoldDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`;
+    const tempPath = path.resolve(HOME_DIR, context.appTempPath, scaffold.uuid);
+    const destinationPathname = path.resolve(tempPath, relativePath);
+
+    const isMatchOverwrite = (pathname: string, patterns: Array<string>): boolean => {
+      for (const pattern of patterns) {
+        if (new RegExp(pattern).test(pathname)) {
+          return true;
+        }
+      }
+      return false;
+    };
 
     /**
+     * @param postfix string
      * match the files with `__template.`, which means it is a scaffold file
      * so we should invoke this.fs.copyTpl to inject the props into that file
      */
-    if (entity.startsWith('__template.')) {
-      context.fs.copyTpl(
-        pathname,
-        context.destinationPath(`${relativePath.slice(0, 0 - entity.length)}${entity.slice(11)}`),
-        scaffold.props || {}
-      );
-    } else {
-      // otherwise, we should also copy the file, but just simple this.fs.copy
-      context.fs.copy(pathname, context.destinationPath(relativePath));
+    const copy = (postfix = '') => {
+      if (entity.startsWith('__template.')) {
+        context.fs.copyTpl(
+          pathname,
+          `${destinationPathname}${postfix}`,
+          scaffold.props || {}
+        );
+      } else {
+        // otherwise, we should also copy the file, but just simple this.fs.copy
+        context.fs.copy(pathname, `${destinationPathname}${postfix}`);
+      }
+    };
+
+    if (context.fs.exists(destinationPathname)) {
+      const overwrites = scaffold?.configuration?.overwrites || [];
+      if (!isMatchOverwrite(relativePath, overwrites)) {
+        copy('.bak');
+        const originalFileContent = context.fs.read(destinationPathname);
+        const currentFileContent = context.fs.read(`${destinationPathname}.bak`);
+        const fileContent = diff(originalFileContent, currentFileContent).reduce((result, item) => {
+          const [action, content] = item;
+          if (action !== -1) {
+            return `${result}${content}`;
+          }
+          return result;
+        }, '');
+        context.fs.write(destinationPathname, fileContent);
+        context.fs.delete(`${destinationPathname}.bak`);
+      } else {
+        copy();
+      }
     }
   });
 

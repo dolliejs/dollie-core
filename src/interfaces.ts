@@ -17,6 +17,7 @@ export interface DollieScaffoldConfiguration {
   deletions?: Array<string>;
   endScripts?: Array<string>;
   extendProps?: Array<string>;
+  overwrites?: Array<string>;
 }
 
 export interface DollieScaffold {
