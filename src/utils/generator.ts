@@ -11,6 +11,29 @@ import { TRAVERSE_IGNORE_REGEXP } from '../constants';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
 
 /**
+ * get extended props from parent scaffold
+ * @param scaffold DollieScaffold
+ * @returns object
+ */
+export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Record<string, any> => {
+  if (!scaffold.parent) {
+    return {};
+  }
+  const extendedPropKeys = scaffold?.configuration?.extendProps || [];
+  const parentScaffold = scaffold.parent;
+  if (extendedPropKeys.length > 0) {
+    return extendedPropKeys.reduce((result, currentKey) => {
+      const currentValue = parentScaffold.props[currentKey];
+      if (currentValue) {
+        result[currentKey] = currentValue;
+      }
+      return result;
+    }, {});
+  }
+  return {};
+};
+
+/**
  * write file to destination recursively
  * @param scaffold DollieScaffold
  * @param context DollieBaseGenerator
@@ -51,23 +74,10 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
      * so we should invoke this.fs.copyTpl to inject the props into that file
      */
     if (entity.startsWith('__template.')) {
-      const extendedPropKeys = scaffold?.configuration?.extendProps || [];
-      let extendedProps = {};
-      if (extendedPropKeys.length > 0 && scaffold?.parent) {
-        extendedProps = _.merge(extendedPropKeys.reduce((result, currentKey) => {
-          const currentValue = scaffold.parent.props[currentKey];
-          if (currentValue) {
-            result[currentKey] = currentValue;
-          }
-          return result;
-        }, {}), scaffold.props);
-      } else {
-        extendedProps = scaffold?.props || {};
-      }
       context.fs.copyTpl(
         pathname,
         context.destinationPath(`${relativePath.slice(0, 0 - entity.length)}${entity.slice(11)}`),
-        extendedProps
+        scaffold.props || {}
       );
     } else {
       // otherwise, we should also copy the file, but just simple this.fs.copy
@@ -222,7 +232,8 @@ export const parseScaffolds = async (
         name: context.projectName,
         scaffold: scaffold.scaffoldName,
       },
-      (scaffold.props || {})
+      getExtendedPropsFromParentScaffold(scaffold),
+      scaffold.props
     );
     if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
       for (const dependence of scaffold.dependencies) {
@@ -262,7 +273,10 @@ export const parseScaffolds = async (
    * @example
    * it will ignore a key-value pair like `{ $CSS_PREPROCESSOR$: 'less' }`
    */
-  scaffold.props = _.omitBy(resultProps, (value, key) => dependenceKeyRegex.test(key)) as DollieScaffoldProps;
+  scaffold.props = _.merge(
+    getExtendedPropsFromParentScaffold(scaffold),
+    _.omitBy(resultProps, (value, key) => dependenceKeyRegex.test(key)) as DollieScaffoldProps,
+  );
 
   /**
    * get the slot question key-value pairs and parse them as dependencies of
