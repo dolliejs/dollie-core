@@ -3,10 +3,8 @@
  * @author lenconda <i@lenconda.top>
  */
 
-import path from 'path';
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
-import readJson from '../utils/read-json';
 import DollieGeneratorBase from './base';
 import { DollieScaffold } from '../interfaces';
 import { parseScaffolds } from '../utils/generator';
@@ -15,15 +13,8 @@ import { APP_COMPOSE_CONFIG_MAP } from '../constants';
 
 class DollieComposeGenerator extends DollieGeneratorBase {
   initializing() {
-    super.initializing();
-    const packageJson =
-      readJson(path.resolve(__dirname, '../../package.json')) || {};
-    if (packageJson.version && packageJson.name) {
-      this.log(
-        `Dollie Compose CLI with ${packageJson.name}@${packageJson.version}`
-      );
-    }
-
+    this.cliName = 'Dollie Compose';
+    super.initializing.call(this);
     // eslint-disable-next-line prettier/prettier
     const scaffold = (this.options && this.options.dollieScaffoldConfig as DollieScaffold) || undefined;
     if (!scaffold) {

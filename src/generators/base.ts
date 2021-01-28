@@ -20,6 +20,7 @@ import fs from 'fs-extra';
 import _ from 'lodash';
 import { execSync } from 'child_process';
 import { recursivelyRemove, recursivelyWrite, getComposedArrayValue } from '../utils/generator';
+import readJson from '../utils/read-json';
 import { HOME_DIR, CACHE_DIR } from '../constants';
 import { DollieScaffold } from '../interfaces';
 
@@ -39,9 +40,20 @@ class DollieGeneratorBase extends Generator {
    * the main scaffold is on the top level, which is supposed to be unique
    */
   protected scaffold: DollieScaffold;
+  /**
+   * the name to be shown as a prompt when CLI is initializing
+   */
+  protected cliName: string;
 
   initializing() {
     this.log(figlet.textSync('DOLLIE'));
+    const packageJson =
+    readJson(path.resolve(__dirname, '../../package.json')) || {};
+    if (packageJson.version && packageJson.name) {
+      this.log(
+        `${this.cliName} CLI with ${packageJson.name}@${packageJson.version}`
+      );
+    }
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
     if (fs.existsSync(this.appBasePath) && fs.readdirSync(this.appBasePath).length !== 0) {
       this.log.info(`Cleaning cache dir (${this.appBasePath})...`);
