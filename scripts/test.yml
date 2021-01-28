@@ -1,0 +1,11 @@
+dollie_scaffold_config:
+  scaffold_name: test
+  props:
+    name: project
+    test: exit 0
+  dependencies:
+    -
+      scaffold_name: less
+      props:
+        example: lenconda
+        test: jest
