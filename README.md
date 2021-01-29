@@ -40,6 +40,5 @@ see <https://github.com/dolliejs/dollie-cli#readme> for details.
 
 ## License
 
-MIT © [Lenconda](https://lenconda.top) & [Dollie.js](https://github.com/dolliejs)
-
-Apache Licence 2.0 © [fast-diff](https://github.com/jhchen/fast-diff)
+- MIT © [Lenconda](https://lenconda.top) & [Dollie.js](https://github.com/dolliejs)
+- BSD © [diff](https://github.com/kpdecker/jsdiff#license)
