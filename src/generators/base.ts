@@ -21,7 +21,7 @@ import _ from 'lodash';
 import { execSync } from 'child_process';
 import { recursivelyRemove, recursivelyWrite, getComposedArrayValue } from '../utils/generator';
 import readJson from '../utils/read-json';
-import { HOME_DIR, CACHE_DIR } from '../constants';
+import { HOME_DIR, CACHE_DIR, TEMP_DIR } from '../constants';
 import { DollieScaffold } from '../interfaces';
 
 class DollieGeneratorBase extends Generator {
@@ -35,7 +35,7 @@ class DollieGeneratorBase extends Generator {
    * it is a composed pathname with `HOME_DIR` and `CACHE_DIR`
    */
   public appBasePath: string;
-  // public appTempPath: string;
+  public appTempPath: string;
   /**
    * the nested tree structure of all scaffolds used during one lifecycle
    * the main scaffold is on the top level, which is supposed to be unique
@@ -56,12 +56,20 @@ class DollieGeneratorBase extends Generator {
       );
     }
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
+    this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
     if (fs.existsSync(this.appBasePath) && fs.readdirSync(this.appBasePath).length !== 0) {
       this.log.info(`Cleaning cache dir ${this.appBasePath}...`);
       fs.removeSync(this.appBasePath);
     }
     if (!fs.existsSync(this.appBasePath)) {
       fs.mkdirpSync(this.appBasePath);
+    }
+    if (fs.existsSync(this.appTempPath) && fs.readdirSync(this.appTempPath).length !== 0) {
+      this.log.info(`Cleaning temp dir ${this.appTempPath}...`);
+      fs.removeSync(this.appTempPath);
+    }
+    if (!fs.existsSync(this.appTempPath)) {
+      fs.mkdirpSync(this.appTempPath);
     }
   }
 

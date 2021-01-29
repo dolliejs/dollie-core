@@ -2,7 +2,6 @@ import path from 'path';
 import fs from 'fs-extra';
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
-import diff from 'fast-diff';
 import DollieBaseGenerator from '../generators/base';
 import traverse from '../utils/traverse';
 import download from '../utils/download';
@@ -54,6 +53,7 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
    * the `scaffoldDir` would probably be $HOME/.dollie/cache/3f74b271-04ac-4e7b-a5c1-b24894c529d2
    */
   const scaffoldDir = path.resolve(context.appBasePath, scaffold.uuid);
+  const destinationDir = path.resolve(context.appTempPath, scaffold.uuid);
 
   /**
    * invoke `traverse` function in `src/utils/traverse.ts`, set the ignore pattern
@@ -71,53 +71,17 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
     const relativePath = entity.startsWith('__template.')
       ? path.relative(scaffoldDir, pathname)
       : `${path.relative(scaffoldDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`;
-    const destinationPathname = context.destinationPath(relativePath);
+    const destinationPathname = path.resolve(destinationDir, relativePath);
 
-    const isMatchOverwrite = (pathname: string, patterns: Array<string>): boolean => {
-      for (const pattern of patterns) {
-        if (new RegExp(pattern).test(pathname)) {
-          return true;
-        }
-      }
-      return false;
-    };
-
-    /**
-     * @param postfix string
-     * match the files with `__template.`, which means it is a scaffold file
-     * so we should invoke this.fs.copyTpl to inject the props into that file
-     */
-    const copy = (postfix = '') => {
-      if (entity.startsWith('__template.')) {
-        context.fs.copyTpl(
-          pathname,
-          context.destinationPath(`${relativePath}${postfix}`),
-          scaffold.props || {}
-        );
-      } else {
-        // otherwise, we should also copy the file, but just simple this.fs.copy
-        context.fs.copy(pathname, context.destinationPath(`${relativePath}${postfix}`));
-      }
-    };
-
-    if (context.fs.exists(destinationPathname)) {
-      const overwrites = scaffold?.configuration?.overwrites || [];
-      if (!isMatchOverwrite(relativePath, overwrites)) {
-        copy('.bak');
-        const originalFileContent = context.fs.read(destinationPathname);
-        const currentFileContent = context.fs.read(`${destinationPathname}.bak`);
-        const fileContent = diff(originalFileContent, currentFileContent).reduce((result, item) => {
-          const [action, content] = item;
-          if (action !== -1) {
-            return `${result}${content}`;
-          }
-          return result;
-        }, '');
-        context.fs.write(destinationPathname, fileContent);
-        context.fs.delete(`${destinationPathname}.bak`);
-      } else {
-        copy();
-      }
+    if (entity.startsWith('__template.')) {
+      context.fs.copyTpl(
+        pathname,
+        destinationPathname,
+        scaffold.props || {}
+      );
+    } else {
+      // otherwise, we should also copy the file, but just simple this.fs.copy
+      context.fs.copy(pathname, destinationPathname);
     }
   });
 
@@ -129,6 +93,85 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
     recursivelyWrite(dependence, context);
   }
 };
+
+// TODO: use diff and merge
+// export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+//   const mergeFiles = scaffold?.configuration?.files?.merge;
+//   const addFiles = scaffold?.configuration?.files?.add;
+//   const scaffoldTempDir = path.resolve(context.appTempPath, scaffold.uuid);
+
+//   traverse(scaffoldTempDir, /.*/, (pathname: string) => {
+//     const relativePathname = path.relative(scaffoldTempDir, pathname);
+//     const destinationFilePathname = context.destinationPath(relativePathname);
+
+//     if (isPathnameInConfig(relativePathname, mergeFiles)) {
+//       const parentFilePathname = path.resolve(context.appTempPath, scaffold.parent.uuid, relativePathname);
+//       if (
+//         !scaffold?.parent ||
+//         !context.fs.exists(parentFilePathname) ||
+//         !context.fs.exists(destinationFilePathname)
+//       ) {
+//         return;
+//       }
+
+//       const fileContent = context.fs.read(pathname);
+//       const parentFileContent = context.fs.read(parentFilePathname);
+//       const destinationFileContent = context.fs.read(destinationFilePathname);
+//       const parentDiffTable = diff(parentFileContent, fileContent);
+//       const destinationDiffTable = diff(destinationFileContent, fileContent);
+//       const results = [];
+
+//       for (let i = 0; i < destinationDiffTable.length; i += 1) {
+//         const diffItem = destinationDiffTable[i];
+//         if (diffItem.removed) {
+//           const nextDiffItem = destinationDiffTable[i + 1];
+//           if (nextDiffItem.added) {
+//             const parentDiffItemIndex = parentDiffTable.findIndex((item) => diffItem.value.indexOf(item.value) !== -1);
+//             const parentDiffItem = parentDiffTable[parentDiffItemIndex];
+//             if (parentDiffItem) {
+//               const parentDiffString = [
+//                 parentDiffTable[parentDiffItemIndex - 1]?.value || '',
+//                 parentDiffTable[parentDiffItemIndex + 1].value,
+//               ].join();
+//               const destinationDiffStringGroup: Array<string> = [];
+//               let j = i;
+//               while (
+//                 parentDiffString.trim().split('\n').slice(-1)[0] !==
+//                 destinationDiffStringGroup[destinationDiffStringGroup.length - 1].trim()
+//               ) {
+//                 if (!destinationDiffTable[j].removed) {
+//                   destinationDiffStringGroup.push(destinationDiffTable[j].value);
+//                 }
+//                 j += 1;
+//               }
+//               // 判断destinationDiffStringGroup是否是parentDiffString的子句
+//               if (parentDiffString.indexOf(destinationDiffStringGroup.join('')) !== -1) {
+//                 results.push(diffItem.value.replace(parentDiffItem.value, ''));
+//               } else {
+//                 results.push(diffItem.value);
+//               }
+//             } else {
+//               results.push(diffItem.value);
+//             }
+//             continue;
+//           } else {
+//             const destinationPreviousDiffItem = destinationDiffTable[i - 1];
+//             const destinationNextDiffItem = nextDiffItem;
+//             for (let j = 0; j < parentDiffTable.length; j += 1) {
+//               const currentParentDiffItem = parentDiffTable[j];
+//               if (currentParentDiffItem.value === diffItem.value) {
+//                 const parentPreviousDiffItem = parentDiffTable[j - 1];
+//                 const parentNextDiffItem = parentDiffTable[j + 1];
+//                 if 
+//               }
+//             }
+//             continue;
+//           }
+//         }
+//       }
+//     }
+//   });
+// };
 
 /**
  * remove file from destination recursively
