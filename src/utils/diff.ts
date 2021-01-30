@@ -37,17 +37,27 @@ const merge = (currentChanges: Change[], newChanges: Change[]): Change[] => {
   }
   for (const newChange of newChanges) {
     if (newChange.removed) {
-      if (addedQueue.length > 0 && newChange.value === addedQueue[0].value) {
-        result.push(newChange);
-        addedQueue.shift();
+      if (addedQueue.length > 0) {
+        const addedChangeIndex = addedQueue.findIndex(
+          (item) => item.value === newChange.value
+        );
+        if (addedChangeIndex !== -1) {
+          result.push(newChange);
+          addedQueue.splice(addedChangeIndex, 1);
+        }
       }
     } else if (newChange.added) {
-      if (
-        removedQueue.length > 0 &&
-        newChange.value !== removedQueue[0].value
-      ) {
+      if (removedQueue.length === 0) {
         result.push(newChange);
-        removedQueue.shift();
+      } else {
+        const removedChangeIndex = removedQueue.findIndex(
+          (item) => item.value === newChange.value
+        );
+        if (removedChangeIndex === -1) {
+          result.push(newChange);
+        } else {
+          removedQueue.splice(removedChangeIndex, 1);
+        }
       }
     } else {
       result.push(newChange);
