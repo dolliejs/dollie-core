@@ -32,6 +32,9 @@ const merge = (currentChanges: Change[], newChanges: Change[]): Change[] => {
   const result = [];
   const removedQueue = currentChanges.filter((change) => change.removed);
   const addedQueue = currentChanges.filter((change) => change.added);
+  if (removedQueue.length === 0 && addedQueue.length === 0) {
+    return newChanges.filter((change) => !change.removed);
+  }
   for (const newChange of newChanges) {
     if (newChange.removed) {
       if (addedQueue.length > 0 && newChange.value === addedQueue[0].value) {
@@ -81,15 +84,15 @@ const checkFileAction = (
     }
   }
 
-  const mergeConfig = _.get(scaffoldFilesConfig, 'merge') || [];
-  const addConfig = _.get(scaffoldFilesConfig, 'add') || [];
+  const mergeConfig = _.get(scaffold.configuration, 'files.merge') || [];
+  const addConfig = _.get(scaffold.configuration, 'files.add') || [];
 
   if (isPathnameInConfig(relativePathname, mergeConfig)) {
     return destFileExistence && parentFileExistence ? 'MERGE' : 'DIRECT';
   } else if (isPathnameInConfig(relativePathname, addConfig)) {
     return 'DIRECT';
   } else {
-    return destFileExistence ? 'DIRECT' : 'NIL';
+    return destFileExistence ? 'NIL' : 'DIRECT';
   }
 };
 

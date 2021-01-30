@@ -114,6 +114,7 @@ export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: 
     const currentTempFileContent = context.fs.read(path.resolve(scaffoldTempDir, relativePathname));
     switch (action) {
       case 'DIRECT': {
+        context.fs.delete(destinationPathname);
         context.fs.write(destinationPathname, currentTempFileContent);
         break;
       }

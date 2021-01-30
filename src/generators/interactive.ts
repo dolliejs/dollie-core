@@ -32,7 +32,7 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
           name: 'scaffold',
           message:
             'Enter the scaffold id',
-          default: 'react-ts-sass',
+          default: 'react',
         },
       ];
 
