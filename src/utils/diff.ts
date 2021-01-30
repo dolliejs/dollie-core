@@ -89,11 +89,13 @@ const checkFileAction = (
 
   if (isPathnameInConfig(relativePathname, mergeConfig)) {
     return destFileExistence && parentFileExistence ? 'MERGE' : 'DIRECT';
-  } else if (isPathnameInConfig(relativePathname, addConfig)) {
-    return 'DIRECT';
-  } else {
-    return destFileExistence ? 'NIL' : 'DIRECT';
   }
+
+  if (isPathnameInConfig(relativePathname, addConfig)) {
+    return 'DIRECT';
+  }
+
+  return destFileExistence ? 'DIRECT' : 'NIL';
 };
 
 export { diff, merge, checkFileAction };
