@@ -28,12 +28,12 @@ npm i yeoman-environment -S
 ```
 
 ```javascript
-const { DollieGenerator } = require('@dollie/core');
+const { DollieInteractiveGenerator } = require('@dollie/core');
 const Environment = require('yeoman-environment');
 
 const env = Environment.createEnv();
-env.registerStub(DollieGenerator, 'dollie');
-env.run('dollie', () => console.log('dollie generator started'));
+env.registerStub(DollieInteractiveGenerator, 'dollie:interactive');
+env.run('dollie:interactive', () => console.log('dollie generator started'));
 ```
 
 see <https://github.com/dolliejs/dollie-cli#readme> for details.

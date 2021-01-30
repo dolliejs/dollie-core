@@ -230,6 +230,7 @@ export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieBaseG
    * current scaffold.
    */
   fs.removeSync(path.resolve(context.appBasePath, scaffold.uuid));
+  fs.removeSync(path.resolve(context.appTempPath, scaffold.uuid));
   /**
    * if there are dependencies depended by current scaffold, we should traverse
    * and invoke `recursivelyRemove` recursively to deal with them
