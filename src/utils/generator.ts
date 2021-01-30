@@ -6,6 +6,7 @@ import DollieBaseGenerator from '../generators/base';
 import traverse from '../utils/traverse';
 import download from '../utils/download';
 import readJson from '../utils/read-json';
+import { diff, merge, checkFileAction } from '../utils/diff';
 import { parseExtendScaffoldName } from '../utils/scaffold';
 import { TRAVERSE_IGNORE_REGEXP } from '../constants';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
@@ -95,83 +96,55 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
 };
 
 // TODO: use diff and merge
-// export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
-//   const mergeFiles = scaffold?.configuration?.files?.merge;
-//   const addFiles = scaffold?.configuration?.files?.add;
-//   const scaffoldTempDir = path.resolve(context.appTempPath, scaffold.uuid);
+export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+  const scaffoldSourceDir = path.resolve(context.appBasePath, scaffold.uuid);
+  const scaffoldTempDir = path.resolve(context.appTempPath, scaffold.uuid);
 
-//   traverse(scaffoldTempDir, /.*/, (pathname: string) => {
-//     const relativePathname = path.relative(scaffoldTempDir, pathname);
-//     const destinationFilePathname = context.destinationPath(relativePathname);
+  traverse(scaffoldSourceDir, /.*/, (pathname: string, entity: string) => {
+    const relativePathname = entity.startsWith('__template.')
+      ? path.relative(scaffoldSourceDir, pathname)
+      : `${path.relative(scaffoldSourceDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`;
+    // const relativePathname = path.relative(scaffoldSourceDir, pathname);
+    const destinationPathname = context.destinationPath(relativePathname);
+    const action = checkFileAction(
+      scaffold,
+      context.appTempPath,
+      context.destinationRoot(),
+      relativePathname,
+      context.fs
+    );
+    const currentTempFileContent = context.fs.read(path.resolve(scaffoldTempDir, relativePathname));
+    switch (action) {
+      case 'DIRECT': {
+        context.fs.write(destinationPathname, currentTempFileContent);
+        break;
+      }
+      case 'MERGE': {
+        if (!scaffold.parent) {
+          break;
+        }
+        const parentScaffoldTempDir = path.resolve(context.appTempPath, scaffold.parent.uuid);
+        const parentTempFilePath = path.resolve(parentScaffoldTempDir, relativePathname);
+        const parentTempFileContent = context.fs.read(parentTempFilePath);
+        const currentDestFilePath = context.destinationPath(relativePathname);
+        const currentFileContent = context.fs.read(currentDestFilePath);
+        const currentDiffTable = diff(parentTempFileContent, currentFileContent);
+        const newDiffTable = diff(currentFileContent, currentTempFileContent);
+        const result = merge(currentDiffTable, newDiffTable);
+        context.fs.write(currentDestFilePath, result.map((item) => item.value).join(''));
+        break;
+      }
+      case 'NIL':
+        break;
+      default:
+        break;
+    }
+  });
 
-//     if (isPathnameInConfig(relativePathname, mergeFiles)) {
-//       const parentFilePathname = path.resolve(context.appTempPath, scaffold.parent.uuid, relativePathname);
-//       if (
-//         !scaffold?.parent ||
-//         !context.fs.exists(parentFilePathname) ||
-//         !context.fs.exists(destinationFilePathname)
-//       ) {
-//         return;
-//       }
-
-//       const fileContent = context.fs.read(pathname);
-//       const parentFileContent = context.fs.read(parentFilePathname);
-//       const destinationFileContent = context.fs.read(destinationFilePathname);
-//       const parentDiffTable = diff(parentFileContent, fileContent);
-//       const destinationDiffTable = diff(destinationFileContent, fileContent);
-//       const results = [];
-
-//       for (let i = 0; i < destinationDiffTable.length; i += 1) {
-//         const diffItem = destinationDiffTable[i];
-//         if (diffItem.removed) {
-//           const nextDiffItem = destinationDiffTable[i + 1];
-//           if (nextDiffItem.added) {
-//             const parentDiffItemIndex = parentDiffTable.findIndex((item) => diffItem.value.indexOf(item.value) !== -1);
-//             const parentDiffItem = parentDiffTable[parentDiffItemIndex];
-//             if (parentDiffItem) {
-//               const parentDiffString = [
-//                 parentDiffTable[parentDiffItemIndex - 1]?.value || '',
-//                 parentDiffTable[parentDiffItemIndex + 1].value,
-//               ].join();
-//               const destinationDiffStringGroup: Array<string> = [];
-//               let j = i;
-//               while (
-//                 parentDiffString.trim().split('\n').slice(-1)[0] !==
-//                 destinationDiffStringGroup[destinationDiffStringGroup.length - 1].trim()
-//               ) {
-//                 if (!destinationDiffTable[j].removed) {
-//                   destinationDiffStringGroup.push(destinationDiffTable[j].value);
-//                 }
-//                 j += 1;
-//               }
-//               // 判断destinationDiffStringGroup是否是parentDiffString的子句
-//               if (parentDiffString.indexOf(destinationDiffStringGroup.join('')) !== -1) {
-//                 results.push(diffItem.value.replace(parentDiffItem.value, ''));
-//               } else {
-//                 results.push(diffItem.value);
-//               }
-//             } else {
-//               results.push(diffItem.value);
-//             }
-//             continue;
-//           } else {
-//             const destinationPreviousDiffItem = destinationDiffTable[i - 1];
-//             const destinationNextDiffItem = nextDiffItem;
-//             for (let j = 0; j < parentDiffTable.length; j += 1) {
-//               const currentParentDiffItem = parentDiffTable[j];
-//               if (currentParentDiffItem.value === diffItem.value) {
-//                 const parentPreviousDiffItem = parentDiffTable[j - 1];
-//                 const parentNextDiffItem = parentDiffTable[j + 1];
-//                 if 
-//               }
-//             }
-//             continue;
-//           }
-//         }
-//       }
-//     }
-//   });
-// };
+  for (const dependence of scaffold.dependencies) {
+    recursivelyCopyToDestination(dependence, context);
+  }
+};
 
 /**
  * remove file from destination recursively
@@ -404,8 +377,8 @@ export const parseScaffolds = async (
  */
 export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string): Array<T> => {
   let result = scaffold.configuration &&
-    Array.isArray(scaffold.configuration[key]) &&
-    Array.from(scaffold.configuration[key]) || [];
+    Array.isArray(_.get(scaffold.configuration, key)) &&
+    Array.from(_.get(scaffold.configuration, key)) || [];
   scaffold.dependencies && Array.isArray(scaffold.dependencies) &&
     scaffold.dependencies.forEach((dependence) => {
       result = result.concat(getComposedArrayValue(dependence, key));

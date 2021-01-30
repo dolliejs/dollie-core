@@ -19,7 +19,7 @@ import figlet from 'figlet';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import { execSync } from 'child_process';
-import { recursivelyRemove, recursivelyWrite, getComposedArrayValue } from '../utils/generator';
+import { recursivelyRemove, recursivelyWrite, getComposedArrayValue, recursivelyCopyToDestination } from '../utils/generator';
 import readJson from '../utils/read-json';
 import { HOME_DIR, CACHE_DIR, TEMP_DIR } from '../constants';
 import { DollieScaffold } from '../interfaces';
@@ -96,6 +96,7 @@ class DollieGeneratorBase extends Generator {
        * scaffold contents into the destination directory
        */
       recursivelyWrite(this.scaffold, this);
+      recursivelyCopyToDestination(this.scaffold, this);
     } catch (e) {
       this.log.error(e.message || e.toString());
       process.exit(1);

@@ -7,6 +7,7 @@ import {
   getExtendedPropsFromParentScaffold,
 } from './utils/generator';
 import { parseComposeConfig, stringifyComposeConfig } from './utils/compose';
+import { diff, merge } from './utils/diff';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
 import {
@@ -15,6 +16,7 @@ import {
   DollieScaffoldProps,
   DollieScaffoldConfiguration,
   DollieScaffoldNameParser,
+  FileAction,
 } from './interfaces';
 import {
   APP_NAME,
@@ -38,6 +40,8 @@ export {
   getExtendedPropsFromParentScaffold,
   parseComposeConfig,
   stringifyComposeConfig,
+  diff,
+  merge,
   // classes
   DollieInteractiveGenerator,
   DollieComposeGenerator,
@@ -47,6 +51,7 @@ export {
   DollieScaffold,
   DollieScaffoldBaseProps,
   DollieScaffoldNameParser,
+  FileAction,
   // constants
   APP_NAME,
   HOME_DIR,
@@ -68,6 +73,8 @@ export default {
   getExtendedPropsFromParentScaffold,
   parseComposeConfig,
   stringifyComposeConfig,
+  diff,
+  merge,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
   APP_NAME,

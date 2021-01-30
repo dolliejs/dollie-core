@@ -1,5 +1,9 @@
+import path from 'path';
 import { diffLines, Change } from 'diff';
 import _ from 'lodash';
+import Generator from 'yeoman-generator';
+import { DollieScaffold, FileAction } from '../interfaces';
+import { isPathnameInConfig } from './scaffold';
 
 const diff = (originalContent: string, newContent: string): Change[] => {
   const changes = diffLines(originalContent, newContent);
@@ -49,5 +53,44 @@ const merge = (currentChanges: Change[], newChanges: Change[]): Change[] => {
   return result;
 };
 
-export default diff;
-export { merge };
+const checkFileAction = (
+  scaffold: DollieScaffold,
+  tempPath: string,
+  destinationPath: string,
+  relativePathname: string,
+  fs: typeof Generator.prototype.fs
+): FileAction => {
+  const scaffoldFilesConfig =
+    scaffold.configuration && scaffold.configuration.files;
+
+  if (!scaffold.parent) {
+    return 'DIRECT';
+  }
+
+  const absoluteDestPathname = path.resolve(destinationPath, relativePathname);
+  const destFileExistence = fs.exists(absoluteDestPathname);
+  const parentFileExistence = fs.exists(
+    path.resolve(tempPath, scaffold.parent.uuid, relativePathname)
+  );
+
+  if (!scaffoldFilesConfig) {
+    if (destFileExistence) {
+      return 'DIRECT';
+    } else {
+      return 'NIL';
+    }
+  }
+
+  const mergeConfig = _.get(scaffoldFilesConfig, 'merge') || [];
+  const addConfig = _.get(scaffoldFilesConfig, 'add') || [];
+
+  if (isPathnameInConfig(relativePathname, mergeConfig)) {
+    return destFileExistence && parentFileExistence ? 'MERGE' : 'DIRECT';
+  } else if (isPathnameInConfig(relativePathname, addConfig)) {
+    return 'DIRECT';
+  } else {
+    return destFileExistence ? 'DIRECT' : 'NIL';
+  }
+};
+
+export { diff, merge, checkFileAction };

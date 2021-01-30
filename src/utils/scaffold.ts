@@ -56,7 +56,7 @@ const isPathnameInConfig = (
   configItems: Array<string>
 ): boolean => {
   for (const item of configItems) {
-    if (new RegExp(item).test(pathname)) {
+    if (item && new RegExp(item).test(pathname)) {
       return true;
     }
   }

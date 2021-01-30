@@ -1,9 +1,4 @@
-import { Change } from 'diff';
 import { Question } from 'yeoman-generator';
-
-export interface DiffChange extends Change {
-  line: number;
-}
 
 export interface DollieScaffoldBaseProps {
   name: string;
@@ -27,7 +22,6 @@ export interface DollieScaffoldConfiguration {
   deletions?: Array<string>;
   endScripts?: Array<string>;
   extendProps?: Array<string>;
-  overwrites?: Array<string>;
   files?: DollieScaffoldFileConfiguration;
 }
 
@@ -41,3 +35,5 @@ export interface DollieScaffold {
 }
 
 export type DollieScaffoldNameParser = (name: string) => string;
+
+export type FileAction = 'DIRECT' | 'MERGE' | 'NIL';
