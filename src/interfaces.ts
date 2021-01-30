@@ -13,13 +13,13 @@ export interface DollieScaffoldProps extends DollieScaffoldBaseProps {
 export interface DollieScaffoldFileConfiguration {
   merge: Array<string>;
   add: Array<string>;
+  delete?: Array<string>;
 }
 
 export interface DollieScaffoldConfiguration {
   questions: Array<Question<DollieScaffoldProps>>;
   installers?: string[];
   extends?: Record<string, string>;
-  deletions?: Array<string>;
   endScripts?: Array<string>;
   extendProps?: Array<string>;
   files?: DollieScaffoldFileConfiguration;

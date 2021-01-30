@@ -70,8 +70,8 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
      * the `relativePath` would become as `src/index.js`
      */
     const relativePath = entity.startsWith('__template.')
-      ? path.relative(scaffoldDir, pathname)
-      : `${path.relative(scaffoldDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`;
+      ? `${path.relative(scaffoldDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`
+      : path.relative(scaffoldDir, pathname);
     const destinationPathname = path.resolve(destinationDir, relativePath);
 
     if (entity.startsWith('__template.')) {
@@ -95,16 +95,14 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
   }
 };
 
-// TODO: use diff and merge
 export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
   const scaffoldSourceDir = path.resolve(context.appBasePath, scaffold.uuid);
   const scaffoldTempDir = path.resolve(context.appTempPath, scaffold.uuid);
 
-  traverse(scaffoldSourceDir, /.*/, (pathname: string, entity: string) => {
+  traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP, (pathname: string, entity: string) => {
     const relativePathname = entity.startsWith('__template.')
-      ? path.relative(scaffoldSourceDir, pathname)
-      : `${path.relative(scaffoldSourceDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`;
-    // const relativePathname = path.relative(scaffoldSourceDir, pathname);
+      ? `${path.relative(scaffoldSourceDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`
+      : path.relative(scaffoldSourceDir, pathname);
     const destinationPathname = context.destinationPath(relativePathname);
     const action = checkFileAction(
       scaffold,
@@ -356,7 +354,7 @@ export const parseScaffolds = async (
  *
  * since the `scaffold` is a nested structure, and every node could have its own configuration
  * value, but we supposed to get all of the values and make a aggregation (something just like
- * a flatten), for example: `installers`, `deletions`, `endScripts` and so on
+ * a flatten), for example: `installers`, `files.delete`, `endScripts` and so on
  *
  * @example
  * image there is a `scaffold` like:
