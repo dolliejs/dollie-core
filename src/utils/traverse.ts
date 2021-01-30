@@ -38,8 +38,10 @@ const traverse = (
         callback(currentEntityPath, entity);
       }
     } else if (stat.isDirectory()) {
-      // if it is a directory, then traverse its contained entities, its pathname
-      // will be passed as startPath
+      /**
+       * if it is a directory, then traverse its contained entities, its pathname
+       * will be passed as startPath
+       */
       traverse(currentEntityPath, callbackReg, callback);
     }
   });

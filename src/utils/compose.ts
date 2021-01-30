@@ -25,7 +25,6 @@ const parseComposeConfig = (content: string): Record<string, any> => {
  */
 const stringifyComposeConfig = (config: Record<string, any>): string => {
   const stringifiedConfig = YAML.stringify(config);
-  console.log(stringifiedConfig);
   let result = stringifiedConfig;
   for (const key of Object.keys(APP_COMPOSE_CONFIG_MAP)) {
     result = result.split(`${APP_COMPOSE_CONFIG_MAP[key]}:`).join(`${key}:`);

@@ -46,4 +46,21 @@ const createParser = (
 const parseScaffoldName = createParser(APP_SCAFFOLD_PREFIX);
 const parseExtendScaffoldName = createParser(APP_EXTEND_SCAFFOLD_PREFIX);
 
-export { parseScaffoldName, parseExtendScaffoldName };
+/**
+ * check if a pathname in config array or not
+ * @param pathname string
+ * @param configItems string
+ */
+const isPathnameInConfig = (
+  pathname: string,
+  configItems: Array<string>
+): boolean => {
+  for (const item of configItems) {
+    if (item && new RegExp(item).test(pathname)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+export { parseScaffoldName, parseExtendScaffoldName, isPathnameInConfig };

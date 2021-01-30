@@ -27,6 +27,7 @@
     "yeoman-generator"
   ],
   "devDependencies": {
+    "@types/diff": "^5.0.0",
     "@types/figlet": "^1.2.1",
     "@types/fs-extra": "^9.0.6",
     "@types/lodash": "^4.14.168",
@@ -57,6 +58,7 @@
     "npm": ">= 4.0.0"
   },
   "dependencies": {
+    "diff": "^5.0.0",
     "download-git-repo": "^3.0.2",
     "figlet": "^1.5.0",
     "fs-extra": "^9.1.0",

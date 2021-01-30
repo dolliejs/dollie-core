@@ -19,9 +19,9 @@ import figlet from 'figlet';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import { execSync } from 'child_process';
-import { recursivelyRemove, recursivelyWrite, getComposedArrayValue } from '../utils/generator';
+import { recursivelyRemove, recursivelyWrite, getComposedArrayValue, recursivelyCopyToDestination } from '../utils/generator';
 import readJson from '../utils/read-json';
-import { HOME_DIR, CACHE_DIR } from '../constants';
+import { HOME_DIR, CACHE_DIR, TEMP_DIR } from '../constants';
 import { DollieScaffold } from '../interfaces';
 
 class DollieGeneratorBase extends Generator {
@@ -35,6 +35,7 @@ class DollieGeneratorBase extends Generator {
    * it is a composed pathname with `HOME_DIR` and `CACHE_DIR`
    */
   public appBasePath: string;
+  public appTempPath: string;
   /**
    * the nested tree structure of all scaffolds used during one lifecycle
    * the main scaffold is on the top level, which is supposed to be unique
@@ -55,12 +56,20 @@ class DollieGeneratorBase extends Generator {
       );
     }
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
+    this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
     if (fs.existsSync(this.appBasePath) && fs.readdirSync(this.appBasePath).length !== 0) {
-      this.log.info(`Cleaning cache dir (${this.appBasePath})...`);
+      this.log.info(`Cleaning cache dir ${this.appBasePath}...`);
       fs.removeSync(this.appBasePath);
     }
     if (!fs.existsSync(this.appBasePath)) {
       fs.mkdirpSync(this.appBasePath);
+    }
+    if (fs.existsSync(this.appTempPath) && fs.readdirSync(this.appTempPath).length !== 0) {
+      this.log.info(`Cleaning temp dir ${this.appTempPath}...`);
+      fs.removeSync(this.appTempPath);
+    }
+    if (!fs.existsSync(this.appTempPath)) {
+      fs.mkdirpSync(this.appTempPath);
     }
   }
 
@@ -87,6 +96,8 @@ class DollieGeneratorBase extends Generator {
        * scaffold contents into the destination directory
        */
       recursivelyWrite(this.scaffold, this);
+      recursivelyCopyToDestination(this.scaffold, this);
+      this.fs.delete(path.resolve(this.appTempPath));
     } catch (e) {
       this.log.error(e.message || e.toString());
       process.exit(1);
@@ -130,14 +141,14 @@ class DollieGeneratorBase extends Generator {
     recursivelyRemove(this.scaffold, this);
 
     /**
-     * if there are items in `config.deletions` options, then we should traverse
+     * if there are items in `config.files.delete` options, then we should traverse
      * it and remove the items
      */
-    const deletions = getComposedArrayValue<string>(this.scaffold, 'deletions');
+    const deletions = getComposedArrayValue<string>(this.scaffold, 'files.delete');
     for (const deletion of deletions) {
       if (typeof deletion === 'string') {
         try {
-          this.log.info(`Deleting scaffold deletion item: ${deletion}`);
+          this.log.info(`Deleting scaffold item: ${deletion}`);
           fs.removeSync(this.destinationPath(deletion));
         } catch (e) {
           this.log.error(e.message || e.toString());

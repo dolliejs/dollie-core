@@ -10,13 +10,19 @@ export interface DollieScaffoldProps extends DollieScaffoldBaseProps {
   [key: string]: string;
 }
 
+export interface DollieScaffoldFileConfiguration {
+  merge: Array<string>;
+  add: Array<string>;
+  delete?: Array<string>;
+}
+
 export interface DollieScaffoldConfiguration {
   questions: Array<Question<DollieScaffoldProps>>;
   installers?: string[];
   extends?: Record<string, string>;
-  deletions?: Array<string>;
   endScripts?: Array<string>;
   extendProps?: Array<string>;
+  files?: DollieScaffoldFileConfiguration;
 }
 
 export interface DollieScaffold {
@@ -29,3 +35,5 @@ export interface DollieScaffold {
 }
 
 export type DollieScaffoldNameParser = (name: string) => string;
+
+export type FileAction = 'DIRECT' | 'MERGE' | 'NIL';
