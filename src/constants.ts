@@ -26,7 +26,16 @@ export const TEMP_DIR = `.${APP_NAME}/temp`;
  * the ignore pattern when traversing files to copy, used by:
  * - `src/utils/generators`
  */
-export const TRAVERSE_IGNORE_REGEXP = /^((?!(\.dollie\.json)).)+$/;
+export const TRAVERSE_IGNORE_REGEXP = new RegExp('^.dollie.(js|json)$');
+/**
+ * a regexp pattern for testing if current name is related to
+ * another scaffold
+ *
+ * @example
+ * `$css_preprocessor$` -> true
+ * `$css_preprocessor` -> false
+ */
+export const DEPENDENCY_KEY_REGEXP = /^\$.*\$$/;
 /**
  * scaffold prefix for `createParser`, used by:
  * - `src/utils/scaffold.ts`

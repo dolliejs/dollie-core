@@ -31,7 +31,7 @@ const traverse = (
       if (
         callbackReg &&
         callbackReg instanceof RegExp &&
-        callbackReg.test(entity) &&
+        !callbackReg.test(entity) &&
         callback &&
         typeof callback === 'function'
       ) {

@@ -7,7 +7,7 @@ import {
   getExtendedPropsFromParentScaffold,
 } from './utils/generator';
 import { parseComposeConfig, stringifyComposeConfig } from './utils/compose';
-import { diff, merge } from './utils/diff';
+import { diff, merge, checkFileAction } from './utils/diff';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
 import {
@@ -22,7 +22,9 @@ import {
   APP_NAME,
   HOME_DIR,
   CACHE_DIR,
+  TEMP_DIR,
   TRAVERSE_IGNORE_REGEXP,
+  DEPENDENCY_KEY_REGEXP,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   APP_SCAFFOLD_NAMESPACE,
@@ -42,6 +44,7 @@ export {
   stringifyComposeConfig,
   diff,
   merge,
+  checkFileAction,
   // classes
   DollieInteractiveGenerator,
   DollieComposeGenerator,
@@ -56,7 +59,9 @@ export {
   APP_NAME,
   HOME_DIR,
   CACHE_DIR,
+  TEMP_DIR,
   TRAVERSE_IGNORE_REGEXP,
+  DEPENDENCY_KEY_REGEXP,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   APP_SCAFFOLD_NAMESPACE,
@@ -75,12 +80,15 @@ export default {
   stringifyComposeConfig,
   diff,
   merge,
+  checkFileAction,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
   APP_NAME,
   HOME_DIR,
   CACHE_DIR,
+  TEMP_DIR,
   TRAVERSE_IGNORE_REGEXP,
+  DEPENDENCY_KEY_REGEXP,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   APP_SCAFFOLD_NAMESPACE,
