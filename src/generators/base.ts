@@ -36,6 +36,7 @@ class DollieGeneratorBase extends Generator {
    */
   public appBasePath: string;
   public appTempPath: string;
+  public mergeTable: Record<string, string> = {};
   /**
    * the nested tree structure of all scaffolds used during one lifecycle
    * the main scaffold is on the top level, which is supposed to be unique

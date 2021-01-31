@@ -151,6 +151,7 @@ export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: 
       context.appTempPath,
       context.destinationRoot(),
       relativePathname,
+      context.mergeTable,
       context.fs
     );
     /**
@@ -165,6 +166,7 @@ export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: 
       case 'DIRECT': {
         context.fs.delete(destinationPathname);
         context.fs.write(destinationPathname, currentTempFileContent);
+        context.mergeTable[relativePathname] = currentTempFileContent;
         break;
       }
       /**
@@ -179,15 +181,13 @@ export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: 
        * 7. write `result` into destination file
        */
       case 'MERGE': {
-        if (!scaffold.parent) {
+        const mergeTableContent = context.mergeTable[relativePathname];
+        if (!mergeTableContent) {
           break;
         }
-        const parentScaffoldTempDir = path.resolve(context.appTempPath, scaffold.parent.uuid);
-        const parentTempFilePath = path.resolve(parentScaffoldTempDir, relativePathname);
-        const parentTempFileContent = context.fs.read(parentTempFilePath);
         const currentDestFilePath = context.destinationPath(relativePathname);
         const currentFileContent = context.fs.read(currentDestFilePath);
-        const currentDiffTable = diff(parentTempFileContent, currentFileContent);
+        const currentDiffTable = diff(mergeTableContent, currentFileContent);
         const newDiffTable = diff(currentFileContent, currentTempFileContent);
         const result = merge(currentDiffTable, newDiffTable);
         context.fs.write(currentDestFilePath, result.map((item) => item.value).join(''));

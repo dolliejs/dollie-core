@@ -134,6 +134,7 @@ const checkFileAction = (
   tempPath: string,
   destinationPath: string,
   relativePathname: string,
+  mergeTable: Record<string, string>,
   fs: typeof Generator.prototype.fs
 ): FileAction => {
   const scaffoldFilesConfig =
@@ -149,9 +150,6 @@ const checkFileAction = (
 
   const absoluteDestPathname = path.resolve(destinationPath, relativePathname);
   const destFileExistence = fs.exists(absoluteDestPathname);
-  const parentFileExistence = fs.exists(
-    path.resolve(tempPath, scaffold.parent.uuid, relativePathname)
-  );
 
   /**
    * if current scaffold has no configuration about how to deal with files, Dollie will consider
@@ -178,9 +176,7 @@ const checkFileAction = (
    */
   if (isPathnameInConfig(relativePathname, mergeConfig)) {
     if (destFileExistence) {
-      return parentFileExistence ? 'MERGE' : 'DIRECT';
-    } else {
-      return isPathnameInConfig(relativePathname, addConfig) ? 'DIRECT' : 'NIL';
+      return mergeTable[relativePathname] ? 'MERGE' : 'DIRECT';
     }
   }
 
@@ -191,7 +187,7 @@ const checkFileAction = (
    * which means returns `MERGE`, otherwise Dollie will consider adding it, that means, returns `DIRECT`
    */
   if (isPathnameInConfig(relativePathname, addConfig)) {
-    return destFileExistence ? 'MERGE' : 'DIRECT';
+    return 'DIRECT';
   }
 
   /**
