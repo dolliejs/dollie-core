@@ -31,11 +31,19 @@ class DollieGeneratorBase extends Generator {
   // eslint-disable-next-line prettier/prettier
   public projectName: string;
   /**
-   * the absolute pathname for storing scaffold contents temporarily
+   * the absolute pathname for storing scaffold contents
    * it is a composed pathname with `HOME_DIR` and `CACHE_DIR`
    */
   public appBasePath: string;
+  /**
+   * the absolute pathname for storing scaffold contents temporarily
+   * it is a composed pathname with `HOME_DIR` and `TEMP_DIR`
+   */
   public appTempPath: string;
+  /**
+   * it is a `(string, string)` tuple, which saves content text of files
+   * that is `config.files.merge`
+   */
   public mergeTable: Record<string, string> = {};
   /**
    * the nested tree structure of all scaffolds used during one lifecycle
@@ -159,36 +167,46 @@ class DollieGeneratorBase extends Generator {
 
     /**
      * if there are items in `config.endScripts` options, then we should traverse
-     * it and remove the items
+     * there are two types for `config.endScripts` option: `string` and `Function`
      */
     const endScripts = getComposedArrayValue<Function | string>(this.scaffold, 'endScripts');
     for (const endScript of endScripts) {
-      if (typeof endScript === 'string') {
-        try {
-          this.log.info(`Executing end script: \`${endScript}\``);
-          this.log(Buffer.from(execSync(endScript)).toString());
-        } catch (e) {
-          this.log.error(e.message || e.toString());
+      try {
+        /**
+         * if current end script value is a string, Dollie will recognize it as a
+         * normal shell command, and will invoke `child_process.execSync` to execute
+         * this script as a command
+         */
+        if (typeof endScript === 'string') {
+            this.log.info(`Executing end script: \`${endScript}\``);
+            this.log(Buffer.from(execSync(endScript)).toString());
+        /**
+         * if current end script value is a function, Dollie will considering reading
+         * the code from it, and call it with `context`
+         * `context` contains some file system utilities provided by Dollie
+         */
+        } else if (typeof endScript === 'function') {
+          const endScriptSource = Function.prototype.toString.call(endScript);
+          const endScriptFunc = new Function(`return ${endScriptSource}`).call(null);
+          endScriptFunc({
+            fs: {
+              read: (pathname: string): string => {
+                return fs.readFileSync(this.destinationPath(pathname), { encoding: 'utf-8' });
+              },
+              exists: (pathname: string): boolean => {
+                return fs.existsSync(this.destinationPath(pathname));
+              },
+              readJson: (pathname: string): object => {
+                return readJson(this.destinationPath(pathname));
+              },
+              remove: (pathname: string) => {
+                return fs.removeSync(pathname);
+              },
+            },
+          });
         }
-      } else if (typeof endScript === 'function') {
-        const endScriptSource = Function.prototype.toString.call(endScript);
-        const endScriptFunc = new Function(`return ${endScriptSource}`).call(null);
-        endScriptFunc({
-          fs: {
-            read: (pathname: string): string => {
-              return fs.readFileSync(this.destinationPath(pathname), { encoding: 'utf-8' });
-            },
-            exists: (pathname: string): boolean => {
-              return fs.existsSync(this.destinationPath(pathname));
-            },
-            readJson: (pathname: string): object => {
-              return readJson(this.destinationPath(pathname));
-            },
-            remove: (pathname: string) => {
-              return fs.removeSync(pathname);
-            },
-          },
-        });
+      } catch (e) {
+        this.log.error(e.message || e.toString());
       }
     }
   }
