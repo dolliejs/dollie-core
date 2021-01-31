@@ -160,7 +160,7 @@ class DollieGeneratorBase extends Generator {
      * if there are items in `config.endScripts` options, then we should traverse
      * it and remove the items
      */
-    const endScripts = getComposedArrayValue<string>(this.scaffold, 'endScripts');
+    const endScripts = getComposedArrayValue<Function | string>(this.scaffold, 'endScripts');
     for (const endScript of endScripts) {
       if (typeof endScript === 'string') {
         try {
@@ -169,6 +169,25 @@ class DollieGeneratorBase extends Generator {
         } catch (e) {
           this.log.error(e.message || e.toString());
         }
+      } else if (typeof endScript === 'function') {
+        const endScriptSource = Function.prototype.toString.call(endScript);
+        const endScriptFunc = new Function(`return ${endScriptSource}`).call(null);
+        endScriptFunc({
+          fs: {
+            read: (pathname: string): string => {
+              return fs.readFileSync(this.destinationPath(pathname), { encoding: 'utf-8' });
+            },
+            exists: (pathname: string): boolean => {
+              return fs.existsSync(this.destinationPath(pathname));
+            },
+            readJson: (pathname: string): object => {
+              return readJson(this.destinationPath(pathname));
+            },
+            remove: (pathname: string) => {
+              return fs.removeSync(pathname);
+            },
+          },
+        });
       }
     }
   }

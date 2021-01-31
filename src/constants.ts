@@ -26,7 +26,7 @@ export const TEMP_DIR = `.${APP_NAME}/temp`;
  * the ignore pattern when traversing files to copy, used by:
  * - `src/utils/generators`
  */
-export const TRAVERSE_IGNORE_REGEXP = /^((?!(\.dollie\.json)).)+$/;
+export const TRAVERSE_IGNORE_REGEXP = new RegExp('^.dollie.(js|json)$');
 /**
  * scaffold prefix for `createParser`, used by:
  * - `src/utils/scaffold.ts`

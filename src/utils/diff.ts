@@ -177,7 +177,11 @@ const checkFileAction = (
    * consider adding it, that means, returns `DIRECT`
    */
   if (isPathnameInConfig(relativePathname, mergeConfig)) {
-    return destFileExistence && parentFileExistence ? 'MERGE' : 'DIRECT';
+    if (destFileExistence) {
+      return parentFileExistence ? 'MERGE' : 'DIRECT';
+    } else {
+      return isPathnameInConfig(relativePathname, addConfig) ? 'DIRECT' : 'NIL';
+    }
   }
 
   /**
