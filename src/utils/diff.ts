@@ -183,8 +183,7 @@ const checkFileAction = (
   /**
    * if current file pathname matches `config.files.add`, which means scaffold's author hope
    * adding this file to destination dir
-   * so if the file exists in destination dir, Dollie will consider comparing with current text
-   * which means returns `MERGE`, otherwise Dollie will consider adding it, that means, returns `DIRECT`
+   * so Dollie will return `DIRECT` wether there is an existed file in destination dir or not
    */
   if (isPathnameInConfig(relativePathname, addConfig)) {
     return 'DIRECT';

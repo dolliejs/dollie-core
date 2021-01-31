@@ -7,7 +7,7 @@ import traverse from '../utils/traverse';
 import download from '../utils/download';
 import { diff, merge, checkFileAction } from '../utils/diff';
 import { parseExtendScaffoldName } from '../utils/scaffold';
-import { TRAVERSE_IGNORE_REGEXP } from '../constants';
+import { TRAVERSE_IGNORE_REGEXP, DEPENDENCY_KEY_REGEXP } from '../constants';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
 import readJson from './read-json';
 
@@ -162,6 +162,8 @@ export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: 
       /**
        * if action for current file is `DIRECT`, which means we can directly write
        * `currentTempFileContent` into destination file without worrying about previous content
+       * besides, we should add current content to `mergeTable` for comparing when this file
+       * will be merged
        */
       case 'DIRECT': {
         context.fs.delete(destinationPathname);
@@ -172,7 +174,7 @@ export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: 
       /**
        * if action for current file is `MERGE`, which means we should take previous content
        * into concern, so Dollie will do these things:
-       * 1. read the file with same name from parent scaffold's temp dir as `content1`
+       * 1. read the content text from `context.mergeTable` by the same filename as `content1`
        * 2. read current file content from destination dir as `content2`
        * 3. read current file content from current scaffold's temp dir as `content3`
        * 4. diff `content1` and `content2` as `diff1`
@@ -397,7 +399,6 @@ export const parseScaffolds = async (
    * assign to `scaffold.props`
    */
   const resultProps = _.merge({ name: context.projectName }, scaffoldProps);
-  const dependenceKeyRegex = /^\$.*\$$/;
   /**
    * omit those slot question key-value pairs, cause they are only used by `parseScaffolds`
    *
@@ -406,14 +407,14 @@ export const parseScaffolds = async (
    */
   scaffold.props = _.merge(
     getExtendedPropsFromParentScaffold(scaffold),
-    _.omitBy(resultProps, (value, key) => dependenceKeyRegex.test(key)) as DollieScaffoldProps,
+    _.omitBy(resultProps, (value, key) => DEPENDENCY_KEY_REGEXP.test(key)) as DollieScaffoldProps,
   );
 
   /**
    * get the slot question key-value pairs and parse them as dependencies of
    * current scaffold, and put them to `scaffold.dependencies`
    */
-  const dependencies = _.pickBy(resultProps, (value, key) => dependenceKeyRegex.test(key) && value !== 'null');
+  const dependencies = _.pickBy(resultProps, (value, key) => DEPENDENCY_KEY_REGEXP.test(key) && value !== 'null');
   for (const dependenceKey of Object.keys(dependencies)) {
     const dependenceUuid = uuid();
     const currentDependence: DollieScaffold = {

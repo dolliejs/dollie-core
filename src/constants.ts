@@ -28,6 +28,15 @@ export const TEMP_DIR = `.${APP_NAME}/temp`;
  */
 export const TRAVERSE_IGNORE_REGEXP = new RegExp('^.dollie.(js|json)$');
 /**
+ * a regexp pattern for testing if current name is related to
+ * another scaffold
+ *
+ * @example
+ * `$css_preprocessor$` -> true
+ * `$css_preprocessor` -> false
+ */
+export const DEPENDENCY_KEY_REGEXP = /^\$.*\$$/;
+/**
  * scaffold prefix for `createParser`, used by:
  * - `src/utils/scaffold.ts`
  */
