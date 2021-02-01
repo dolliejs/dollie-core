@@ -19,10 +19,15 @@ import figlet from 'figlet';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import { execSync } from 'child_process';
-import { recursivelyRemove, recursivelyWrite, getComposedArrayValue, recursivelyCopyToDestination } from '../utils/generator';
+import {
+  recursivelyRemove,
+  recursivelyWrite,
+  getComposedArrayValue,
+  recursivelyCopyToDestination,
+} from '../utils/generator';
 import readJson from '../utils/read-json';
 import { HOME_DIR, CACHE_DIR, TEMP_DIR } from '../constants';
-import { DollieScaffold } from '../interfaces';
+import { DollieScaffold, MergeConflictRecord } from '../interfaces';
 
 class DollieGeneratorBase extends Generator {
   /**
@@ -45,6 +50,7 @@ class DollieGeneratorBase extends Generator {
    * that is `config.files.merge`
    */
   public mergeTable: Record<string, string> = {};
+  public conflicts: Array<MergeConflictRecord> = [];
   /**
    * the nested tree structure of all scaffolds used during one lifecycle
    * the main scaffold is on the top level, which is supposed to be unique
