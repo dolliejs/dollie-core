@@ -474,17 +474,3 @@ export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string):
     });
   return result as Array<T>;
 };
-
-const test = () => {
-  const dir = '/Users/lenconda/Desktop/diff';
-  const originalContent = fs.readFileSync(path.resolve(dir, 'original.txt'), { encoding: 'utf-8' });
-  const midContent = fs.readFileSync(path.resolve(dir, 'mid.txt'), { encoding: 'utf-8' });
-  const newContent = fs.readFileSync(path.resolve(dir, 'new.txt'), { encoding: 'utf-8' });
-  const diff1 = diff(originalContent, midContent);
-  const diff2 = diff(midContent, newContent);
-  console.log(diff1);
-  console.log(diff2);
-  console.log(merge(diff1, diff2).text);
-};
-
-test();

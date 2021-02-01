@@ -18,6 +18,7 @@ import Generator from 'yeoman-generator';
 import figlet from 'figlet';
 import fs from 'fs-extra';
 import _ from 'lodash';
+import chalk from 'chalk';
 import { execSync } from 'child_process';
 import {
   recursivelyRemove,
@@ -120,6 +121,9 @@ class DollieGeneratorBase extends Generator {
   }
 
   install() {
+    if (this.conflicts.length > 0) {
+      return;
+    }
     /**
      * define installers map
      * only support npm, yarn and bower currently
@@ -214,6 +218,16 @@ class DollieGeneratorBase extends Generator {
       } catch (e) {
         this.log.error(e.message || e.toString());
       }
+    }
+
+    const conflicts = this.conflicts.filter((conflict) => deletions.indexOf(conflict.pathname) === -1);
+    if (conflicts.length > 0) {
+      this.log(`There ${conflicts.length === 1 ? 'is' : 'are'} ${conflicts.length} file(s) contains several conflicts:`);
+      conflicts.forEach((conflict) => {
+        if (deletions.indexOf(conflict.pathname) === -1) {
+          this.log(chalk.yellow(`\t- ${conflict.pathname}`));
+        }
+      });
     }
   }
 }
