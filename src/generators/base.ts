@@ -220,10 +220,9 @@ class DollieGeneratorBase extends Generator {
       }
     }
 
-    const conflicts = this.conflicts.filter((conflict) => deletions.indexOf(conflict.pathname) === -1);
-    if (conflicts.length > 0) {
-      this.log(`There ${conflicts.length === 1 ? 'is' : 'are'} ${conflicts.length} file(s) contains several conflicts:`);
-      conflicts.forEach((conflict) => {
+    if (this.conflicts.length > 0) {
+      this.log(`There ${this.conflicts.length === 1 ? 'is' : 'are'} still ${this.conflicts.length} file(s) contains several conflicts:`);
+      this.conflicts.forEach((conflict) => {
         if (deletions.indexOf(conflict.pathname) === -1) {
           this.log(chalk.yellow(`\t- ${conflict.pathname}`));
         }

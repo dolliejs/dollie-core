@@ -1,4 +1,4 @@
-import { DollieScaffoldNameParser } from '../interfaces';
+import { DollieScaffoldNameParser, MergeBlock } from '../interfaces';
 import {
   APP_SCAFFOLD_NAMESPACE,
   APP_SCAFFOLD_PREFIX,
@@ -63,4 +63,16 @@ const isPathnameInConfig = (
   return false;
 };
 
-export { parseScaffoldName, parseExtendScaffoldName, isPathnameInConfig };
+const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
+  const validBlocks = blocks.filter(
+    (block) => block.status === 'CONFLICT' && !block.ignored
+  );
+  return validBlocks.length;
+};
+
+export {
+  parseScaffoldName,
+  parseExtendScaffoldName,
+  isPathnameInConfig,
+  checkConflictBlockCount,
+};

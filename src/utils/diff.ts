@@ -170,21 +170,26 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
   return {
     conflicts,
     blocks: resultBlocks,
-    text: resultBlocks.reduce((result, currentBlock) => {
-      if (currentBlock.status === 'OK') {
-        return `${result}${currentBlock.values.current.join('')}`;
-      } else {
-        return (
-          result +
-          '<<<<<<< former\n' +
-          currentBlock.values.former.join('') +
-          '=======\n' +
-          currentBlock.values.current.join('') +
-          '>>>>>>> current\n'
-        );
-      }
-    }, ''),
+    text: stringifyBlocks(resultBlocks),
   };
+};
+
+const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
+  const text = blocks.reduce((result, currentBlock) => {
+    if (currentBlock.status === 'OK') {
+      return `${result}${currentBlock.values.current.join('')}`;
+    } else {
+      return (
+        result +
+        '<<<<<<< former\n' +
+        currentBlock.values.former.join('') +
+        '=======\n' +
+        currentBlock.values.current.join('') +
+        '>>>>>>> current\n'
+      );
+    }
+  }, '');
+  return text;
 };
 
 /**
@@ -262,4 +267,4 @@ const checkFileAction = (
   return destFileExistence ? 'DIRECT' : 'NIL';
 };
 
-export { diff, merge, checkFileAction };
+export { diff, merge, checkFileAction, stringifyBlocks };

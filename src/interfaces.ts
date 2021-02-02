@@ -44,6 +44,7 @@ export interface MergeBlock {
     former: Array<string>,
     current: Array<string>,
   };
+  ignored?: boolean;
 }
 
 export interface MergeResult {
