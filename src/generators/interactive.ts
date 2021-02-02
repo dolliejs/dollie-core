@@ -6,9 +6,9 @@
 import { Questions } from 'yeoman-generator';
 import { v4 as uuid } from 'uuid';
 import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
-import { getComposedArrayValue, parseScaffolds } from '../utils/generator';
+import { parseScaffolds } from '../utils/generator';
 import DollieGeneratorBase from './base';
-import { DollieScaffold, DollieScaffoldProps } from '../interfaces';
+import { ConflictKeepsTable, DollieScaffold, DollieScaffoldProps } from '../interfaces';
 import { stringifyBlocks } from '../utils/diff';
 
 class DollieInteractiveGenerator extends DollieGeneratorBase {
@@ -65,16 +65,11 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
 
   async writing() {
     await super.writing.call(this);
-    const deletions = getComposedArrayValue<string>(this.scaffold, 'files.delete');
-    const conflicts = this.conflicts.filter(
-      (conflict) => deletions.indexOf(conflict.pathname) === -1
-    );
-    this.conflicts = conflicts;
-    if (conflicts.length === 0) { return; }
+    if (this.conflicts.length === 0) { return; }
 
-    const keepsTable: Record<string, Array<Array<string>>> = {};
+    const keepsTable: ConflictKeepsTable = {};
 
-    for (const conflict of conflicts) {
+    for (const conflict of this.conflicts) {
       if (!keepsTable[conflict.pathname]) {
         keepsTable[conflict.pathname] = [];
       }

@@ -1,4 +1,5 @@
 import {
+  ConflictKeepsTable,
   DollieScaffoldNameParser,
   MergeBlock,
   MergeConflictRecord,
@@ -76,7 +77,7 @@ const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
 
 const solveConflicts = (
   conflicts: Array<MergeConflictRecord>,
-  keepsTable: Record<string, Array<Array<string>>>
+  keepsTable: ConflictKeepsTable
 ): { result: Array<MergeConflictRecord>, ignored: Array<MergeConflictRecord> } => {
   const result = [];
   const ignored = [];

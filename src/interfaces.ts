@@ -57,3 +57,5 @@ export interface MergeConflictRecord {
   pathname: string;
   blocks: MergeBlock[];
 }
+
+export type ConflictKeepsTable = Record<string, Array<Array<string>>>;
