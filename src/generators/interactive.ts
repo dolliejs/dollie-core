@@ -5,10 +5,10 @@
 
 import { Questions } from 'yeoman-generator';
 import { v4 as uuid } from 'uuid';
-import { checkConflictBlockCount, parseScaffoldName } from '../utils/scaffold';
+import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
 import { getComposedArrayValue, parseScaffolds } from '../utils/generator';
 import DollieGeneratorBase from './base';
-import { DollieScaffold, DollieScaffoldProps, MergeBlock } from '../interfaces';
+import { DollieScaffold, DollieScaffoldProps } from '../interfaces';
 import { stringifyBlocks } from '../utils/diff';
 
 class DollieInteractiveGenerator extends DollieGeneratorBase {
@@ -69,29 +69,22 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
     const conflicts = this.conflicts.filter(
       (conflict) => deletions.indexOf(conflict.pathname) === -1
     );
-
     this.conflicts = conflicts;
     if (conflicts.length === 0) { return; }
 
-    while (
-      this.conflicts.filter(
-        (conflict) => checkConflictBlockCount(conflict.blocks) > 0
-      ).length !== 0
-    ) {
-      const currentConflictFile = this.conflicts.shift();
-      let conflictBlockIndex = 0;
-      const currentBlocks = [];
-      for (const block of currentConflictFile.blocks) {
-        if (block.status === 'OK' || block.ignored) {
-          currentBlocks.push(block);
-          continue;
-        }
-        conflictBlockIndex += 1;
+    const keepsTable: Record<string, Array<Array<string>>> = {};
+
+    for (const conflict of conflicts) {
+      if (!keepsTable[conflict.pathname]) {
+        keepsTable[conflict.pathname] = [];
+      }
+      const conflictBlocks = conflict.blocks.filter((blocks) => blocks.status === 'CONFLICT');
+      for (const [index, block] of conflictBlocks.entries()) {
         const { keeps } = (await this.prompt([
           {
             type: 'checkbox',
             name: 'keeps',
-            message: `Solving conflicts in ${currentConflictFile.pathname} [${conflictBlockIndex}]:`,
+            message: `Solving conflicts in ${conflict.pathname} (${index + 1}/${conflictBlocks.length}):`,
             choices: ['former', 'current'].reduce((result, currentKey) => {
               const choices = (block.values[currentKey] as Array<string> || []).map((value, index) => {
                 return {
@@ -103,30 +96,17 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
             }, []),
           },
         ])) as { keeps: Array<string> };
-        if (keeps.length === 0) {
-          block.ignored = true;
-          currentBlocks.push(block);
-        } else {
-          const solvedBlock: MergeBlock = {
-            status: 'OK',
-            values: {
-              former: [],
-              current: keeps.reduce((result, currentKey) => {
-                const [key, index] = currentKey.split('#');
-                result.push(block.values[key][index]);
-                return result;
-              }, [] as Array<string>),
-            },
-          };
-          currentBlocks.push(solvedBlock);
-        }
+        keepsTable[conflict.pathname].push(keeps);
       }
-      currentConflictFile.blocks = currentBlocks;
-      if (checkConflictBlockCount(currentBlocks) > 0) {
-        this.conflicts.push(currentConflictFile);
-      }
-      this.fs.delete(currentConflictFile.pathname);
-      this.fs.write(currentConflictFile.pathname, stringifyBlocks(currentBlocks));
+    }
+
+    const solvedConflicts = solveConflicts(this.conflicts, keepsTable);
+    this.conflicts = solvedConflicts.ignored || [];
+
+    const files = [...solvedConflicts.result, ... solvedConflicts.ignored];
+    for (const file of files) {
+      this.fs.delete(file.pathname);
+      this.fs.write(file.pathname, stringifyBlocks(file.blocks));
     }
   }
 
