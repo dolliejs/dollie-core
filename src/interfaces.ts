@@ -59,3 +59,7 @@ export interface MergeConflictRecord {
 }
 
 export type ConflictKeepsTable = Record<string, Array<Array<string>>>;
+export type ComposedConflictKeepsTable = Record<
+  string,
+  Array<{ former?: Array<number | string>, current?: Array<number | string> }>
+>;

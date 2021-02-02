@@ -119,7 +119,7 @@ const solveConflicts = (
             former: [],
             current: keeps.reduce((result, currentKey) => {
               const [key, index] = currentKey.split('#');
-              result.push(block.values[key][index]);
+              result.push(block.values[key][index] || '');
               return result;
             // eslint-disable-next-line prettier/prettier
             }, [] as Array<string>),

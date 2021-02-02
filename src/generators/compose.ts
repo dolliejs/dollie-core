@@ -6,7 +6,7 @@
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
 import DollieGeneratorBase from './base';
-import { DollieScaffold, ConflictKeepsTable } from '../interfaces';
+import { DollieScaffold, ComposedConflictKeepsTable, ConflictKeepsTable } from '../interfaces';
 import { parseScaffolds } from '../utils/generator';
 import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
 import { APP_COMPOSE_CONFIG_MAP } from '../constants';
@@ -52,7 +52,22 @@ class DollieComposeGenerator extends DollieGeneratorBase {
 
     if (this.conflicts.length === 0) { return; }
 
-    const keepsTable = _.get(this, 'options.keepsTable') as ConflictKeepsTable || {};
+    const composedKeepsTable = _.get(this.options, APP_COMPOSE_CONFIG_MAP.conflict_keeps_table) as ComposedConflictKeepsTable || {};
+    const keepsTable = Object
+      .keys(composedKeepsTable)
+      .reduce((result, currentPathname) => {
+        const currentComposedKeepsList = composedKeepsTable[currentPathname];
+        const values = currentComposedKeepsList.map((keep) => {
+          return ['former', 'current'].reduce((keepsResult, currentKey) => {
+            return keepsResult.concat(
+              (keep[currentKey] as Array<string | number> || []).map((value) => `${currentKey}#${value}`)
+            );
+          }, []);
+        });
+        result[currentPathname] = (result[currentPathname] || []).concat(values);
+        return result;
+      }, {} as ConflictKeepsTable);
+
     const solvedConflicts = solveConflicts(this.conflicts, keepsTable);
     this.conflicts = solvedConflicts.ignored || [];
 
