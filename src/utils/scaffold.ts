@@ -68,13 +68,29 @@ const isPathnameInConfig = (
   return false;
 };
 
+/**
+ * check and count the quantity of conflicted blocks in a file
+ * @param blocks Array<MergeBlock>
+ * @returns number
+ */
 const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
-  const validBlocks = blocks.filter(
-    (block) => block.status === 'CONFLICT'
-  );
+  const validBlocks = blocks.filter((block) => block.status === 'CONFLICT');
   return validBlocks.length;
 };
 
+/**
+ * solve conflicts for a group of files, and return the solved files and
+ * also the files that still has conflicts
+ * @param conflicts Array<MergeConflictRecord>
+ * @param keepsTable ConflictKeepsTable
+ * @returns object
+ *
+ * since Dollie uses an technique (or algorithm) inspired by three-way merge
+ * (http://www.cis.upenn.edu/~bcpierce/papers/diff3-short.pdf), there would be
+ * three character in every diff:
+ * - BASE: the content of last file write by `DIRECT` action
+ * - THEIRS: the content of current file in the destination dir, we call it as ``
+ */
 const solveConflicts = (
   conflicts: Array<MergeConflictRecord>,
   keepsTable: ConflictKeepsTable

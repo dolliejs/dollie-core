@@ -51,6 +51,12 @@ class DollieGeneratorBase extends Generator {
    * that is `config.files.merge`
    */
   public mergeTable: Record<string, string> = {};
+  /**
+   * saves all the conflicts in this array.
+   * when a file from destination dir is written by more than two scaffold,
+   * there might become some conflicts. Dollie uses Myers diff and 3-merge algorithm
+   * inspired by Git to save the conflict files during writing files
+   */
   public conflicts: Array<MergeConflictRecord> = [];
   /**
    * the nested tree structure of all scaffolds used during one lifecycle
@@ -218,7 +224,11 @@ class DollieGeneratorBase extends Generator {
               remove: (pathname: string) => {
                 return fs.removeSync(pathname);
               },
+              write: (pathname: string, content: string) => {
+                return fs.writeFileSync(pathname, content, { encoding: 'utf-8' });
+              },
             },
+            scaffold: this.scaffold,
           });
         }
       } catch (e) {
@@ -227,7 +237,13 @@ class DollieGeneratorBase extends Generator {
     }
 
     if (this.conflicts.length > 0) {
-      this.log(`There ${this.conflicts.length === 1 ? 'is' : 'are'} still ${this.conflicts.length} file(s) contains several conflicts:`);
+      this.log(
+        'There ' +
+        (this.conflicts.length === 1 ? 'is' : 'are') +
+        ' still ' + this.conflicts.length +
+        ' file' + (this.conflicts.length == 1 ? ' ' : 's ') +
+        'contains several conflicts:'
+      );
       this.conflicts.forEach((conflict) => {
         if (deletions.indexOf(conflict.pathname) === -1) {
           this.log(chalk.yellow(`\t- ${conflict.pathname}`));

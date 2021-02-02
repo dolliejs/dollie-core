@@ -180,6 +180,7 @@ export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: 
        * 5. diff `content1` and `content3` as `diff2`
        * 6. merge with `diff1` and `diff2` as `result`
        * 7. write `result` into destination file
+       * 8. if merge result becomes a conflict, then add current file and its blocks into `context.conflicts`
        */
       case 'MERGE': {
         const mergeTableContent = context.mergeTable[relativePathname];

@@ -52,6 +52,9 @@ class DollieComposeGenerator extends DollieGeneratorBase {
 
     if (this.conflicts.length === 0) { return; }
 
+    /**
+     * get keeps table from user's yaml config and parse it into the format that Dollie can understand
+     */
     const composedKeepsTable = _.get(this.options, APP_COMPOSE_CONFIG_MAP.conflict_keeps_table) as ComposedConflictKeepsTable || {};
     const keepsTable = Object
       .keys(composedKeepsTable)

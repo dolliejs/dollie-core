@@ -42,10 +42,25 @@ const diff = (originalContent: string, newContent: string): Change[] => {
  * merge two changes records into one
  * @param currentChanges Change[]
  * @param newChanges Change[]
- * @returns Change[]
+ * @returns MergeResult
  *
  * `currentChanges` is the changes between original text and current text
  * `newChanges` is the changes between current text and new text
+ *
+ * since Dollie uses an technique (or algorithm) inspired by three-way merge
+ * (http://www.cis.upenn.edu/~bcpierce/papers/diff3-short.pdf), there would be
+ * three character in every diff:
+ * - BASE: the content of last file write by `DIRECT` action, we call it as `original`
+ * - THEIRS: the content of current file in the destination dir, we call it as `current`
+ * - OURS: the content of new file to be written, we call it as `new`
+ *
+ * conflicts will be shown in result text.
+ * @example
+ * <<<<<<< former
+ * current_file_content
+ * =======
+ * new_file_content
+ * >>>>>>> current
  */
 const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
   const resultBlocks: Array<MergeBlock> = [];
@@ -54,9 +69,9 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
   const removedChangesList = currentChanges.filter((change) => change.removed);
   const addedChangesList = currentChanges.filter((change) => change.added);
   /**
-   * if `removedChangesList` and `addedChangesList` are all empty, it means
-   * there is no change been made between original text and current text, so
-   * we just return the new changes without removed ones
+   * if `removedChangesList` and `addedChangesList` are all empty, it means there is no change
+   * been made between original text and current text, so we just return the value of new changes
+   * without removed ones into one block, and push it into result
    */
   if (removedChangesList.length === 0 && addedChangesList.length === 0) {
     const block: MergeBlock = {
@@ -78,6 +93,9 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
   while (newChanges.length !== 0) {
     const lastResultBlock = resultBlocks[resultBlocks.length - 1];
     const newChange = newChanges.shift();
+    /**
+     * if `newChange` matches conflict flags, we should set the status to corresponding phrase
+     */
     if (newChange.value === '<<<<<<< former\n') {
       parseStatus = 'FORMER';
       continue;
@@ -85,12 +103,21 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
       parseStatus = 'CURRENT';
       continue;
     } else if (newChange.value === '>>>>>>> current\n') {
+      /**
+       * if matches `>>>>>>> current\n`, it means we just finished traversing a conflict block, so
+       * we should set the `parseStatus` to the normal value: `NIL`
+       */
       parseStatus = 'NIL';
       continue;
     }
 
     if (parseStatus === 'FORMER' || parseStatus === 'CURRENT') {
-      if (lastResultBlock.status !== 'CONFLICT') {
+      /**
+       * if last block's status is not `CONFLICT`, Dollie will make a new block with status `CONFLICT`
+       * and push current change value into the right array by `parseStatus`, e.g.
+       * if `parseStatus` is `FORMER`, then Dollie pushes value to `values.former`
+       */
+      if (!lastResultBlock || lastResultBlock.status !== 'CONFLICT') {
         const block: MergeBlock = {
           status: 'CONFLICT',
           values: {
@@ -101,6 +128,10 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
         block.values[parseStatus.toLocaleLowerCase()].push(newChange.value);
         resultBlocks.push(block);
       } else {
+        /**
+         * if last block's status is `CONFLICT`, Dollie will push the value directly into last block's
+         * value group with `parseStatus`
+         */
         lastResultBlock.values[parseStatus.toLowerCase()].push(newChange.value);
       }
       continue;
@@ -108,10 +139,19 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
 
     if (newChange.removed) {
       if (addedChangesList.length > 0) {
+        /**
+         * if a new change item is with `removed` attribute, we should find a change with `added`
+         * attribute from `diff1`
+         */
         const addedChangeIndex = addedChangesList.findIndex(
           (item) => item.value === newChange.value
         );
         if (addedChangeIndex !== -1) {
+          /**
+           * if we can find a valid item in `diff1`, and next change in `diff2` has `added` attribute,
+           * it means that the scaffold want to remove current file's corresponding content and add new
+           * content to it, which leads to an incoming conflict
+           */
           if (newChanges[0].added) {
             conflicts = true;
             const block: MergeBlock = {
@@ -123,6 +163,9 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
             };
             resultBlocks.push(block);
           } else {
+            /**
+             * if `diff2`'s last block has status `CONFLICT`, then create a new block with status `OK`
+             */
             if (!lastResultBlock || lastResultBlock.status === 'CONFLICT') {
               const block: MergeBlock = {
                 status: 'OK',
@@ -134,24 +177,59 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
               resultBlocks.push(block);
             }
           }
+          /**
+           * finally, remove the change from `diff1`'s added changes list, in order to avoid mismatch by
+           * changes after current change
+           */
           addedChangesList.splice(addedChangeIndex, 1);
         }
       }
     } else if (newChange.added) {
-      if (!lastResultBlock || lastResultBlock.status === 'CONFLICT') {
-        lastResultBlock.values.current.push(newChange.value);
+      /**
+       * if there is not items in `resultBlocks`, Dollie will create a new block and push it into `resultBlocks`
+       */
+      if (!lastResultBlock) {
+        const block: MergeBlock = {
+          status: 'OK',
+          values: {
+            former: [],
+            current: [newChange.value],
+          },
+        };
+        resultBlocks.push(block);
         continue;
       }
+      /**
+       * if we can find a removed item in `diff1`'s removed changes, we should remove it from list
+       */
       const removedChangeIndex = removedChangesList.findIndex(
         (item) => item.value === newChange.value
       );
-      if (removedChangesList.length === 0 || removedChangeIndex === -1) {
-        lastResultBlock.values.current.push(newChange.value);
-      }
       if (removedChangeIndex !== -1) {
         removedChangesList.splice(removedChangeIndex, 1);
       }
+      /**
+       * if last item of `resultBlocks` has status `CONFLICT`, Dollie will consider current change as a conflicted
+       * one, so just push the value of current change to `values.current` of last item of blocks
+       */
+      if (lastResultBlock.status === 'CONFLICT') {
+        lastResultBlock.values.current.push(newChange.value);
+        continue;
+      }
+      /**
+       * if not, just find a change with the same value from removed changes list of `diff1`, if there is not an
+       * appropriate change, just push it into last item of `resultBlocks`
+       */
+      if (removedChangesList.length === 0 || removedChangeIndex === -1) {
+        lastResultBlock.values.current.push(newChange.value);
+        continue;
+      }
     } else {
+      /**
+       * if current change is a normal change, just add its value to last block item, however, if last block item
+       * has status `CONFLICT` or does not exist, we should create a new block with status `OK` and push the value
+       * of current change to its `values.current`
+       */
       if (!lastResultBlock || lastResultBlock.status !== 'OK') {
         const block: MergeBlock = {
           status: 'OK',
@@ -174,6 +252,11 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
   };
 };
 
+/**
+ * parse file blocks with conflict flags
+ * @param blocks Array<MergeBlock>
+ * @returns string
+ */
 const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
   const text = blocks.reduce((result, currentBlock) => {
     if (currentBlock.status === 'OK') {
