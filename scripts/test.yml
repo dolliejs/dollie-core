@@ -1,11 +1,18 @@
 dollie_scaffold_config:
-  scaffold_name: test
+  scaffold_name: react
   props:
     name: project
-    test: exit 0
   dependencies:
-    -
-      scaffold_name: less
-      props:
-        example: lenconda
-        test: jest
+    - scaffold_name: react-ts
+    - scaffold_name: react-less
+
+conflict_keeps_table:
+  config/webpack.config.js:
+    - former:
+      - 0
+    - former:
+      - 0
+    - former:
+      - 0
+    - former:
+      - 0

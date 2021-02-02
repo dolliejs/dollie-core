@@ -2,7 +2,12 @@ import path from 'path';
 import { diffLines, Change } from 'diff';
 import _ from 'lodash';
 import Generator from 'yeoman-generator';
-import { DollieScaffold, FileAction } from '../interfaces';
+import {
+  DollieScaffold,
+  FileAction,
+  MergeBlock,
+  MergeResult,
+} from '../interfaces';
 import { isPathnameInConfig } from './scaffold';
 
 /**
@@ -37,90 +42,243 @@ const diff = (originalContent: string, newContent: string): Change[] => {
  * merge two changes records into one
  * @param currentChanges Change[]
  * @param newChanges Change[]
- * @returns Change[]
+ * @returns MergeResult
  *
  * `currentChanges` is the changes between original text and current text
  * `newChanges` is the changes between current text and new text
+ *
+ * since Dollie uses an technique (or algorithm) inspired by three-way merge
+ * (http://www.cis.upenn.edu/~bcpierce/papers/diff3-short.pdf), there would be
+ * three character in every diff:
+ * - BASE: the content of last file write by `DIRECT` action, we call it as `original`
+ * - THEIRS: the content of current file in the destination dir, we call it as `current`
+ * - OURS: the content of new file to be written, we call it as `new`
+ *
+ * conflicts will be shown in result text.
+ * @example
+ * <<<<<<< former
+ * current_file_content
+ * =======
+ * new_file_content
+ * >>>>>>> current
  */
-const merge = (currentChanges: Change[], newChanges: Change[]): Change[] => {
-  /**
-   * the final changes from the merge result
-   * it is also in the type `Change[]`
-   */
-  const result: Change[] = [];
+const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
+  const resultBlocks: Array<MergeBlock> = [];
+  let conflicts = false;
+  let parseStatus: 'CURRENT' | 'FORMER' | 'NIL' = 'NIL';
   const removedChangesList = currentChanges.filter((change) => change.removed);
   const addedChangesList = currentChanges.filter((change) => change.added);
   /**
-   * if `removedChangesList` and `addedChangesList` are all empty, it means
-   * there is no change been made between original text and current text, so
-   * we just return the new changes without removed ones
+   * if `removedChangesList` and `addedChangesList` are all empty, it means there is no change
+   * been made between original text and current text, so we just return the value of new changes
+   * without removed ones into one block, and push it into result
    */
   if (removedChangesList.length === 0 && addedChangesList.length === 0) {
-    return newChanges.filter((change) => !change.removed);
+    const block: MergeBlock = {
+      status: 'OK',
+      values: {
+        former: [],
+        current: newChanges
+          .filter((change) => !change.removed)
+          .map((change) => change.value),
+      },
+    };
+    return {
+      conflicts: false,
+      blocks: [block],
+      text: block.values.current.join(''),
+    };
   }
-  /**
-   * traverse all changes in `newChanges`
-   */
-  for (const newChange of newChanges) {
+
+  while (newChanges.length !== 0) {
+    const lastResultBlock = resultBlocks[resultBlocks.length - 1];
+    const newChange = newChanges.shift();
     /**
-     * for each removed change in `newChanges`
-     * if there is a same value in `addedChangesList`, which means new text should not remove
-     * current change
-     * so we should push current change to `result`, no matter will be removed by new text
-     * after pushing, we should delete it from `addedChangesList`
+     * if `newChange` matches conflict flags, we should set the status to corresponding phrase
      */
+    if (newChange.value === '<<<<<<< former\n') {
+      parseStatus = 'FORMER';
+      continue;
+    } else if (newChange.value === '=======\n') {
+      parseStatus = 'CURRENT';
+      continue;
+    } else if (newChange.value === '>>>>>>> current\n') {
+      /**
+       * if matches `>>>>>>> current\n`, it means we just finished traversing a conflict block, so
+       * we should set the `parseStatus` to the normal value: `NIL`
+       */
+      parseStatus = 'NIL';
+      continue;
+    }
+
+    if (parseStatus === 'FORMER' || parseStatus === 'CURRENT') {
+      /**
+       * if last block's status is not `CONFLICT`, Dollie will make a new block with status `CONFLICT`
+       * and push current change value into the right array by `parseStatus`, e.g.
+       * if `parseStatus` is `FORMER`, then Dollie pushes value to `values.former`
+       */
+      if (!lastResultBlock || lastResultBlock.status !== 'CONFLICT') {
+        const block: MergeBlock = {
+          status: 'CONFLICT',
+          values: {
+            former: [],
+            current: [],
+          },
+        };
+        block.values[parseStatus.toLocaleLowerCase()].push(newChange.value);
+        resultBlocks.push(block);
+      } else {
+        /**
+         * if last block's status is `CONFLICT`, Dollie will push the value directly into last block's
+         * value group with `parseStatus`
+         */
+        lastResultBlock.values[parseStatus.toLowerCase()].push(newChange.value);
+      }
+      continue;
+    }
+
     if (newChange.removed) {
       if (addedChangesList.length > 0) {
+        /**
+         * if a new change item is with `removed` attribute, we should find a change with `added`
+         * attribute from `diff1`
+         */
         const addedChangeIndex = addedChangesList.findIndex(
           (item) => item.value === newChange.value
         );
         if (addedChangeIndex !== -1) {
-          result.push(newChange);
+          /**
+           * if we can find a valid item in `diff1`, and next change in `diff2` has `added` attribute,
+           * it means that the scaffold want to remove current file's corresponding content and add new
+           * content to it, which leads to an incoming conflict
+           */
+          if (newChanges[0].added) {
+            conflicts = true;
+            const block: MergeBlock = {
+              status: 'CONFLICT',
+              values: {
+                former: [newChange.value],
+                current: [],
+              },
+            };
+            resultBlocks.push(block);
+          } else {
+            /**
+             * if `diff2`'s last block has status `CONFLICT`, then create a new block with status `OK`
+             */
+            if (!lastResultBlock || lastResultBlock.status === 'CONFLICT') {
+              const block: MergeBlock = {
+                status: 'OK',
+                values: {
+                  former: [],
+                  current: [newChange.value],
+                },
+              };
+              resultBlocks.push(block);
+            }
+          }
+          /**
+           * finally, remove the change from `diff1`'s added changes list, in order to avoid mismatch by
+           * changes after current change
+           */
           addedChangesList.splice(addedChangeIndex, 1);
         }
       }
-      /**
-       * for each added change in `newChanges`
-       * if there is not a same value in `removedChangesList`, which means current change is not
-       * redundant, that is, this change should be applied to the result
-       * so we should push it to `result`
-       * if we find an item with the same value in `removedChangesList`, we should not push current
-       * change to `result`, but delete the item from `removedChangesList`
-       */
     } else if (newChange.added) {
       /**
-       * if `removedChangesList` is empty, it means that all added changes from new text should
-       * be applied to the result
+       * if there is not items in `resultBlocks`, Dollie will create a new block and push it into `resultBlocks`
        */
-      if (removedChangesList.length === 0) {
-        result.push(newChange);
-      } else {
-        const removedChangeIndex = removedChangesList.findIndex(
-          (item) => item.value === newChange.value
-        );
-        if (removedChangeIndex === -1) {
-          result.push(newChange);
-        } else {
-          removedChangesList.splice(removedChangeIndex, 1);
-        }
+      if (!lastResultBlock) {
+        const block: MergeBlock = {
+          status: 'OK',
+          values: {
+            former: [],
+            current: [newChange.value],
+          },
+        };
+        resultBlocks.push(block);
+        continue;
       }
       /**
-       * if current change has neither `removed` nor `added` flag, it means the change is the same
-       * both in current text and new text
-       * so we should push it to `result`
+       * if we can find a removed item in `diff1`'s removed changes, we should remove it from list
        */
+      const removedChangeIndex = removedChangesList.findIndex(
+        (item) => item.value === newChange.value
+      );
+      if (removedChangeIndex !== -1) {
+        removedChangesList.splice(removedChangeIndex, 1);
+      }
+      /**
+       * if last item of `resultBlocks` has status `CONFLICT`, Dollie will consider current change as a conflicted
+       * one, so just push the value of current change to `values.current` of last item of blocks
+       */
+      if (lastResultBlock.status === 'CONFLICT') {
+        lastResultBlock.values.current.push(newChange.value);
+        continue;
+      }
+      /**
+       * if not, just find a change with the same value from removed changes list of `diff1`, if there is not an
+       * appropriate change, just push it into last item of `resultBlocks`
+       */
+      if (removedChangesList.length === 0 || removedChangeIndex === -1) {
+        lastResultBlock.values.current.push(newChange.value);
+        continue;
+      }
     } else {
-      result.push(newChange);
+      /**
+       * if current change is a normal change, just add its value to last block item, however, if last block item
+       * has status `CONFLICT` or does not exist, we should create a new block with status `OK` and push the value
+       * of current change to its `values.current`
+       */
+      if (!lastResultBlock || lastResultBlock.status !== 'OK') {
+        const block: MergeBlock = {
+          status: 'OK',
+          values: {
+            former: [],
+            current: [newChange.value],
+          },
+        };
+        resultBlocks.push(block);
+      } else {
+        lastResultBlock.values.current.push(newChange.value);
+      }
     }
   }
-  return result;
+
+  return {
+    conflicts,
+    blocks: resultBlocks,
+    text: stringifyBlocks(resultBlocks),
+  };
+};
+
+/**
+ * parse file blocks with conflict flags
+ * @param blocks Array<MergeBlock>
+ * @returns string
+ */
+const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
+  const text = blocks.reduce((result, currentBlock) => {
+    if (currentBlock.status === 'OK') {
+      return `${result}${currentBlock.values.current.join('')}`;
+    } else {
+      return (
+        result +
+        '<<<<<<< former\n' +
+        currentBlock.values.former.join('') +
+        '=======\n' +
+        currentBlock.values.current.join('') +
+        '>>>>>>> current\n'
+      );
+    }
+  }, '');
+  return text;
 };
 
 /**
  * parse scaffold tree, temp files of each scaffold and user's scaffold configuration
  * and return an appropriate file action strategy
  * @param scaffold DollieScaffold
- * @param tempPath string
  * @param destinationPath string
  * @param relativePathname string
  * @param fs typeof Generator.prototype.fs
@@ -131,7 +289,6 @@ const merge = (currentChanges: Change[], newChanges: Change[]): Change[] => {
  */
 const checkFileAction = (
   scaffold: DollieScaffold,
-  tempPath: string,
   destinationPath: string,
   relativePathname: string,
   mergeTable: Record<string, string>,
@@ -158,11 +315,7 @@ const checkFileAction = (
    * return `NIL` instead
    */
   if (!scaffoldFilesConfig) {
-    if (destFileExistence) {
-      return 'DIRECT';
-    } else {
-      return 'NIL';
-    }
+    return destFileExistence ? 'DIRECT' : 'NIL';
   }
 
   const mergeConfig = _.get(scaffold.configuration, 'files.merge') || [];
@@ -197,4 +350,4 @@ const checkFileAction = (
   return destFileExistence ? 'DIRECT' : 'NIL';
 };
 
-export { diff, merge, checkFileAction };
+export { diff, merge, checkFileAction, stringifyBlocks };

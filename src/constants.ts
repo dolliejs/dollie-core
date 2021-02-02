@@ -59,4 +59,5 @@ export const APP_SCAFFOLD_NAMESPACE = `${APP_NAME}js`;
 export const APP_COMPOSE_CONFIG_MAP = {
   dollie_scaffold_config: 'dollieScaffoldConfig',
   scaffold_name: 'scaffoldName',
+  conflict_keeps_table: 'keepsTable',
 };

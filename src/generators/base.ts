@@ -18,11 +18,17 @@ import Generator from 'yeoman-generator';
 import figlet from 'figlet';
 import fs from 'fs-extra';
 import _ from 'lodash';
+import chalk from 'chalk';
 import { execSync } from 'child_process';
-import { recursivelyRemove, recursivelyWrite, getComposedArrayValue, recursivelyCopyToDestination } from '../utils/generator';
+import {
+  recursivelyRemove,
+  recursivelyWrite,
+  getComposedArrayValue,
+  recursivelyCopyToDestination,
+} from '../utils/generator';
 import readJson from '../utils/read-json';
 import { HOME_DIR, CACHE_DIR, TEMP_DIR } from '../constants';
-import { DollieScaffold } from '../interfaces';
+import { DollieScaffold, MergeConflictRecord } from '../interfaces';
 
 class DollieGeneratorBase extends Generator {
   /**
@@ -45,6 +51,13 @@ class DollieGeneratorBase extends Generator {
    * that is `config.files.merge`
    */
   public mergeTable: Record<string, string> = {};
+  /**
+   * saves all the conflicts in this array.
+   * when a file from destination dir is written by more than two scaffold,
+   * there might become some conflicts. Dollie uses Myers diff and 3-merge algorithm
+   * inspired by Git to save the conflict files during writing files
+   */
+  public conflicts: Array<MergeConflictRecord> = [];
   /**
    * the nested tree structure of all scaffolds used during one lifecycle
    * the main scaffold is on the top level, which is supposed to be unique
@@ -107,6 +120,12 @@ class DollieGeneratorBase extends Generator {
       recursivelyWrite(this.scaffold, this);
       recursivelyCopyToDestination(this.scaffold, this);
       this.fs.delete(path.resolve(this.appTempPath));
+
+      const deletions = getComposedArrayValue<string>(this.scaffold, 'files.delete');
+      const conflicts = this.conflicts.filter(
+        (conflict) => deletions.indexOf(conflict.pathname) === -1
+      );
+      this.conflicts = conflicts;
     } catch (e) {
       this.log.error(e.message || e.toString());
       process.exit(1);
@@ -114,6 +133,9 @@ class DollieGeneratorBase extends Generator {
   }
 
   install() {
+    if (this.conflicts.length > 0) {
+      return;
+    }
     /**
      * define installers map
      * only support npm, yarn and bower currently
@@ -202,12 +224,31 @@ class DollieGeneratorBase extends Generator {
               remove: (pathname: string) => {
                 return fs.removeSync(pathname);
               },
+              write: (pathname: string, content: string) => {
+                return fs.writeFileSync(pathname, content, { encoding: 'utf-8' });
+              },
             },
+            scaffold: this.scaffold,
           });
         }
       } catch (e) {
         this.log.error(e.message || e.toString());
       }
+    }
+
+    if (this.conflicts.length > 0) {
+      this.log(
+        'There ' +
+        (this.conflicts.length === 1 ? 'is' : 'are') +
+        ' still ' + this.conflicts.length +
+        ' file' + (this.conflicts.length == 1 ? ' ' : 's ') +
+        'contains several conflicts:'
+      );
+      this.conflicts.forEach((conflict) => {
+        if (deletions.indexOf(conflict.pathname) === -1) {
+          this.log(chalk.yellow(`\t- ${conflict.pathname}`));
+        }
+      });
     }
   }
 }

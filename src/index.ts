@@ -1,13 +1,18 @@
 import downloadGitRepo from './utils/download';
 import readJson from './utils/read-json';
 import traverse from './utils/traverse';
-import { parseScaffoldName, parseExtendScaffoldName } from './utils/scaffold';
+import {
+  parseScaffoldName,
+  parseExtendScaffoldName,
+  checkConflictBlockCount,
+  solveConflicts,
+} from './utils/scaffold';
 import {
   getComposedArrayValue,
   getExtendedPropsFromParentScaffold,
 } from './utils/generator';
 import { parseComposeConfig, stringifyComposeConfig } from './utils/compose';
-import { diff, merge, checkFileAction } from './utils/diff';
+import { diff, merge, checkFileAction, stringifyBlocks } from './utils/diff';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
 import {
@@ -17,6 +22,11 @@ import {
   DollieScaffoldConfiguration,
   DollieScaffoldNameParser,
   FileAction,
+  MergeResult,
+  MergeBlock,
+  MergeConflictRecord,
+  ConflictKeepsTable,
+  ComposedConflictKeepsTable,
 } from './interfaces';
 import {
   APP_NAME,
@@ -45,6 +55,9 @@ export {
   diff,
   merge,
   checkFileAction,
+  stringifyBlocks,
+  checkConflictBlockCount,
+  solveConflicts,
   // classes
   DollieInteractiveGenerator,
   DollieComposeGenerator,
@@ -54,6 +67,11 @@ export {
   DollieScaffold,
   DollieScaffoldBaseProps,
   DollieScaffoldNameParser,
+  MergeResult,
+  MergeBlock,
+  MergeConflictRecord,
+  ConflictKeepsTable,
+  ComposedConflictKeepsTable,
   FileAction,
   // constants
   APP_NAME,
@@ -81,6 +99,9 @@ export default {
   diff,
   merge,
   checkFileAction,
+  stringifyBlocks,
+  checkConflictBlockCount,
+  solveConflicts,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
   APP_NAME,

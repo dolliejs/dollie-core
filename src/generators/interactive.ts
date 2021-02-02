@@ -5,10 +5,11 @@
 
 import { Questions } from 'yeoman-generator';
 import { v4 as uuid } from 'uuid';
-import { parseScaffoldName } from '../utils/scaffold';
+import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
 import { parseScaffolds } from '../utils/generator';
 import DollieGeneratorBase from './base';
-import { DollieScaffold, DollieScaffoldProps } from '../interfaces';
+import { ConflictKeepsTable, DollieScaffold, DollieScaffoldProps } from '../interfaces';
+import { stringifyBlocks } from '../utils/diff';
 
 class DollieInteractiveGenerator extends DollieGeneratorBase {
   initializing() {
@@ -64,6 +65,44 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
 
   async writing() {
     await super.writing.call(this);
+    if (this.conflicts.length === 0) { return; }
+
+    const keepsTable: ConflictKeepsTable = {};
+
+    for (const conflict of this.conflicts) {
+      if (!keepsTable[conflict.pathname]) {
+        keepsTable[conflict.pathname] = [];
+      }
+      const conflictBlocks = conflict.blocks.filter((blocks) => blocks.status === 'CONFLICT');
+      for (const [index, block] of conflictBlocks.entries()) {
+        const { keeps } = (await this.prompt([
+          {
+            type: 'checkbox',
+            name: 'keeps',
+            message: `Solving conflicts in ${conflict.pathname} (${index + 1}/${conflictBlocks.length}):`,
+            choices: ['former', 'current'].reduce((result, currentKey) => {
+              const choices = (block.values[currentKey] as Array<string> || []).map((value, index) => {
+                return {
+                  name: `[${currentKey}] ${value.trim()}`,
+                  value: `${currentKey}#${index}`,
+                };
+              });
+              return result.concat(choices);
+            }, []),
+          },
+        ])) as { keeps: Array<string> };
+        keepsTable[conflict.pathname].push(keeps);
+      }
+    }
+
+    const solvedConflicts = solveConflicts(this.conflicts, keepsTable);
+    this.conflicts = solvedConflicts.ignored || [];
+
+    const files = [...solvedConflicts.result, ... solvedConflicts.ignored];
+    for (const file of files) {
+      this.fs.delete(file.pathname);
+      this.fs.write(file.pathname, stringifyBlocks(file.blocks));
+    }
   }
 
   install() {

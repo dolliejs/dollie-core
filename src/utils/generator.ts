@@ -3,13 +3,13 @@ import fs from 'fs-extra';
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
 import DollieBaseGenerator from '../generators/base';
-import traverse from '../utils/traverse';
-import download from '../utils/download';
-import { diff, merge, checkFileAction } from '../utils/diff';
-import { parseExtendScaffoldName } from '../utils/scaffold';
+import traverse from './traverse';
+import download from './download';
+import { diff, merge, checkFileAction } from './diff';
+import { parseExtendScaffoldName } from './scaffold';
+import readJson from './read-json';
 import { TRAVERSE_IGNORE_REGEXP, DEPENDENCY_KEY_REGEXP } from '../constants';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
-import readJson from './read-json';
 
 /**
  * get extended props from parent scaffold
@@ -148,7 +148,6 @@ export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: 
      */
     const action = checkFileAction(
       scaffold,
-      context.appTempPath,
       context.destinationRoot(),
       relativePathname,
       context.mergeTable,
@@ -181,6 +180,7 @@ export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: 
        * 5. diff `content1` and `content3` as `diff2`
        * 6. merge with `diff1` and `diff2` as `result`
        * 7. write `result` into destination file
+       * 8. if merge result becomes a conflict, then add current file and its blocks into `context.conflicts`
        */
       case 'MERGE': {
         const mergeTableContent = context.mergeTable[relativePathname];
@@ -192,7 +192,17 @@ export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: 
         const currentDiffTable = diff(mergeTableContent, currentFileContent);
         const newDiffTable = diff(currentFileContent, currentTempFileContent);
         const result = merge(currentDiffTable, newDiffTable);
-        context.fs.write(currentDestFilePath, result.map((item) => item.value).join(''));
+        context.fs.write(currentDestFilePath, result.text);
+        if (result.conflicts) {
+          const recordIndex = context.conflicts.findIndex(
+            (conflict) => conflict.pathname === relativePathname
+          );
+          if (recordIndex === -1) {
+            context.conflicts.push({ pathname: relativePathname, blocks: result.blocks });
+          } else {
+            context.conflicts[recordIndex].blocks = result.blocks;
+          }
+        }
         break;
       }
       /**

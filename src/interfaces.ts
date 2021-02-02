@@ -37,3 +37,29 @@ export interface DollieScaffold {
 export type DollieScaffoldNameParser = (name: string) => string;
 
 export type FileAction = 'DIRECT' | 'MERGE' | 'NIL';
+
+export interface MergeBlock {
+  status: 'OK' | 'CONFLICT';
+  values: {
+    former: Array<string>,
+    current: Array<string>,
+  };
+  ignored?: boolean;
+}
+
+export interface MergeResult {
+  conflicts: boolean;
+  blocks: MergeBlock[];
+  text: string;
+}
+
+export interface MergeConflictRecord {
+  pathname: string;
+  blocks: MergeBlock[];
+}
+
+export type ConflictKeepsTable = Record<string, Array<Array<string>>>;
+export type ComposedConflictKeepsTable = Record<
+  string,
+  Array<{ former?: Array<number | string>, current?: Array<number | string> }>
+>;
