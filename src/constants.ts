@@ -17,10 +17,25 @@ export const HOME_DIR = os.homedir();
  */
 export const CACHE_DIR = `.${APP_NAME}/cache`;
 /**
+ * the directory to save scaffold contents
+ * it is a relative path with `HOME_DIR`, used by:
+ * - `src/generator/base.ts`
+ */
+export const TEMP_DIR = `.${APP_NAME}/temp`;
+/**
  * the ignore pattern when traversing files to copy, used by:
  * - `src/utils/generators`
  */
-export const TRAVERSE_IGNORE_REGEXP = /^((?!(\.dollie\.json)).)+$/;
+export const TRAVERSE_IGNORE_REGEXP = new RegExp('^.dollie.(js|json)$');
+/**
+ * a config name if current name is related to another scaffold
+ *
+ * @example
+ * `$DEPENDS_ON$` -> true
+ * `$DEPENDS_ON` -> false
+ * `$depends_on$` -> false
+ */
+export const DEPENDS_ON_KEY = '$DEPENDS_ON$';
 /**
  * scaffold prefix for `createParser`, used by:
  * - `src/utils/scaffold.ts`
@@ -44,4 +59,5 @@ export const APP_SCAFFOLD_NAMESPACE = `${APP_NAME}js`;
 export const APP_COMPOSE_CONFIG_MAP = {
   dollie_scaffold_config: 'dollieScaffoldConfig',
   scaffold_name: 'scaffoldName',
+  conflict_keeps_table: 'keepsTable',
 };

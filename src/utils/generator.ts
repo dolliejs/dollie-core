@@ -3,12 +3,36 @@ import fs from 'fs-extra';
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
 import DollieBaseGenerator from '../generators/base';
-import traverse from '../utils/traverse';
-import download from '../utils/download';
-import readJson from '../utils/read-json';
-import { parseExtendScaffoldName } from '../utils/scaffold';
-import { TRAVERSE_IGNORE_REGEXP } from '../constants';
+import traverse from './traverse';
+import download from './download';
+import { diff, merge, checkFileAction } from './diff';
+import { parseExtendScaffoldName } from './scaffold';
+import readJson from './read-json';
+import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY } from '../constants';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
+
+/**
+ * get extended props from parent scaffold
+ * @param scaffold DollieScaffold
+ * @returns object
+ */
+export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Record<string, any> => {
+  if (!scaffold.parent) {
+    return {};
+  }
+  const extendedPropKeys = scaffold?.configuration?.extendProps || [];
+  const parentScaffold = scaffold.parent;
+  if (extendedPropKeys.length > 0) {
+    return extendedPropKeys.reduce((result, currentKey) => {
+      const currentValue = parentScaffold.props[currentKey];
+      if (currentValue) {
+        result[currentKey] = currentValue;
+      }
+      return result;
+    }, {});
+  }
+  return {};
+};
 
 /**
  * write file to destination recursively
@@ -18,7 +42,7 @@ import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from
  * gives a scaffold configuration with tree data structure
  * and traverse all of the nodes in this tree recursively and process them
  * with `Generator#fs#copyTpl` and `Generator#fs#copy`
- * it will ignore `.dollie.json`, and inject props into the files
+ * it will ignore `.dollie.js`, and inject props into the files
  * which contain `__template.` as their filename at the beginning
  */
 export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
@@ -27,51 +51,38 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
    * `scaffold.uuid` is the UUID for current scaffold, e.g. 3f74b271-04ac-4e7b-a5c1-b24894c529d2
    *
    * @example
-   * the `scaffoldDir` would probably be $HOME/.dollie/cache/3f74b271-04ac-4e7b-a5c1-b24894c529d2
+   * the `scaffoldSourceDir` would probably be $HOME/.dollie/cache/3f74b271-04ac-4e7b-a5c1-b24894c529d2
    */
-  const scaffoldDir = path.resolve(context.appBasePath, scaffold.uuid);
+  const scaffoldSourceDir = path.resolve(context.appBasePath, scaffold.uuid);
+  const destinationDir = path.resolve(context.appTempPath, scaffold.uuid);
 
   /**
    * invoke `traverse` function in `src/utils/traverse.ts`, set the ignore pattern
-   * to avoid copying `.dollie.json` to destination path.
+   * to avoid copying `.dollie.js` to temporary dir
    */
-  traverse(path.resolve(scaffoldDir), TRAVERSE_IGNORE_REGEXP, (pathname: string, entity: string) => {
+  traverse(path.resolve(scaffoldSourceDir), TRAVERSE_IGNORE_REGEXP, (pathname: string, entity: string) => {
     /**
-     * `pathname` is an absolute pathname of file against `scaffoldDir` as above
+     * `pathname` is an absolute pathname of file against `scaffoldSourceDir` as above
      * we should get the relate pathname to concat with destination pathname
      *
      * @example
      * if a `pathname` equals to `/home/lenconda/.dollie/cache/3f74b271-04ac-4e7b-a5c1-b24894c529d2/src/index.js`
      * the `relativePath` would become as `src/index.js`
      */
-    const relativePath = path.relative(scaffoldDir, pathname);
+    const relativePath = entity.startsWith('__template.')
+      ? `${path.relative(scaffoldSourceDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`
+      : path.relative(scaffoldSourceDir, pathname);
+    const destinationPathname = path.resolve(destinationDir, relativePath);
 
-    /**
-     * match the files with `__template.`, which means it is a scaffold file
-     * so we should invoke this.fs.copyTpl to inject the props into that file
-     */
     if (entity.startsWith('__template.')) {
-      const extendedPropKeys = scaffold?.configuration?.extendProps || [];
-      let extendedProps = {};
-      if (extendedPropKeys.length > 0 && scaffold?.parent) {
-        extendedProps = _.merge(extendedPropKeys.reduce((result, currentKey) => {
-          const currentValue = scaffold.parent.props[currentKey];
-          if (currentValue) {
-            result[currentKey] = currentValue;
-          }
-          return result;
-        }, {}), scaffold.props);
-      } else {
-        extendedProps = scaffold?.props || {};
-      }
       context.fs.copyTpl(
         pathname,
-        context.destinationPath(`${relativePath.slice(0, 0 - entity.length)}${entity.slice(11)}`),
-        extendedProps
+        destinationPathname,
+        scaffold.props || {}
       );
     } else {
       // otherwise, we should also copy the file, but just simple this.fs.copy
-      context.fs.copy(pathname, context.destinationPath(relativePath));
+      context.fs.copy(pathname, destinationPathname);
     }
   });
 
@@ -81,6 +92,136 @@ export const recursivelyWrite = (scaffold: DollieScaffold, context: DollieBaseGe
    */
   for (const dependence of scaffold.dependencies) {
     recursivelyWrite(dependence, context);
+  }
+};
+
+/**
+ * copy and write files from temporary source
+ * @param scaffold DollieScaffold
+ * @param context DollieBaseGenerator
+ *
+ * once `recursivelyWrite` is finished, which means Dollie has written all files
+ * into the temporary dirs, then `recursivelyCopyToDestination` will be invoked to read
+ * the files from each file in each temporary dir and use an appropriate action to write
+ * the file content into destination dir
+ */
+export const recursivelyCopyToDestination = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+  /**
+   * it is mentioned as above
+   * the dir storing all of the scaffold content on the physical file system
+   */
+  const scaffoldSourceDir = path.resolve(context.appBasePath, scaffold.uuid);
+  /**
+   * the temporary dir on mem-fs for containing generated files with props
+   *
+   * @default
+   * $HOME/.dollie/temp/$UUID
+   */
+  const scaffoldTempDir = path.resolve(context.appTempPath, scaffold.uuid);
+
+  /**
+   * invoke `traverse` function in `src/utils/traverse.ts`
+   * set the ignore pattern to avoid reading `.dollie.js` from temporary dir
+   * we still traverse from `scaffoldSourceDir` because it is the only way to
+   * get the folder structure from each nested scaffold
+   */
+  traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP, (pathname: string, entity: string) => {
+    /**
+     * get the relative path with the start dir of current scaffold's temporary dir
+     * still need get rid of `__template.` at the beginning of each file's filename
+     */
+    const relativePathname = entity.startsWith('__template.')
+      ? `${path.relative(scaffoldSourceDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`
+      : path.relative(scaffoldSourceDir, pathname);
+    /**
+     * destination dir, into where Dollie will write the ultimate files
+     *
+     * @default
+     * process.cwd() + $PROJECT_NAME
+     */
+    const destinationPathname = context.destinationPath(relativePathname);
+    /**
+     * get the action from relations as below:
+     * 1. parent scaffold's file content with the same name
+     * 2. file content in destination dir on mem-fs which has the same name as current one
+     * 3. current file that will be written into destination dir
+     */
+    const action = checkFileAction(
+      scaffold,
+      context.destinationRoot(),
+      relativePathname,
+      context.mergeTable,
+      context.fs
+    );
+    /**
+     * read current file from temporary dir on mem-fs
+     */
+    const currentTempFileContent = context.fs.read(path.resolve(scaffoldTempDir, relativePathname));
+    switch (action) {
+      /**
+       * if action for current file is `DIRECT`, which means we can directly write
+       * `currentTempFileContent` into destination file without worrying about previous content
+       * besides, we should add current content to `mergeTable` for comparing when this file
+       * will be merged
+       */
+      case 'DIRECT': {
+        context.fs.delete(destinationPathname);
+        context.fs.write(destinationPathname, currentTempFileContent);
+        context.mergeTable[relativePathname] = currentTempFileContent;
+        break;
+      }
+      /**
+       * if action for current file is `MERGE`, which means we should take previous content
+       * into concern, so Dollie will do these things:
+       * 1. read the content text from `context.mergeTable` by the same filename as `content1`
+       * 2. read current file content from destination dir as `content2`
+       * 3. read current file content from current scaffold's temp dir as `content3`
+       * 4. diff `content1` and `content2` as `diff1`
+       * 5. diff `content1` and `content3` as `diff2`
+       * 6. merge with `diff1` and `diff2` as `result`
+       * 7. write `result` into destination file
+       * 8. if merge result becomes a conflict, then add current file and its blocks into `context.conflicts`
+       */
+      case 'MERGE': {
+        const mergeTableContent = context.mergeTable[relativePathname];
+        if (!mergeTableContent) {
+          break;
+        }
+        const currentDestFilePath = context.destinationPath(relativePathname);
+        const currentFileContent = context.fs.read(currentDestFilePath);
+        const currentDiffTable = diff(mergeTableContent, currentFileContent);
+        const newDiffTable = diff(currentFileContent, currentTempFileContent);
+        const result = merge(currentDiffTable, newDiffTable);
+        context.fs.write(currentDestFilePath, result.text);
+        if (result.conflicts) {
+          const recordIndex = context.conflicts.findIndex(
+            (conflict) => conflict.pathname === relativePathname
+          );
+          if (recordIndex === -1) {
+            context.conflicts.push({ pathname: relativePathname, blocks: result.blocks });
+          } else {
+            context.conflicts[recordIndex].blocks = result.blocks;
+          }
+        }
+        break;
+      }
+      /**
+       * if action for current file is `NIL`, which means we should not take any action with
+       * current file content and destination file, even if creating and overwriting, just do nothing
+       */
+      case 'NIL':
+        break;
+      default:
+        break;
+    }
+  });
+
+  /**
+   * if there are dependencies in current scaffold, then we should traverse the array
+   * and call `recursivelyCopyToDestination` to process array items
+   */
+  for (const dependence of scaffold.dependencies) {
+    recursivelyCopyToDestination(dependence, context);
   }
 };
 
@@ -101,6 +242,7 @@ export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieBaseG
    * current scaffold.
    */
   fs.removeSync(path.resolve(context.appBasePath, scaffold.uuid));
+  fs.removeSync(path.resolve(context.appTempPath, scaffold.uuid));
   /**
    * if there are dependencies depended by current scaffold, we should traverse
    * and invoke `recursivelyRemove` recursively to deal with them
@@ -154,13 +296,24 @@ export const parseScaffolds = async (
   const duration = await download(githubRepositoryId, scaffoldDir);
   context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
   context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
-  const customScaffoldConfiguration: DollieScaffoldConfiguration =
-    /**
-     * after downloading scaffold, then we should read `.dollie.json` from its
-     * local template directory if it exist
-     */
+  let customScaffoldConfiguration: DollieScaffoldConfiguration = { questions: [] };
+  const dollieJsConfigPathname = path.resolve(scaffoldDir, '.dollie.js');
+  const dollieJsonConfigPathname = path.resolve(scaffoldDir, '.dollie.json');
+  /**
+   * after downloading scaffold, then we should read `.dollie.js` from its
+   * local template directory if it exist
+   */
+  if (fs.existsSync(dollieJsConfigPathname)) {
     // eslint-disable-next-line prettier/prettier
-    (readJson(path.resolve(scaffoldDir, '.dollie.json')) || {}) as DollieScaffoldConfiguration;
+    customScaffoldConfiguration = require(dollieJsConfigPathname) || {} as DollieScaffoldConfiguration;
+  } else {
+    if (fs.existsSync(dollieJsonConfigPathname)) {
+      // eslint-disable-next-line prettier/prettier
+      customScaffoldConfiguration = (readJson(dollieJsonConfigPathname) || {}) as DollieScaffoldConfiguration;
+    } else {
+      customScaffoldConfiguration = { questions: [] };
+    }
+  }
   /**
    * set default configuration to merge with current scaffold's configuration
    */
@@ -178,7 +331,7 @@ export const parseScaffolds = async (
   /**
    * users can determine whether their scaffolds should use Yeoman's installers or not
    * if do not want to execute any installer, then set the `installers` option as `[]`
-   * in .dollie.json
+   * in .dollie.js
    * Currently, installers from Yeoman could be `npm`, `bower` and `yarn`
    */
   if (
@@ -190,7 +343,7 @@ export const parseScaffolds = async (
   }
 
   /**
-   * if there is not an `installer` option in .dollie.json, we should set the default value
+   * if there is not an `installer` option in .dollie.js, we should set the default value
    * as `["npm"]` to configuration
    */
   if (!customScaffoldConfiguration.installers) {
@@ -200,6 +353,16 @@ export const parseScaffolds = async (
   if (!customScaffoldConfiguration.questions) {
     scaffoldConfiguration.questions = [];
   }
+
+  scaffoldConfiguration.questions = scaffoldConfiguration.questions.map((question) => {
+    if (question.name === DEPENDS_ON_KEY) {
+      return {
+        ...question,
+        name: context.createDependencyKey(),
+      };
+    }
+    return question;
+  });
 
   scaffold.configuration = scaffoldConfiguration;
 
@@ -222,7 +385,8 @@ export const parseScaffolds = async (
         name: context.projectName,
         scaffold: scaffold.scaffoldName,
       },
-      (scaffold.props || {})
+      getExtendedPropsFromParentScaffold(scaffold),
+      scaffold.props
     );
     if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
       for (const dependence of scaffold.dependencies) {
@@ -242,7 +406,7 @@ export const parseScaffolds = async (
   const scaffoldQuestions = scaffoldConfiguration.questions || [];
 
   /**
-   * if there is a questions param available in .dollie.json, then we should
+   * if there is a questions param available in .dollie.js, then we should
    * put the questions and make prompts to users to get the answers
    * this answers will be assigned to `scaffold.props`
    */
@@ -255,20 +419,28 @@ export const parseScaffolds = async (
    * assign to `scaffold.props`
    */
   const resultProps = _.merge({ name: context.projectName }, scaffoldProps);
-  const dependenceKeyRegex = /^\$.*\$$/;
   /**
    * omit those slot question key-value pairs, cause they are only used by `parseScaffolds`
    *
    * @example
    * it will ignore a key-value pair like `{ $CSS_PREPROCESSOR$: 'less' }`
    */
-  scaffold.props = _.omitBy(resultProps, (value, key) => dependenceKeyRegex.test(key)) as DollieScaffoldProps;
+  scaffold.props = _.merge(
+    getExtendedPropsFromParentScaffold(scaffold),
+    _.omitBy(
+      resultProps,
+      (value, key) => context.isDependencyKeyRegistered(key)
+    ) as DollieScaffoldProps,
+  );
 
   /**
    * get the slot question key-value pairs and parse them as dependencies of
    * current scaffold, and put them to `scaffold.dependencies`
    */
-  const dependencies = _.pickBy(resultProps, (value, key) => dependenceKeyRegex.test(key) && value !== 'null');
+  const dependencies = _.pickBy(
+    resultProps,
+    (value, key) => context.isDependencyKeyRegistered(key) && value !== 'null'
+  );
   for (const dependenceKey of Object.keys(dependencies)) {
     const dependenceUuid = uuid();
     const currentDependence: DollieScaffold = {
@@ -290,7 +462,7 @@ export const parseScaffolds = async (
  *
  * since the `scaffold` is a nested structure, and every node could have its own configuration
  * value, but we supposed to get all of the values and make a aggregation (something just like
- * a flatten), for example: `installers`, `deletions`, `endScripts` and so on
+ * a flatten), for example: `installers`, `files.delete`, `endScripts` and so on
  *
  * @example
  * image there is a `scaffold` like:
@@ -311,8 +483,8 @@ export const parseScaffolds = async (
  */
 export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string): Array<T> => {
   let result = scaffold.configuration &&
-    Array.isArray(scaffold.configuration[key]) &&
-    Array.from(scaffold.configuration[key]) || [];
+    Array.isArray(_.get(scaffold.configuration, key)) &&
+    Array.from(_.get(scaffold.configuration, key)) || [];
   scaffold.dependencies && Array.isArray(scaffold.dependencies) &&
     scaffold.dependencies.forEach((dependence) => {
       result = result.concat(getComposedArrayValue(dependence, key));

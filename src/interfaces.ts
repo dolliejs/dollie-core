@@ -10,13 +10,19 @@ export interface DollieScaffoldProps extends DollieScaffoldBaseProps {
   [key: string]: string;
 }
 
+export interface DollieScaffoldFileConfiguration {
+  merge: Array<string>;
+  add: Array<string>;
+  delete?: Array<string>;
+}
+
 export interface DollieScaffoldConfiguration {
   questions: Array<Question<DollieScaffoldProps>>;
   installers?: string[];
   extends?: Record<string, string>;
-  deletions?: Array<string>;
-  endScripts?: Array<string>;
+  endScripts?: Array<Function | string>;
   extendProps?: Array<string>;
+  files?: DollieScaffoldFileConfiguration;
 }
 
 export interface DollieScaffold {
@@ -29,3 +35,31 @@ export interface DollieScaffold {
 }
 
 export type DollieScaffoldNameParser = (name: string) => string;
+
+export type FileAction = 'DIRECT' | 'MERGE' | 'NIL';
+
+export interface MergeBlock {
+  status: 'OK' | 'CONFLICT';
+  values: {
+    former: Array<string>,
+    current: Array<string>,
+  };
+  ignored?: boolean;
+}
+
+export interface MergeResult {
+  conflicts: boolean;
+  blocks: MergeBlock[];
+  text: string;
+}
+
+export interface MergeConflictRecord {
+  pathname: string;
+  blocks: MergeBlock[];
+}
+
+export type ConflictKeepsTable = Record<string, Array<Array<string>>>;
+export type ComposedConflictKeepsTable = Record<
+  string,
+  Array<{ former?: Array<number | string>, current?: Array<number | string> }>
+>;

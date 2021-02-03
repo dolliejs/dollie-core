@@ -1,4 +1,9 @@
-import { DollieScaffoldNameParser } from '../interfaces';
+import {
+  ConflictKeepsTable,
+  DollieScaffoldNameParser,
+  MergeBlock,
+  MergeConflictRecord,
+} from '../interfaces';
 import {
   APP_SCAFFOLD_NAMESPACE,
   APP_SCAFFOLD_PREFIX,
@@ -46,4 +51,114 @@ const createParser = (
 const parseScaffoldName = createParser(APP_SCAFFOLD_PREFIX);
 const parseExtendScaffoldName = createParser(APP_EXTEND_SCAFFOLD_PREFIX);
 
-export { parseScaffoldName, parseExtendScaffoldName };
+/**
+ * check if a pathname in config array or not
+ * @param pathname string
+ * @param configItems string
+ */
+const isPathnameInConfig = (
+  pathname: string,
+  configItems: Array<string>
+): boolean => {
+  for (const item of configItems) {
+    if (item && new RegExp(item).test(pathname)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+/**
+ * check and count the quantity of conflicted blocks in a file
+ * @param blocks Array<MergeBlock>
+ * @returns number
+ */
+const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
+  const validBlocks = blocks.filter((block) => block.status === 'CONFLICT');
+  return validBlocks.length;
+};
+
+/**
+ * solve conflicts for a group of files, and return the solved files and
+ * also the files that still has conflicts
+ * @param conflicts Array<MergeConflictRecord>
+ * @param keepsTable ConflictKeepsTable
+ * @returns object
+ *
+ * since Dollie uses an technique (or algorithm) inspired by three-way merge
+ * (http://www.cis.upenn.edu/~bcpierce/papers/diff3-short.pdf), there would be
+ * three character in every diff:
+ * - BASE: the content of last file write by `DIRECT` action
+ * - THEIRS: the content of current file in the destination dir, we call it as ``
+ */
+const solveConflicts = (
+  conflicts: Array<MergeConflictRecord>,
+  keepsTable: ConflictKeepsTable
+): { result: Array<MergeConflictRecord>, ignored: Array<MergeConflictRecord> } => {
+  const result = [];
+  const ignored = [];
+  const remainedConflicts = Array.from(conflicts);
+  while (
+    remainedConflicts.filter(
+      (conflict) => checkConflictBlockCount(conflict.blocks) > 0
+    ).length !== 0
+  ) {
+    const currentConflictFile = remainedConflicts.shift();
+    const currentBlocks = [];
+    const currentKeepsList = keepsTable[currentConflictFile.pathname] || [];
+
+    if (currentKeepsList.length === 0) {
+      currentConflictFile.blocks = currentConflictFile.blocks.map((block) => {
+        if (block.status === 'CONFLICT') {
+          return { ...block, ignored: true };
+        }
+        return block;
+      });
+      ignored.push(currentConflictFile);
+      continue;
+    }
+
+    let currentCursor = 0;
+
+    for (const block of currentConflictFile.blocks) {
+      if (block.status === 'OK') {
+        currentBlocks.push(block);
+        continue;
+      }
+      const keeps = currentKeepsList[currentCursor] || [];
+      if (keeps.length === 0) {
+        currentBlocks.push({ ...block, ignored: true });
+      } else {
+        const solvedBlock: MergeBlock = {
+          status: 'OK',
+          values: {
+            former: [],
+            current: keeps.reduce((result, currentKey) => {
+              const [key, index] = currentKey.split('#');
+              result.push(block.values[key][index] || '');
+              return result;
+            // eslint-disable-next-line prettier/prettier
+            }, [] as Array<string>),
+          },
+        };
+        currentBlocks.push(solvedBlock);
+      }
+      currentCursor += 1;
+    }
+    currentConflictFile.blocks = currentBlocks;
+    if (checkConflictBlockCount(currentBlocks) > 0) {
+      ignored.push(currentConflictFile);
+    } else {
+      result.push(currentConflictFile);
+    }
+  }
+  return { result, ignored };
+};
+
+export {
+  parseScaffoldName,
+  parseExtendScaffoldName,
+  isPathnameInConfig,
+  checkConflictBlockCount,
+  solveConflicts,
+};
