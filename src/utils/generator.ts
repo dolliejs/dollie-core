@@ -374,6 +374,8 @@ export const parseScaffolds = async (
     scaffold.parent = parentScaffold;
   }
 
+  const projectNameProp = { name: context.projectName };
+
   /**
    * if current mode is `compose` (using `dollie-compose`), then we should not
    * prompt question to users, just resolve the dependencies, invoke `parseScaffolds`
@@ -381,10 +383,7 @@ export const parseScaffolds = async (
    */
   if (isCompose) {
     scaffold.props = _.merge(
-      {
-        name: context.projectName,
-        scaffold: scaffold.scaffoldName,
-      },
+      projectNameProp,
       getExtendedPropsFromParentScaffold(scaffold),
       scaffold.props
     );
@@ -415,20 +414,16 @@ export const parseScaffolds = async (
     : {};
 
   /**
-   * merge default answers and scaffold answers as `resultProps`, and then
-   * assign to `scaffold.props`
-   */
-  const resultProps = _.merge({ name: context.projectName }, scaffoldProps);
-  /**
    * omit those slot question key-value pairs, cause they are only used by `parseScaffolds`
    *
    * @example
    * it will ignore a key-value pair like `{ $CSS_PREPROCESSOR$: 'less' }`
    */
   scaffold.props = _.merge(
+    projectNameProp,
     getExtendedPropsFromParentScaffold(scaffold),
     _.omitBy(
-      resultProps,
+      scaffoldProps,
       (value, key) => context.isDependencyKeyRegistered(key)
     ) as DollieScaffoldProps,
   );
@@ -438,7 +433,7 @@ export const parseScaffolds = async (
    * current scaffold, and put them to `scaffold.dependencies`
    */
   const dependencies = _.pickBy(
-    resultProps,
+    scaffoldProps,
     (value, key) => context.isDependencyKeyRegistered(key) && value !== 'null'
   );
   for (const dependenceKey of Object.keys(dependencies)) {

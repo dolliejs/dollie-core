@@ -1,14 +1,11 @@
 import { Question } from 'yeoman-generator';
 
-export interface DollieScaffoldBaseProps {
-  name: string;
-}
-
-export interface DollieScaffoldProps extends DollieScaffoldBaseProps {
+export interface DollieBasicProps {
   name: string;
   scaffold: string;
-  [key: string]: string;
 }
+
+export type DollieScaffoldProps = Record<string, string>;
 
 export interface DollieScaffoldFileConfiguration {
   merge: Array<string>;
