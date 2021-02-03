@@ -17,7 +17,6 @@ import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
 import {
   DollieScaffold,
-  DollieScaffoldBaseProps,
   DollieScaffoldProps,
   DollieScaffoldConfiguration,
   DollieScaffoldNameParser,
@@ -64,7 +63,6 @@ export {
   DollieScaffoldConfiguration,
   DollieScaffoldProps,
   DollieScaffold,
-  DollieScaffoldBaseProps,
   DollieScaffoldNameParser,
   MergeResult,
   MergeBlock,
