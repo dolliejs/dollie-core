@@ -202,7 +202,8 @@ class DollieGeneratorBase extends Generator {
      * if there are items in `config.files.delete` options, then we should traverse
      * it and remove the items
      */
-    const deletions = getComposedArrayValue<string>(this.scaffold, 'files.delete');
+    const deletions = getComposedArrayValue<string>(this.scaffold, 'files.delete')
+      .filter((deletion) => fs.existsSync(this.destinationPath(deletion)));
     for (const deletion of deletions) {
       if (typeof deletion === 'string') {
         try {
