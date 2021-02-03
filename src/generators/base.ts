@@ -20,6 +20,7 @@ import fs from 'fs-extra';
 import _ from 'lodash';
 import chalk from 'chalk';
 import { execSync } from 'child_process';
+import { v4 as uuidv4 } from 'uuid';
 import {
   recursivelyRemove,
   recursivelyWrite,
@@ -67,6 +68,32 @@ class DollieGeneratorBase extends Generator {
    * the name to be shown as a prompt when CLI is initializing
    */
   protected cliName: string;
+  private dependencyKeys: Array<string> = [];
+
+  /**
+   * create a unique dependency key and push to `this.dependencyKeys`
+   * @returns string
+   */
+  public createDependencyKey(): string {
+    const uuid = uuidv4();
+    const randomString = Math.random().toString(32).slice(2);
+    const key = `$dep_${uuid.split('-').join('')}_${randomString}`;
+    if (this.dependencyKeys.indexOf(key) === -1) {
+      this.dependencyKeys.push(key);
+      return key;
+    } else {
+      return this.createDependencyKey();
+    }
+  }
+
+  /**
+   * check if a key is in the `this.dependencyKeys` or not
+   * @param key string
+   * @returns boolean
+   */
+  public isDependencyKeyRegistered(key: string): boolean {
+    return this.dependencyKeys.indexOf(key) !== -1;
+  }
 
   initializing() {
     this.log(figlet.textSync('DOLLIE'));

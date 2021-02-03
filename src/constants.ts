@@ -28,14 +28,14 @@ export const TEMP_DIR = `.${APP_NAME}/temp`;
  */
 export const TRAVERSE_IGNORE_REGEXP = new RegExp('^.dollie.(js|json)$');
 /**
- * a regexp pattern for testing if current name is related to
- * another scaffold
+ * a config name if current name is related to another scaffold
  *
  * @example
- * `$css_preprocessor$` -> true
- * `$css_preprocessor` -> false
+ * `$DEPENDS_ON$` -> true
+ * `$DEPENDS_ON` -> false
+ * `$depends_on$` -> false
  */
-export const DEPENDENCY_KEY_REGEXP = /^\$.*\$$/;
+export const DEPENDS_ON_KEY = '$DEPENDS_ON$';
 /**
  * scaffold prefix for `createParser`, used by:
  * - `src/utils/scaffold.ts`

@@ -8,7 +8,7 @@ import download from './download';
 import { diff, merge, checkFileAction } from './diff';
 import { parseExtendScaffoldName } from './scaffold';
 import readJson from './read-json';
-import { TRAVERSE_IGNORE_REGEXP, DEPENDENCY_KEY_REGEXP } from '../constants';
+import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY } from '../constants';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
 
 /**
@@ -354,6 +354,16 @@ export const parseScaffolds = async (
     scaffoldConfiguration.questions = [];
   }
 
+  scaffoldConfiguration.questions = scaffoldConfiguration.questions.map((question) => {
+    if (question.name === DEPENDS_ON_KEY) {
+      return {
+        ...question,
+        name: context.createDependencyKey(),
+      };
+    }
+    return question;
+  });
+
   scaffold.configuration = scaffoldConfiguration;
 
   /**
@@ -417,14 +427,20 @@ export const parseScaffolds = async (
    */
   scaffold.props = _.merge(
     getExtendedPropsFromParentScaffold(scaffold),
-    _.omitBy(resultProps, (value, key) => DEPENDENCY_KEY_REGEXP.test(key)) as DollieScaffoldProps,
+    _.omitBy(
+      resultProps,
+      (value, key) => context.isDependencyKeyRegistered(key)
+    ) as DollieScaffoldProps,
   );
 
   /**
    * get the slot question key-value pairs and parse them as dependencies of
    * current scaffold, and put them to `scaffold.dependencies`
    */
-  const dependencies = _.pickBy(resultProps, (value, key) => DEPENDENCY_KEY_REGEXP.test(key) && value !== 'null');
+  const dependencies = _.pickBy(
+    resultProps,
+    (value, key) => context.isDependencyKeyRegistered(key) && value !== 'null'
+  );
   for (const dependenceKey of Object.keys(dependencies)) {
     const dependenceUuid = uuid();
     const currentDependence: DollieScaffold = {
