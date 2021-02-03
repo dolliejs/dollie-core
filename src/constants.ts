@@ -60,4 +60,5 @@ export const APP_COMPOSE_CONFIG_MAP = {
   dollie_scaffold_config: 'dollieScaffoldConfig',
   scaffold_name: 'scaffoldName',
   conflict_keeps_table: 'keepsTable',
+  project_name: 'projectName',
 };

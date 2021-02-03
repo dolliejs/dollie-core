@@ -8,7 +8,7 @@ import { v4 as uuid } from 'uuid';
 import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
 import { parseScaffolds } from '../utils/generator';
 import DollieGeneratorBase from './base';
-import { ConflictKeepsTable, DollieScaffold, DollieScaffoldProps } from '../interfaces';
+import { ConflictKeepsTable, DollieBasicProps, DollieScaffold } from '../interfaces';
 import { stringifyBlocks } from '../utils/diff';
 
 class DollieInteractiveGenerator extends DollieGeneratorBase {
@@ -39,13 +39,14 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
 
       // get props from user's input
       // eslint-disable-next-line prettier/prettier
-      const props = await this.prompt(defaultQuestions) as DollieScaffoldProps;
+      const props = await this.prompt(defaultQuestions) as DollieBasicProps;
 
       if (!props.name || !props.scaffold) {
         this.log.error('There are essential params lost');
       }
 
       this.projectName = props.name;
+
       const scaffold: DollieScaffold = {
         uuid: uuid(),
         scaffoldName: parseScaffoldName(props.scaffold),

@@ -1,7 +1,7 @@
+project_name: project
+
 dollie_scaffold_config:
   scaffold_name: react
-  props:
-    name: project
   dependencies:
     - scaffold_name: react-ts
     - scaffold_name: react-less

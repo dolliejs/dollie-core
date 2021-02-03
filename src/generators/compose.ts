@@ -22,7 +22,7 @@ class DollieComposeGenerator extends DollieGeneratorBase {
       this.log.error('Cannot read configuration for Dollie Compose');
       process.exit(1);
     }
-    const projectName = scaffold?.props?.name;
+    const projectName = _.get(this, 'options.projectName') || '';
     if (!projectName) {
       this.log.error('A value of `string` must be assigned to `name`');
       process.exit(1);
