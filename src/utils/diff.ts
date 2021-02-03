@@ -175,6 +175,8 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
                 },
               };
               resultBlocks.push(block);
+            } else {
+              lastResultBlock.values.current.push(newChange.value);
             }
           }
           /**
