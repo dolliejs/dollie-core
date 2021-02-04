@@ -15,7 +15,7 @@ export interface DollieScaffoldFileConfiguration {
 
 export interface DollieScaffoldConfiguration {
   questions: Array<Question<DollieScaffoldProps>>;
-  installers?: string[];
+  installers?: Array<string>;
   extends?: Record<string, string>;
   endScripts?: Array<Function | string>;
   extendProps?: Array<string>;
@@ -46,13 +46,13 @@ export interface MergeBlock {
 
 export interface MergeResult {
   conflicts: boolean;
-  blocks: MergeBlock[];
+  blocks: Array<MergeBlock>;
   text: string;
 }
 
 export interface MergeConflictRecord {
   pathname: string;
-  blocks: MergeBlock[];
+  blocks: Array<MergeBlock>;
 }
 
 export type ConflictKeepsTable = Record<string, Array<Array<string>>>;

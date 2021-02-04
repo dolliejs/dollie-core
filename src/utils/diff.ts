@@ -1,5 +1,5 @@
 import path from 'path';
-import { diffLines, Change } from 'diff';
+import { Change, diffLines } from 'diff';
 import _ from 'lodash';
 import Generator from 'yeoman-generator';
 import {
@@ -21,7 +21,7 @@ import { isPathnameInConfig } from './scaffold';
  */
 const diff = (originalContent: string, newContent: string): Change[] => {
   const changes = diffLines(originalContent, newContent);
-  const result = changes.reduce((result, currentItem) => {
+  return changes.reduce((result, currentItem) => {
     const lines = (currentItem.value.endsWith('\n')
       ? currentItem.value.slice(0, -1)
       : currentItem.value
@@ -34,8 +34,6 @@ const diff = (originalContent: string, newContent: string): Change[] => {
       .map((item) => _.omit({ ...currentItem, value: `${item}\n` }, 'count'));
     return result.concat(lines);
   }, []);
-
-  return result;
 };
 
 /**
@@ -224,7 +222,6 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
        */
       if (removedChangesList.length === 0 || removedChangeIndex === -1) {
         lastResultBlock.values.current.push(newChange.value);
-        continue;
       }
     } else {
       /**
@@ -260,7 +257,7 @@ const merge = (currentChanges: Change[], newChanges: Change[]): MergeResult => {
  * @returns string
  */
 const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
-  const text = blocks.reduce((result, currentBlock) => {
+  return blocks.reduce((result, currentBlock) => {
     if (currentBlock.status === 'OK') {
       return `${result}${currentBlock.values.current.join('')}`;
     } else {
@@ -274,7 +271,6 @@ const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
       );
     }
   }, '');
-  return text;
 };
 
 /**
@@ -283,6 +279,7 @@ const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
  * @param scaffold DollieScaffold
  * @param destinationPath string
  * @param relativePathname string
+ * @param mergeTable Record<string, string>
  * @param fs typeof Generator.prototype.fs
  *
  * @description `DIRECT` write file to destination pathname directory
@@ -338,7 +335,7 @@ const checkFileAction = (
   /**
    * if current file pathname matches `config.files.add`, which means scaffold's author hope
    * adding this file to destination dir
-   * so Dollie will return `DIRECT` wether there is an existed file in destination dir or not
+   * so Dollie will return `DIRECT` whether there is an existed file in destination dir or not
    */
   if (isPathnameInConfig(relativePathname, addConfig)) {
     return 'DIRECT';

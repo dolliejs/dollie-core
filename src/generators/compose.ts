@@ -40,8 +40,7 @@ class DollieComposeGenerator extends DollieGeneratorBase {
     scaffold.scaffoldName = parseScaffoldName(scaffold.scaffoldName);
     const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
       const result: DollieScaffold = scaffold;
-      const currentUuid = uuid();
-      result.uuid = currentUuid;
+      result.uuid = uuid();
       await parseScaffolds(result, this, null, true);
       return result;
     };
