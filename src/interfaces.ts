@@ -8,8 +8,8 @@ export interface DollieBasicProps {
 export type DollieScaffoldProps = Record<string, string>;
 
 export interface DollieScaffoldFileConfiguration {
-  merge: Array<string>;
-  add: Array<string>;
+  merge?: Array<string>;
+  add?: Array<string>;
   delete?: Array<string>;
 }
 
