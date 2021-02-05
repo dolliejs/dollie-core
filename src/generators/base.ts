@@ -144,14 +144,30 @@ class DollieGeneratorBase extends Generator {
        * invoke `recursiveWrite` function to deal with scaffolds and write
        * scaffold contents into the destination directory
        */
-      recursivelyWrite(this.scaffold, this);
-      recursivelyCopyToDestination(this.scaffold, this);
-      this.fs.delete(path.resolve(this.appTempPath));
+      await recursivelyWrite(this.scaffold, this);
+      await recursivelyCopyToDestination(this.scaffold, this);
 
-      const deletions = getComposedArrayValue<string>(this.scaffold, 'files.delete');
+      /**
+       * if there are items in `config.files.delete` options, then we should traverse
+       * it and remove the items
+       */
+      const deletions = getComposedArrayValue<string>(this.scaffold, 'files.delete')
+        .filter((pathname) => this.fs.exists(this.destinationPath(pathname)));
       this.conflicts = this.conflicts.filter(
         (conflict) => deletions.indexOf(conflict.pathname) === -1
       );
+      for (const deletion of deletions) {
+        if (typeof deletion === 'string') {
+          try {
+            this.log.info(`Deleting scaffold item: ${deletion}`);
+            this.fs.delete(this.destinationPath(deletion));
+          } catch (e) {
+            this.log.error(e.message || e.toString());
+          }
+        }
+      }
+
+      this.fs.delete(path.resolve(this.appTempPath));
     } catch (e) {
       this.log.error(e.message || e.toString());
       process.exit(1);
@@ -196,23 +212,6 @@ class DollieGeneratorBase extends Generator {
      */
     this.log.info('Cleaning scaffold cache...');
     recursivelyRemove(this.scaffold, this);
-
-    /**
-     * if there are items in `config.files.delete` options, then we should traverse
-     * it and remove the items
-     */
-    const deletions = getComposedArrayValue<string>(this.scaffold, 'files.delete')
-      .filter((deletion) => fs.existsSync(this.destinationPath(deletion)));
-    for (const deletion of deletions) {
-      if (typeof deletion === 'string') {
-        try {
-          this.log.info(`Deleting scaffold item: ${deletion}`);
-          fs.removeSync(this.destinationPath(deletion));
-        } catch (e) {
-          this.log.error(e.message || e.toString());
-        }
-      }
-    }
 
     /**
      * if there are items in `config.endScripts` options, then we should traverse
@@ -272,7 +271,7 @@ class DollieGeneratorBase extends Generator {
         'contains several conflicts:'
       );
       this.conflicts.forEach((conflict) => {
-        if (deletions.indexOf(conflict.pathname) === -1) {
+        if (fs.existsSync(this.destinationPath(conflict.pathname))) {
           this.log(chalk.yellow(`\t- ${conflict.pathname}`));
         }
       });
