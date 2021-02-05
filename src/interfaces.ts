@@ -16,7 +16,6 @@ export interface DollieScaffoldFileConfiguration {
 export interface DollieScaffoldConfiguration {
   questions: Array<Question<DollieScaffoldProps>>;
   installers?: Array<string>;
-  extends?: Record<string, string>;
   endScripts?: Array<Function | string>;
   extendProps?: Array<string>;
   files?: DollieScaffoldFileConfiguration;
