@@ -30,11 +30,9 @@ class DollieComposeGenerator extends DollieGeneratorBase {
     this.projectName = projectName;
   }
 
-  default() {
+  async default() {
     super.default.call(this);
-  }
 
-  async writing() {
     // eslint-disable-next-line prettier/prettier
     const scaffold = _.get(this.options, APP_COMPOSE_CONFIG_MAP.dollie_scaffold_config) as DollieScaffold;
     scaffold.scaffoldName = parseScaffoldName(scaffold.scaffoldName);
@@ -46,7 +44,9 @@ class DollieComposeGenerator extends DollieGeneratorBase {
     };
 
     this.scaffold = await createDetailedScaffold(scaffold);
+  }
 
+  async writing() {
     await super.writing.call(this);
 
     if (this.conflicts.length === 0) { return; }
