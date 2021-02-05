@@ -30,24 +30,23 @@ class DollieComposeGenerator extends DollieGeneratorBase {
     this.projectName = projectName;
   }
 
-  default() {
+  async default() {
     super.default.call(this);
-  }
 
-  async writing() {
     // eslint-disable-next-line prettier/prettier
     const scaffold = _.get(this.options, APP_COMPOSE_CONFIG_MAP.dollie_scaffold_config) as DollieScaffold;
     scaffold.scaffoldName = parseScaffoldName(scaffold.scaffoldName);
     const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
       const result: DollieScaffold = scaffold;
-      const currentUuid = uuid();
-      result.uuid = currentUuid;
+      result.uuid = uuid();
       await parseScaffolds(result, this, null, true);
       return result;
     };
 
     this.scaffold = await createDetailedScaffold(scaffold);
+  }
 
+  async writing() {
     await super.writing.call(this);
 
     if (this.conflicts.length === 0) { return; }

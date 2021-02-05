@@ -149,10 +149,9 @@ class DollieGeneratorBase extends Generator {
       this.fs.delete(path.resolve(this.appTempPath));
 
       const deletions = getComposedArrayValue<string>(this.scaffold, 'files.delete');
-      const conflicts = this.conflicts.filter(
+      this.conflicts = this.conflicts.filter(
         (conflict) => deletions.indexOf(conflict.pathname) === -1
       );
-      this.conflicts = conflicts;
     } catch (e) {
       this.log.error(e.message || e.toString());
       process.exit(1);

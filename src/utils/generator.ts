@@ -296,7 +296,7 @@ export const parseScaffolds = async (
   const duration = await download(githubRepositoryId, scaffoldDir);
   context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
   context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
-  let customScaffoldConfiguration: DollieScaffoldConfiguration = { questions: [] };
+  let customScaffoldConfiguration: DollieScaffoldConfiguration;
   const dollieJsConfigPathname = path.resolve(scaffoldDir, '.dollie.js');
   const dollieJsonConfigPathname = path.resolve(scaffoldDir, '.dollie.json');
   /**
@@ -389,8 +389,7 @@ export const parseScaffolds = async (
     );
     if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
       for (const dependence of scaffold.dependencies) {
-        const dependenceUuid = uuid();
-        dependence.uuid = dependenceUuid;
+        dependence.uuid = uuid();
         /**
          * cause current scaffold is a dependency, so we should invoke `parseExtendScaffoldName`
          * to parse the scaffold's name
