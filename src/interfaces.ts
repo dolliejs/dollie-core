@@ -16,7 +16,6 @@ export interface DollieScaffoldFileConfiguration {
 export interface DollieScaffoldConfiguration {
   questions: Array<Question<DollieScaffoldProps>>;
   installers?: Array<string>;
-  extends?: Record<string, string>;
   endScripts?: Array<Function | string>;
   extendProps?: Array<string>;
   files?: DollieScaffoldFileConfiguration;
@@ -60,3 +59,8 @@ export type ComposedConflictKeepsTable = Record<
   string,
   Array<{ former?: Array<number | string>, current?: Array<number | string> }>
 >;
+
+export interface TraverseResultItem {
+  pathname: string;
+  entity: string;
+}
