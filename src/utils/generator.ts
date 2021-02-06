@@ -60,9 +60,10 @@ export const recursivelyWrite = async (scaffold: DollieScaffold, context: Dollie
    * invoke `traverse` function in `src/utils/traverse.ts`, set the ignore pattern
    * to avoid copying `.dollie.js` to temporary dir
    */
-  const data = await traverse(path.resolve(scaffoldSourceDir), TRAVERSE_IGNORE_REGEXP);
-  for (const item of data) {
-    const { pathname, entity } = item;
+  const files = await traverse(path.resolve(scaffoldSourceDir), TRAVERSE_IGNORE_REGEXP);
+
+  for (const file of files) {
+    const { pathname, entity } = file;
     /**
      * `pathname` is an absolute pathname of file against `scaffoldSourceDir` as above
      * we should get the relate pathname to concat with destination pathname
@@ -128,9 +129,9 @@ export const recursivelyCopyToDestination = async (scaffold: DollieScaffold, con
    * get the folder structure from each nested scaffold
    */
 
-  const data = await traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP);
-  for (const item of data) {
-    const { pathname, entity } = item;
+  const files = await traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP);
+  for (const file of files) {
+    const { pathname, entity } = file;
     /**
      * get the relative path with the start dir of current scaffold's temporary dir
      * still need get rid of `__template.` at the beginning of each file's filename
@@ -220,8 +221,6 @@ export const recursivelyCopyToDestination = async (scaffold: DollieScaffold, con
         break;
     }
   }
-  // traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP, (pathname: string, entity: string) => {
-  // });
 
   /**
    * if there are dependencies in current scaffold, then we should traverse the array

@@ -1,11 +1,12 @@
 import fs from 'fs-extra';
 import path from 'path';
+import { TraverseResultItem } from '../interfaces';
 
 /**
  * @author lenconda <i@lenconda.top>
  * @param startPath string
- * @param callback Function
  * @param callbackReg Regexp
+ * @param lastResult Array<TraverseResultItem>
  *
  * traverse a specified directory, and invoke callback when
  * current entity is a file and matches regexp
@@ -15,10 +16,8 @@ const traverse = async (
   startPath: string,
   // a RegExp param, passed to match a file to invoke callback
   callbackReg: RegExp,
-  // callback function
-  // callback?: (pathname: string, entity?: string) => void
-  lastResult?: { pathname: string, entity?: string }[]
-): Promise<{ pathname: string, entity?: string }[]> => {
+  lastResult?: Array<TraverseResultItem>
+): Promise<Array<TraverseResultItem>> => {
   let result = lastResult || [];
   // all the entities for current path, including directories and files
   const currentEntities = fs.readdirSync(startPath);

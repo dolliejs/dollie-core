@@ -59,3 +59,8 @@ export type ComposedConflictKeepsTable = Record<
   string,
   Array<{ former?: Array<number | string>, current?: Array<number | string> }>
 >;
+
+export interface TraverseResultItem {
+  pathname: string;
+  entity: string;
+}

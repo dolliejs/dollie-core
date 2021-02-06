@@ -69,6 +69,9 @@ class DollieGeneratorBase extends Generator {
    * the name to be shown as a prompt when CLI is initializing
    */
   protected cliName: string;
+  /**
+   * keys of dependencies
+   */
   private dependencyKeys: Array<string> = [];
 
   /**
@@ -96,7 +99,11 @@ class DollieGeneratorBase extends Generator {
     return this.dependencyKeys.indexOf(key) !== -1;
   }
 
-  protected checkDeletions(): Array<string> {
+  /**
+   * traverse files in destination dir and get the deletion pathname
+   * @returns Array<string>
+   */
+  private checkDeletions(): Array<string> {
     /**
      * if there are items in `config.files.delete` options, then we should traverse
      * it and remove the items
@@ -110,13 +117,22 @@ class DollieGeneratorBase extends Generator {
     });
   }
 
-  protected checkConflicts(deletions: Array<string>): Array<MergeConflictRecord> {
+  /**
+   * get the conflicts not in the `deletions`
+   * @param deletions Array<string>
+   * @returns Array<MergeConflictRecord>
+   */
+  private checkConflicts(deletions: Array<string>): Array<MergeConflictRecord> {
     return this.conflicts.filter(
       (conflict) => deletions.indexOf(conflict.pathname) === -1
     );
   }
 
-  protected deleteFiles(deletions: Array<string>) {
+  /**
+   * delete files from destination dir in mem-fs before committing
+   * @param deletions Array<string>
+   */
+  private deleteFiles(deletions: Array<string>) {
     for (const deletion of deletions) {
       if (typeof deletion === 'string') {
         try {
@@ -181,6 +197,9 @@ class DollieGeneratorBase extends Generator {
       await recursivelyWrite(this.scaffold, this);
       await recursivelyCopyToDestination(this.scaffold, this);
 
+      const deletions = this.checkDeletions();
+      this.conflicts = this.checkConflicts(deletions);
+      this.deleteFiles(deletions);
       this.fs.delete(path.resolve(this.appTempPath));
     } catch (e) {
       this.log.error(e.message || e.toString());
