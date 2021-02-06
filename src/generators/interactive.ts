@@ -66,6 +66,7 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
 
   async writing() {
     await super.writing.call(this);
+
     if (this.conflicts.length === 0) { return; }
 
     const keepsTable: ConflictKeepsTable = {};
