@@ -66,6 +66,10 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
 
   async writing() {
     await super.writing.call(this);
+
+    const deletions = this.checkDeletions();
+    this.conflicts = this.checkConflicts(deletions);
+
     if (this.conflicts.length === 0) { return; }
 
     const keepsTable: ConflictKeepsTable = {};
@@ -104,6 +108,8 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
       this.fs.delete(file.pathname);
       this.fs.write(file.pathname, stringifyBlocks(file.blocks));
     }
+
+    this.deleteFiles(deletions);
   }
 
   install() {
