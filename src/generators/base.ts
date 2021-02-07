@@ -22,14 +22,15 @@ import chalk from 'chalk';
 import { execSync } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  recursivelyRemove,
-  recursivelyWrite,
+  removeTempFiles,
+  writeTempFiles,
   getComposedArrayValue,
-  recursivelyCopyToDestination,
+  writeCacheTable,
+  writeToDestinationPath,
 } from '../utils/generator';
 import readJson from '../utils/read-json';
 import { HOME_DIR, CACHE_DIR, TEMP_DIR } from '../constants';
-import { DollieScaffold, MergeConflictRecord } from '../interfaces';
+import { CacheTable, DollieScaffold, Conflict } from '../interfaces';
 import { isPathnameInConfig } from '../utils/scaffold';
 
 class DollieGeneratorBase extends Generator {
@@ -52,14 +53,14 @@ class DollieGeneratorBase extends Generator {
    * it is a `(string, string)` tuple, which saves content text of files
    * that is `config.files.merge`
    */
-  public mergeTable: Record<string, string> = {};
+  public cacheTable: CacheTable = {}
   /**
    * saves all the conflicts in this array.
    * when a file from destination dir is written by more than two scaffold,
    * there might become some conflicts. Dollie uses Myers diff and 3-merge algorithm
    * inspired by Git to save the conflict files during writing files
    */
-  public conflicts: Array<MergeConflictRecord> = [];
+  public conflicts: Array<Conflict> = [];
   /**
    * the nested tree structure of all scaffolds used during one lifecycle
    * the main scaffold is on the top level, which is supposed to be unique
@@ -103,26 +104,23 @@ class DollieGeneratorBase extends Generator {
    * traverse files in destination dir and get the deletion pathname
    * @returns Array<string>
    */
-  private checkDeletions(): Array<string> {
+  private getDeletions(): Array<string> {
     /**
      * if there are items in `config.files.delete` options, then we should traverse
      * it and remove the items
      */
     const deletionRegExps = getComposedArrayValue<string>(this.scaffold, 'files.delete');
-    return Object.keys(this.mergeTable).filter((pathname) => {
-      return (
-        isPathnameInConfig(pathname, deletionRegExps) &&
-        this.fs.exists(this.destinationPath(pathname))
-      );
+    return Object.keys(this.cacheTable).filter((pathname) => {
+      return (isPathnameInConfig(pathname, deletionRegExps));
     });
   }
 
   /**
    * get the conflicts not in the `deletions`
    * @param deletions Array<string>
-   * @returns Array<MergeConflictRecord>
+   * @returns Array<Conflict>
    */
-  private checkConflicts(deletions: Array<string>): Array<MergeConflictRecord> {
+  private getConflicts(deletions: Array<string>): Array<Conflict> {
     return this.conflicts.filter(
       (conflict) => deletions.indexOf(conflict.pathname) === -1
     );
@@ -132,15 +130,11 @@ class DollieGeneratorBase extends Generator {
    * delete files from destination dir in mem-fs before committing
    * @param deletions Array<string>
    */
-  private deleteFiles(deletions: Array<string>) {
+  public deleteCachedFiles(deletions: Array<string>) {
     for (const deletion of deletions) {
       if (typeof deletion === 'string') {
-        try {
-          this.log.info(`Deleting scaffold item: ${deletion}`);
-          this.fs.delete(this.destinationPath(deletion));
-        } catch (e) {
-          this.log.error(e.message || e.toString());
-        }
+        this.log.info(`Deleting scaffold item: ${deletion}`);
+        this.cacheTable[deletion] = null;
       }
     }
   }
@@ -194,12 +188,12 @@ class DollieGeneratorBase extends Generator {
        * invoke `recursiveWrite` function to deal with scaffolds and write
        * scaffold contents into the destination directory
        */
-      await recursivelyWrite(this.scaffold, this);
-      await recursivelyCopyToDestination(this.scaffold, this);
-
-      const deletions = this.checkDeletions();
-      this.conflicts = this.checkConflicts(deletions);
-      this.deleteFiles(deletions);
+      await writeTempFiles(this.scaffold, this);
+      await writeCacheTable(this.scaffold, this);
+      const deletions = this.getDeletions();
+      this.conflicts = this.getConflicts(deletions);
+      this.deleteCachedFiles(deletions);
+      writeToDestinationPath(this);
       this.fs.delete(path.resolve(this.appTempPath));
     } catch (e) {
       this.log.error(e.message || e.toString());
@@ -244,7 +238,7 @@ class DollieGeneratorBase extends Generator {
      * it would be cleaned when next generator is initializing
      */
     this.log.info('Cleaning scaffold cache...');
-    recursivelyRemove(this.scaffold, this);
+    removeTempFiles(this.scaffold, this);
 
     /**
      * if there are items in `config.endScripts` options, then we should traverse

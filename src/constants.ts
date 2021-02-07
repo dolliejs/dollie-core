@@ -62,3 +62,4 @@ export const APP_COMPOSE_CONFIG_MAP = {
   conflict_keeps_table: 'keepsTable',
   project_name: 'projectName',
 };
+export const TEMPLATE_FILE_PREFIX = '__template.';

@@ -5,8 +5,8 @@ import _ from 'lodash';
 import DollieBaseGenerator from '../generators/base';
 import traverse from './traverse';
 import download from './download';
-import { diff, merge, checkFileAction } from './diff';
-import { parseExtendScaffoldName } from './scaffold';
+import { diff, checkFileAction, parseDiff, stringifyBlocks, merge } from './diff';
+import { parseExtendScaffoldName, parseFilePathname } from './scaffold';
 import readJson from './read-json';
 import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY } from '../constants';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
@@ -45,7 +45,7 @@ export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Re
  * it will ignore `.dollie.js`, and inject props into the files
  * which contain `__template.` as their filename at the beginning
  */
-export const recursivelyWrite = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
   /**
    * `context.appBasePath` usually is $HOME/.dollie/cache
    * `scaffold.uuid` is the UUID for current scaffold, e.g. 3f74b271-04ac-4e7b-a5c1-b24894c529d2
@@ -72,10 +72,9 @@ export const recursivelyWrite = async (scaffold: DollieScaffold, context: Dollie
      * if a `pathname` equals to `/home/lenconda/.dollie/cache/3f74b271-04ac-4e7b-a5c1-b24894c529d2/src/index.js`
      * the `relativePath` would become as `src/index.js`
      */
-    const relativePath = entity.startsWith('__template.')
-      ? `${path.relative(scaffoldSourceDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`
-      : path.relative(scaffoldSourceDir, pathname);
-    const destinationPathname = path.resolve(destinationDir, relativePath);
+    const absolutePathname = parseFilePathname(pathname);
+    const relativePathname = path.relative(scaffoldSourceDir, absolutePathname);
+    const destinationPathname = path.resolve(destinationDir, relativePathname);
 
     if (entity.startsWith('__template.')) {
       context.fs.copyTpl(
@@ -91,10 +90,10 @@ export const recursivelyWrite = async (scaffold: DollieScaffold, context: Dollie
 
   /**
    * if there are dependencies in current scaffold, then we should traverse the array
-   * and call `recursivelyWrite` to process array items
+   * and call `writeTempFiles` to process array items
    */
   for (const dependence of scaffold.dependencies) {
-    await recursivelyWrite(dependence, context);
+    await writeTempFiles(dependence, context);
   }
 };
 
@@ -103,12 +102,12 @@ export const recursivelyWrite = async (scaffold: DollieScaffold, context: Dollie
  * @param scaffold DollieScaffold
  * @param context DollieBaseGenerator
  *
- * once `recursivelyWrite` is finished, which means Dollie has written all files
- * into the temporary dirs, then `recursivelyCopyToDestination` will be invoked to read
+ * once `writeTempFiles` is finished, which means Dollie has written all files
+ * into the temporary dirs, then `writeCacheTable` will be invoked to read
  * the files from each file in each temporary dir and use an appropriate action to write
  * the file content into destination dir
  */
-export const recursivelyCopyToDestination = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
   /**
    * it is mentioned as above
    * the dir storing all of the scaffold content on the physical file system
@@ -131,38 +130,27 @@ export const recursivelyCopyToDestination = async (scaffold: DollieScaffold, con
 
   const files = await traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP);
   for (const file of files) {
-    const { pathname, entity } = file;
+    const { pathname } = file;
     /**
      * get the relative path with the start dir of current scaffold's temporary dir
      * still need get rid of `__template.` at the beginning of each file's filename
      */
-    const relativePathname = entity.startsWith('__template.')
-      ? `${path.relative(scaffoldSourceDir, pathname).slice(0, 0 - entity.length)}${entity.slice(11)}`
-      : path.relative(scaffoldSourceDir, pathname);
-    /**
-     * destination dir, into where Dollie will write the ultimate files
-     *
-     * @default
-     * process.cwd() + $PROJECT_NAME
-     */
-    const destinationPathname = context.destinationPath(relativePathname);
+
+    const absolutePathname = parseFilePathname(pathname);
+    const relativePathname = path.relative(scaffoldSourceDir, absolutePathname);
     /**
      * get the action from relations as below:
      * 1. parent scaffold's file content with the same name
      * 2. file content in destination dir on mem-fs which has the same name as current one
      * 3. current file that will be written into destination dir
      */
-    const action = checkFileAction(
-      scaffold,
-      context.destinationRoot(),
-      relativePathname,
-      context.mergeTable,
-      context.fs
-    );
+    const action = checkFileAction(scaffold, relativePathname, context.cacheTable);
     /**
      * read current file from temporary dir on mem-fs
      */
-    const currentTempFileContent = context.fs.read(path.resolve(scaffoldTempDir, relativePathname));
+    const currentTempFileContent = context.fs.read(
+      path.resolve(scaffoldTempDir, relativePathname)
+    );
     switch (action) {
       /**
        * if action for current file is `DIRECT`, which means we can directly write
@@ -171,9 +159,10 @@ export const recursivelyCopyToDestination = async (scaffold: DollieScaffold, con
        * will be merged
        */
       case 'DIRECT': {
-        context.fs.delete(destinationPathname);
-        context.fs.write(destinationPathname, currentTempFileContent);
-        context.mergeTable[relativePathname] = currentTempFileContent;
+        if (!context.cacheTable[relativePathname]) {
+          context.cacheTable[relativePathname] = [];
+        }
+        context.cacheTable[relativePathname] = [diff(currentTempFileContent, currentTempFileContent)];
         break;
       }
       /**
@@ -189,26 +178,16 @@ export const recursivelyCopyToDestination = async (scaffold: DollieScaffold, con
        * 8. if merge result becomes a conflict, then add current file and its blocks into `context.conflicts`
        */
       case 'MERGE': {
-        const mergeTableContent = context.mergeTable[relativePathname];
-        if (!mergeTableContent) {
+        const cacheTableItem = context.cacheTable[relativePathname];
+
+        if (!cacheTableItem) {
           break;
         }
-        const currentDestFilePath = context.destinationPath(relativePathname);
-        const currentFileContent = context.fs.read(currentDestFilePath);
-        const currentDiffTable = diff(mergeTableContent, currentFileContent);
-        const newDiffTable = diff(currentFileContent, currentTempFileContent);
-        const result = merge(currentDiffTable, newDiffTable);
-        context.fs.write(currentDestFilePath, result.text);
-        if (result.conflicts) {
-          const recordIndex = context.conflicts.findIndex(
-            (conflict) => conflict.pathname === relativePathname
-          );
-          if (recordIndex === -1) {
-            context.conflicts.push({ pathname: relativePathname, blocks: result.blocks });
-          } else {
-            context.conflicts[recordIndex].blocks = result.blocks;
-          }
-        }
+
+        const originalDiff = cacheTableItem[0];
+        const originalFileContent = stringifyBlocks(parseDiff(originalDiff));
+        cacheTableItem.push(diff(originalFileContent, currentTempFileContent));
+
         break;
       }
       /**
@@ -224,10 +203,32 @@ export const recursivelyCopyToDestination = async (scaffold: DollieScaffold, con
 
   /**
    * if there are dependencies in current scaffold, then we should traverse the array
-   * and call `recursivelyCopyToDestination` to process array items
+   * and call `writeCacheTable` to process array items
    */
   for (const dependence of scaffold.dependencies) {
-    await recursivelyCopyToDestination(dependence, context);
+    await writeCacheTable(dependence, context);
+  }
+};
+
+export const writeToDestinationPath = (context: DollieBaseGenerator) => {
+  for (const pathname of Object.keys(context.cacheTable)) {
+    if (!context.cacheTable[pathname]) { continue; }
+    const currentCachedFile = context.cacheTable[pathname];
+    const destinationFilePathname = context.destinationPath(pathname);
+    let content = '';
+    if (currentCachedFile.length === 1) {
+      content = stringifyBlocks(parseDiff(currentCachedFile[0]));
+    } else {
+      const originalDiff = currentCachedFile[0];
+      const diffs = currentCachedFile.slice(1);
+      const currentMergeBlocks = parseDiff(merge(originalDiff, diffs));
+      if (currentMergeBlocks.filter((block) => block.status === 'CONFLICT').length !== 0) {
+        context.conflicts.push({ pathname, blocks: currentMergeBlocks });
+      }
+      content = stringifyBlocks(currentMergeBlocks);
+    }
+    context.fs.delete(destinationFilePathname);
+    context.fs.write(destinationFilePathname, content);
   }
 };
 
@@ -240,7 +241,7 @@ export const recursivelyCopyToDestination = async (scaffold: DollieScaffold, con
  * and traverse all of the nodes on it and remove the cache paths
  * of them from file system
  */
-export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+export const removeTempFiles = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
   /**
    * remove current scaffold node's cache path
    * `context.appBasePath` and `scaffold.uuid` is mentioned above
@@ -251,7 +252,7 @@ export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieBaseG
   fs.removeSync(path.resolve(context.appTempPath, scaffold.uuid));
   /**
    * if there are dependencies depended by current scaffold, we should traverse
-   * and invoke `recursivelyRemove` recursively to deal with them
+   * and invoke `removeTempFiles` recursively to deal with them
    */
   if (
     scaffold.dependencies &&
@@ -259,8 +260,8 @@ export const recursivelyRemove = (scaffold: DollieScaffold, context: DollieBaseG
     scaffold.dependencies.length > 0
   ) {
     for (const dependence of scaffold.dependencies) {
-      // invoke `recursivelyRemove` to deal with each dependence
-      recursivelyRemove(dependence, context);
+      // invoke `removeTempFiles` to deal with each dependence
+      removeTempFiles(dependence, context);
     }
   }
 };

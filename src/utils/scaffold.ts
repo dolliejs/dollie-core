@@ -1,13 +1,15 @@
+import path from 'path';
 import {
   ConflictKeepsTable,
   DollieScaffoldNameParser,
   MergeBlock,
-  MergeConflictRecord,
+  Conflict,
 } from '../interfaces';
 import {
   APP_SCAFFOLD_NAMESPACE,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
+  TEMPLATE_FILE_PREFIX,
 } from '../constants';
 
 /**
@@ -18,13 +20,13 @@ import {
  *
  * @example
  * ```
- * const parse = createParser('scaffold-', 'dolliejs');
+ * const parse = createScaffoldNameParser('scaffold-', 'dolliejs');
  * parse('test'); -> dolliejs/scaffold-test
  * parse('lenconda/test') -> lenconda/scaffold-test
  * parse('lenconda/scaffold-test') -> lenconda/scaffold-test
  * ```
  */
-const createParser = (
+const createScaffoldNameParser = (
   scaffoldPrefix: string,
   defaultNamespace = APP_SCAFFOLD_NAMESPACE
 ): DollieScaffoldNameParser => {
@@ -48,8 +50,22 @@ const createParser = (
   };
 };
 
-const parseScaffoldName = createParser(APP_SCAFFOLD_PREFIX);
-const parseExtendScaffoldName = createParser(APP_EXTEND_SCAFFOLD_PREFIX);
+const parseScaffoldName = createScaffoldNameParser(APP_SCAFFOLD_PREFIX);
+const parseExtendScaffoldName = createScaffoldNameParser(APP_EXTEND_SCAFFOLD_PREFIX);
+
+const parseFilePathname = (pathname: string): string => {
+  if (!pathname || pathname === '') {
+    return '';
+  }
+  const pathnameGroup = pathname.split(path.sep);
+  const filename = pathnameGroup.pop();
+  if (filename.startsWith(TEMPLATE_FILE_PREFIX)) {
+    pathnameGroup.push(filename.slice(11));
+  } else {
+    pathnameGroup.push(filename);
+  }
+  return pathnameGroup.join(path.sep);
+};
 
 /**
  * check if a pathname in config array or not
@@ -81,7 +97,7 @@ const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
 /**
  * solve conflicts for a group of files, and return the solved files and
  * also the files that still has conflicts
- * @param conflicts Array<MergeConflictRecord>
+ * @param conflicts Array<Conflict>
  * @param keepsTable ConflictKeepsTable
  * @returns object
  *
@@ -92,9 +108,9 @@ const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
  * - THEIRS: the content of current file in the destination dir, we call it as ``
  */
 const solveConflicts = (
-  conflicts: Array<MergeConflictRecord>,
+  conflicts: Array<Conflict>,
   keepsTable: ConflictKeepsTable
-): { result: Array<MergeConflictRecord>, ignored: Array<MergeConflictRecord> } => {
+): { result: Array<Conflict>, ignored: Array<Conflict> } => {
   const result = [];
   const ignored = [];
   const remainedConflicts = Array.from(conflicts);
@@ -161,4 +177,5 @@ export {
   isPathnameInConfig,
   checkConflictBlockCount,
   solveConflicts,
+  parseFilePathname,
 };

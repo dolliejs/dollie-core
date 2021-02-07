@@ -23,7 +23,7 @@ import {
   FileAction,
   MergeResult,
   MergeBlock,
-  MergeConflictRecord,
+  Conflict,
   ConflictKeepsTable,
   ComposedConflictKeepsTable,
 } from './interfaces';
@@ -66,7 +66,7 @@ export {
   DollieScaffoldNameParser,
   MergeResult,
   MergeBlock,
-  MergeConflictRecord,
+  Conflict,
   ConflictKeepsTable,
   ComposedConflictKeepsTable,
   FileAction,
