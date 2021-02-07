@@ -1,4 +1,4 @@
-import { Change, diffLines } from 'diff';
+import { diffLines } from 'diff';
 import _ from 'lodash';
 import {
   DollieScaffold,
@@ -19,10 +19,12 @@ import { isPathnameInConfig } from './scaffold';
  * this function uses diff algorithm from Myers: http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.4.6927
  * we diff two blocks of text with lines, and split the values with single lines
  */
-const diff = (originalContent: string, newContent: string): Array<Change> => {
-  // return diffLines(originalContent, newContent);
+const diff = (
+  originalContent: string,
+  newContent: string
+): Array<DiffChange> => {
   const changes = diffLines(originalContent, newContent);
-  return changes.reduce((result, currentItem) => {
+  const splitChanges = changes.reduce((result, currentItem) => {
     const lines = (currentItem.value.endsWith('\n')
       ? currentItem.value.slice(0, -1)
       : currentItem.value
@@ -34,7 +36,19 @@ const diff = (originalContent: string, newContent: string): Array<Change> => {
        */
       .map((item) => _.omit({ ...currentItem, value: `${item}\n` }, 'count'));
     return result.concat(lines);
+    // eslint-disable-next-line prettier/prettier
   }, []);
+  const result: Array<DiffChange> = [];
+  let lineNumber = 0;
+  while (splitChanges.length !== 0) {
+    const currentSplitChange = splitChanges.shift();
+    if (!currentSplitChange.added) {
+      result.push({ ...currentSplitChange, lineNumber: lineNumber++ });
+    } else {
+      result.push({ ...currentSplitChange, lineNumber: lineNumber - 1 });
+    }
+  }
+  return result;
 };
 
 /**
@@ -62,130 +76,72 @@ const diff = (originalContent: string, newContent: string): Array<Change> => {
  * >>>>>>> current
  */
 const merge = (
-  originalDiff: Array<DiffChange>,
+  original: Array<DiffChange>,
   diffs: Array<Array<DiffChange>>
 ): Array<DiffChange> => {
-  if (!originalDiff) {
+  if (!original) {
     return [];
   }
 
   if (!diffs || !Array.isArray(diffs) || diffs.length === 0) {
-    return originalDiff;
+    return original;
   }
 
-  const getIndex = (diff: Array<DiffChange>, start: number) => {
-    return diff.findIndex((change, index) => {
-      return (change.removed || change.added) && index >= start;
-    });
-  };
-
+  const originalDiff = Array.from(original);
   const patchTable: PatchTable = {};
 
   for (const currentDiff of diffs) {
-    let startLine = 0;
-    let patchCount = 0;
-    let patchIndex = getIndex(currentDiff, startLine);
-
-    while (patchIndex !== -1) {
-      startLine = patchIndex;
-
-      if (!patchTable[patchIndex - patchCount]) {
-        patchTable[patchIndex - patchCount] = {
-          modifyLength: 1,
-          changes: [],
-        };
+    for (const change of currentDiff) {
+      if (change.added) {
+        if (!Boolean(patchTable[change.lineNumber])) {
+          patchTable[change.lineNumber] = {
+            changes: [],
+            modifyLength: 0,
+          };
+        }
+        patchTable[change.lineNumber].changes.push(change);
       } else {
-        patchTable[patchIndex - patchCount].modifyLength += 1;
-      }
-
-      const patchTableItem = patchTable[patchIndex - patchCount];
-
-      for (const change of currentDiff.slice(patchIndex)) {
-        if (change.added || change.removed) {
-          startLine += 1;
-          patchCount += 1;
-          patchTableItem.changes.push(change);
-        } else {
-          break;
-        }
-      }
-
-      patchIndex = getIndex(currentDiff, startLine);
-    }
-  }
-
-  for (const patchItemIndex of Object.keys(patchTable)) {
-    const patchItem = patchTable[patchItemIndex];
-    if (patchItem.modifyLength > 1) {
-      for (const change of patchItem.changes) {
-        const contrastChangeIndex = patchItem.changes.findIndex(
-          (currentChange) => {
-            return (
-              (change.added && currentChange.removed) ||
-              (change.removed && currentChange.added)
-            );
-          }
-        );
-        if (contrastChangeIndex !== -1) {
-          patchItem.changes = patchItem.changes.map((change) => ({
-            ...change,
-            conflicted: true,
-            conflictIgnored: false,
-            conflictGroup: 'current',
-          }));
-          break;
+        if (change.removed) {
+          originalDiff.splice(change.lineNumber, 1, change);
         }
       }
     }
-  }
+    const addedChangeLineNumbers = currentDiff
+      .filter((change) => change.added)
+      .map((change) => change.lineNumber);
 
-  const lastPatchItemIndex = parseInt(_.last(Object.keys(patchTable)), 10);
-
-  if (!lastPatchItemIndex) {
-    return originalDiff;
-  }
-
-  const getOriginalDiffBlock = (
-    previous: Array<DiffChange>,
-    original: Array<DiffChange>
-  ): Array<DiffChange> => {
-    const result = Array.from(original);
-    const removedChanges = previous.filter(
-      (change) => change.removed && !change.conflicted
-    );
-    for (const removedChange of removedChanges) {
-      const sameChangeIndexInResult = result.findIndex(
-        (change) => change.value === removedChange.value
-      );
-      if (sameChangeIndexInResult !== -1) {
-        result.splice(sameChangeIndexInResult, 1);
-      }
+    for (const matchedLineNumber of _.uniq(addedChangeLineNumbers)) {
+      patchTable[matchedLineNumber].modifyLength += 1;
     }
-    return result;
-  };
+  }
 
-  return Object.keys(patchTable)
-    .reduce((result, patchItemIndexString, index) => {
-      const patchItem = patchTable[patchItemIndexString];
-      const patchItemIndex = parseInt(patchItemIndexString, 10);
-      const previousPatchItemIndex = parseInt(
-        Object.keys(patchTable)[index - 1] || '-1',
-        10
-      );
+  const blocks: Array<Array<DiffChange>> = [];
+  const patches = Object.keys(patchTable).map(
+    (patchIndex) => patchTable[patchIndex]
+  );
 
-      const originalChanges = getOriginalDiffBlock(
-        patchItem.changes,
-        originalDiff.slice(previousPatchItemIndex + 1, patchItemIndex + 1)
-      );
+  const lineNumbers = Object.keys(patchTable).map((lineNumber) => {
+    return parseInt(lineNumber, 10);
+  });
 
-      return result.concat(originalChanges).concat(patchItem.changes);
-    }, [])
-    .concat(
-      getOriginalDiffBlock(
-        patchTable[lastPatchItemIndex].changes,
-        originalDiff.slice(lastPatchItemIndex + 1)
-      )
-    );
+  lineNumbers.unshift(-1);
+
+  for (const [index, lineNumber] of lineNumbers.entries()) {
+    const nextLineNumber = lineNumbers[index + 1];
+    if (!nextLineNumber) {
+      blocks.push(originalDiff.slice(lineNumber + 1));
+    } else {
+      blocks.push(originalDiff.slice(lineNumber + 1, nextLineNumber + 1));
+    }
+  }
+
+  return blocks.reduce((result, currentBlock) => {
+    const currentPatchItem = patches.shift();
+    if (!currentPatchItem) {
+      return result.concat(currentBlock);
+    }
+    return result.concat(currentBlock).concat(currentPatchItem.changes);
+  }, []);
 };
 
 /**
@@ -213,6 +169,9 @@ const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
 const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
   const mergeBlocks: Array<MergeBlock> = [];
   for (const line of mergeResult) {
+    if (line.removed) {
+      continue;
+    }
     if (line.conflicted) {
       if (
         mergeBlocks.length === 0 ||
@@ -229,9 +188,6 @@ const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
       const lastMergeBlock = _.last(mergeBlocks);
       lastMergeBlock.values[line.conflictGroup].push(line.value);
     } else {
-      if (line.removed) {
-        continue;
-      }
       if (
         mergeBlocks.length === 0 ||
         _.last(mergeBlocks).status === 'CONFLICT'

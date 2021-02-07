@@ -5,6 +5,7 @@ export interface DiffChange extends Change {
   conflicted?: boolean;
   conflictGroup?: 'former' | 'current';
   conflictIgnored?: boolean;
+  lineNumber: number;
 }
 
 export interface PatchTableItem {
