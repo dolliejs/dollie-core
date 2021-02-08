@@ -128,7 +128,7 @@ const merge = (
 
   for (const [index, lineNumber] of lineNumbers.entries()) {
     const nextLineNumber = lineNumbers[index + 1];
-    if (!nextLineNumber) {
+    if (nextLineNumber === undefined) {
       blocks.push(originalDiff.slice(lineNumber + 1));
     } else {
       blocks.push(originalDiff.slice(lineNumber + 1, nextLineNumber + 1));

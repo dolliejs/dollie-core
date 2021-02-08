@@ -492,29 +492,3 @@ export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string):
     });
   return result as Array<T>;
 };
-
-// const test = () => {
-//   const dir = '/Users/lenconda/Desktop/diff';
-//   const originalContent = fs.readFileSync(path.resolve(dir, 'original.txt'), { encoding: 'utf-8' });
-//   const content1 = fs.readFileSync(path.resolve(dir, '1.txt'), { encoding: 'utf-8' });
-//   const content2 = fs.readFileSync(path.resolve(dir, '2.txt'), { encoding: 'utf-8' });
-//   const content3 = fs.readFileSync(path.resolve(dir, '3.txt'), { encoding: 'utf-8' });
-//   const originalDiff = diff(originalContent, originalContent);
-//   const diff1 = diff(originalContent, content1);
-//   const diff2 = diff(originalContent, content2);
-//   const diff3 = diff(originalContent, content3);
-//   // console.log(originalDiff);
-//   // console.log();
-//   // console.log(diff1);
-//   // console.log();
-//   // console.log(diff2);
-//   // console.log();
-//   // console.log(diff3);
-//   // console.log();
-//   const result = merge(originalDiff, [diff1, diff2, diff3]);
-//   // console.log(result);
-//   // console.log(result.filter((change) => !change.removed));
-//   console.log(result.filter((line) => !line.removed).map((line) => line.value).join(''));
-// };
-
-// test();
