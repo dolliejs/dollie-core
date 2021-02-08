@@ -28,7 +28,7 @@ import {
  */
 const createScaffoldNameParser = (
   scaffoldPrefix: string,
-  defaultNamespace = APP_SCAFFOLD_NAMESPACE
+  defaultNamespace = APP_SCAFFOLD_NAMESPACE,
 ): DollieScaffoldNameParser => {
   return (name: string) => {
     if (/\//.test(name)) {
@@ -74,7 +74,7 @@ const parseFilePathname = (pathname: string): string => {
  */
 const isPathnameInConfig = (
   pathname: string,
-  configItems: Array<string>
+  configItems: Array<string>,
 ): boolean => {
   for (const item of configItems) {
     if (item && new RegExp(item).test(pathname)) {
@@ -109,14 +109,14 @@ const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
  */
 const solveConflicts = (
   conflicts: Array<Conflict>,
-  keeps: ConflictKeepsTable | string
+  keeps: ConflictKeepsTable,
 ): { result: Array<Conflict>, ignored: Array<Conflict> } => {
   const result = [];
   const ignored = [];
   const remainedConflicts = Array.from(conflicts);
   while (
     remainedConflicts.filter(
-      (conflict) => checkConflictBlockCount(conflict.blocks) > 0
+      (conflict) => checkConflictBlockCount(conflict.blocks) > 0,
     ).length !== 0
   ) {
     const currentConflictFile = remainedConflicts.shift();
@@ -160,7 +160,9 @@ const solveConflicts = (
       }
       currentCursor += 1;
     }
+
     currentConflictFile.blocks = currentBlocks;
+
     if (checkConflictBlockCount(currentBlocks) > 0) {
       ignored.push(currentConflictFile);
     } else {

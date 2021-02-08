@@ -16,7 +16,7 @@ const traverse = async (
   startPath: string,
   // a RegExp param, passed to match a file to invoke callback
   callbackReg: RegExp,
-  lastResult?: Array<TraverseResultItem>
+  lastResult?: Array<TraverseResultItem>,
 ): Promise<Array<TraverseResultItem>> => {
   let result = lastResult || [];
   // all the entities for current path, including directories and files

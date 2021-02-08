@@ -80,7 +80,7 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
       context.fs.copyTpl(
         pathname,
         destinationPathname,
-        scaffold.props || {}
+        scaffold.props || {},
       );
     } else {
       // otherwise, we should also copy the file, but just simple this.fs.copy
@@ -149,7 +149,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
      * read current file from temporary dir on mem-fs
      */
     const currentTempFileContent = context.fs.read(
-      path.resolve(scaffoldTempDir, relativePathname)
+      path.resolve(scaffoldTempDir, relativePathname),
     );
     switch (action) {
       /**
@@ -280,7 +280,7 @@ export const parseScaffolds = async (
   scaffold: DollieScaffold,
   context: DollieBaseGenerator,
   parentScaffold?: DollieScaffold,
-  isCompose = false
+  isCompose = false,
 ) => {
   if (!scaffold) { return; }
   const { uuid: scaffoldUuid, scaffoldName } = scaffold;
@@ -329,7 +329,7 @@ export const parseScaffolds = async (
   const scaffoldConfiguration: DollieScaffoldConfiguration = {
     ..._.merge(
       defaultConfiguration,
-      customScaffoldConfiguration
+      customScaffoldConfiguration,
     ),
   };
 
@@ -390,7 +390,7 @@ export const parseScaffolds = async (
     scaffold.props = _.merge(
       projectNameProp,
       getExtendedPropsFromParentScaffold(scaffold),
-      scaffold.props
+      scaffold.props,
     );
     if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
       for (const dependence of scaffold.dependencies) {
@@ -428,7 +428,7 @@ export const parseScaffolds = async (
     getExtendedPropsFromParentScaffold(scaffold),
     _.omitBy(
       scaffoldProps,
-      (value, key) => context.isDependencyKeyRegistered(key)
+      (value, key) => context.isDependencyKeyRegistered(key),
     ) as DollieScaffoldProps,
   );
 
@@ -438,7 +438,7 @@ export const parseScaffolds = async (
    */
   const dependencies = _.pickBy(
     scaffoldProps,
-    (value, key) => context.isDependencyKeyRegistered(key) && value !== 'null'
+    (value, key) => context.isDependencyKeyRegistered(key) && value !== 'null',
   );
   for (const dependenceKey of Object.keys(dependencies)) {
     const dependenceUuid = uuid();

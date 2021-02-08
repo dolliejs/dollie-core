@@ -60,7 +60,7 @@ class DollieComposeGenerator extends DollieGeneratorBase {
         const values = currentComposedKeepsList.map((keep) => {
           return ['former', 'current'].reduce((keepsResult, currentKey) => {
             return keepsResult.concat(
-              (keep[currentKey] as Array<string | number> || []).map((value) => `${currentKey}#${value}`)
+              (keep[currentKey] as Array<string | number> || []).map((value) => `${currentKey}#${value}`),
             );
           }, []);
         });

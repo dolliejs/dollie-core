@@ -22,7 +22,7 @@ import { isPathnameInConfig } from './scaffold';
  */
 const diff = (
   originalContent: string,
-  newContent: string
+  newContent: string,
 ): Array<DiffChange> => {
   const changes = diffLines(originalContent, newContent);
   const splitChanges = changes.reduce((result, currentItem) => {
@@ -77,7 +77,7 @@ const diff = (
  */
 const merge = (
   original: Array<DiffChange>,
-  diffs: Array<Array<DiffChange>>
+  diffs: Array<Array<DiffChange>>,
 ): Array<DiffChange> => {
   if (!original) {
     return [];
@@ -93,7 +93,7 @@ const merge = (
   for (const currentDiff of diffs) {
     for (const change of currentDiff) {
       if (change.added) {
-        if (!Boolean(patchTable[change.lineNumber])) {
+        if (!patchTable[change.lineNumber]) {
           patchTable[change.lineNumber] = {
             changes: [],
             modifyLength: 0,
@@ -128,7 +128,7 @@ const merge = (
 
   const blocks: Array<Array<DiffChange>> = [];
   const patches = Object.keys(patchTable).map(
-    (patchIndex) => patchTable[patchIndex]
+    (patchIndex) => patchTable[patchIndex],
   );
 
   const lineNumbers = Object.keys(patchTable).map((lineNumber) => {
@@ -232,7 +232,7 @@ const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
 const checkFileAction = (
   scaffold: DollieScaffold,
   relativePathname: string,
-  cacheTable: CacheTable
+  cacheTable: CacheTable,
 ): FileAction => {
   const scaffoldFilesConfig = _.get(scaffold, 'configuration.files') as DollieScaffoldFileConfiguration;
 

@@ -52,7 +52,7 @@ class DollieGeneratorBase extends Generator {
    * it is a `(string, string)` tuple, which saves content text of files
    * that is `config.files.merge`
    */
-  public cacheTable: CacheTable = {}
+  public cacheTable: CacheTable = {};
   /**
    * saves all the conflicts in this array.
    * when a file from destination dir is written by more than two scaffold,
@@ -118,7 +118,7 @@ class DollieGeneratorBase extends Generator {
     readJson(path.resolve(__dirname, '../../package.json')) || {};
     if (packageJson.version && packageJson.name) {
       this.log(
-        `${this.cliName} CLI with ${packageJson.name}@${packageJson.version}`
+        `${this.cliName} CLI with ${packageJson.name}@${packageJson.version}`,
       );
     }
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
@@ -267,8 +267,8 @@ class DollieGeneratorBase extends Generator {
         'There ' +
         (this.conflicts.length === 1 ? 'is' : 'are') +
         ' still ' + this.conflicts.length +
-        ' file' + (this.conflicts.length == 1 ? ' ' : 's ') +
-        'contains several conflicts:'
+        ' file' + (this.conflicts.length === 1 ? ' ' : 's ') +
+        'contains several conflicts:',
       );
       this.conflicts.forEach((conflict) => {
         if (fs.existsSync(this.destinationPath(conflict.pathname))) {
@@ -300,7 +300,7 @@ class DollieGeneratorBase extends Generator {
    */
   private getConflicts(deletions: Array<string>): Array<Conflict> {
     return this.conflicts.filter(
-      (conflict) => deletions.indexOf(conflict.pathname) === -1
+      (conflict) => deletions.indexOf(conflict.pathname) === -1,
     );
   }
 }

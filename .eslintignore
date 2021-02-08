@@ -1,5 +1,5 @@
 coverage
-typings
 node_modules
 lib
 *.json
+scripts
