@@ -70,6 +70,8 @@ export interface Conflict {
 }
 
 export type ConflictKeepsTable = Record<string, Array<Array<string>>>;
+export type ConflictSolveItem = Array<string> | string | 'current' | 'former' | 'all' | 'none' | 'skip';
+export type ConflictSolveTable = Record<string, Array<ConflictSolveItem>>;
 export type ComposedConflictKeepsTable = Record<
   string,
   Array<{ former?: Array<number | string>, current?: Array<number | string> }>

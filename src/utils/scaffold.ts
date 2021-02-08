@@ -4,6 +4,7 @@ import {
   DollieScaffoldNameParser,
   MergeBlock,
   Conflict,
+  ConflictSolveTable,
 } from '../interfaces';
 import {
   APP_SCAFFOLD_NAMESPACE,
@@ -109,11 +110,12 @@ const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
  */
 const solveConflicts = (
   conflicts: Array<Conflict>,
-  keeps: ConflictKeepsTable,
+  keeps: ConflictSolveTable,
 ): { result: Array<Conflict>, ignored: Array<Conflict> } => {
   const result = [];
   const ignored = [];
   const remainedConflicts = Array.from(conflicts);
+
   while (
     remainedConflicts.filter(
       (conflict) => checkConflictBlockCount(conflict.blocks) > 0,
@@ -121,7 +123,7 @@ const solveConflicts = (
   ) {
     const currentConflictFile = remainedConflicts.shift();
     const currentBlocks = [];
-    const currentKeepsList = keeps[currentConflictFile.pathname] || [];
+    const currentKeepsList = keeps[currentConflictFile.pathname];
 
     if (currentKeepsList.length === 0) {
       currentConflictFile.blocks = currentConflictFile.blocks.map((block) => {
@@ -141,10 +143,42 @@ const solveConflicts = (
         currentBlocks.push(block);
         continue;
       }
-      const keeps = currentKeepsList[currentCursor] || [];
-      if (keeps.length === 0) {
-        currentBlocks.push({ ...block, ignored: true });
-      } else {
+
+      const keeps = currentKeepsList[currentCursor];
+
+      if (typeof keeps === 'string') {
+        if (keeps === 'skip') {
+          block.status = keeps === 'skip' ? 'CONFLICT' : 'OK';
+          block.ignored = keeps === 'skip' ? true : false;
+        } else if (['current', 'former', 'all', 'none'].indexOf(keeps) !== -1) {
+          switch (keeps) {
+            case 'current': {
+              block.values.former = [];
+              break;
+            }
+            case 'former': {
+              block.values.current = [];
+              break;
+            }
+            case 'all': {
+              break;
+            }
+            case 'none': {
+              block.values.former = [];
+              block.values.current = [];
+              break;
+            }
+            default:
+              break;
+          }
+        } else {
+          block.status = 'OK';
+          const currentContent = keeps.endsWith('\n') ? keeps.slice(0, -1) : keeps;
+          block.values.current = currentContent.split('\n').map((value) => `${value}\n`);
+          block.values.former = [];
+        }
+        currentBlocks.push(block);
+      } else if (Array.isArray(keeps)) {
         const solvedBlock: MergeBlock = {
           status: 'OK',
           values: {
@@ -169,6 +203,7 @@ const solveConflicts = (
       result.push(currentConflictFile);
     }
   }
+
   return { result, ignored };
 };
 
