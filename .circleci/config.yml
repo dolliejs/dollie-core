@@ -10,9 +10,9 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - run: npm run pretest
       - run: npm install
       - run: npm run checksum
+      - run: npm run pretest
       - save_cache:
           paths:
             - node_modules
