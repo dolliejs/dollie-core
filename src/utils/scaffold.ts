@@ -98,7 +98,7 @@ const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
  * solve conflicts for a group of files, and return the solved files and
  * also the files that still has conflicts
  * @param conflicts Array<Conflict>
- * @param keepsTable ConflictKeepsTable
+ * @param keeps ConflictKeepsTable
  * @returns object
  *
  * since Dollie uses an technique (or algorithm) inspired by three-way merge
@@ -109,7 +109,7 @@ const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
  */
 const solveConflicts = (
   conflicts: Array<Conflict>,
-  keepsTable: ConflictKeepsTable
+  keeps: ConflictKeepsTable | string
 ): { result: Array<Conflict>, ignored: Array<Conflict> } => {
   const result = [];
   const ignored = [];
@@ -121,7 +121,7 @@ const solveConflicts = (
   ) {
     const currentConflictFile = remainedConflicts.shift();
     const currentBlocks = [];
-    const currentKeepsList = keepsTable[currentConflictFile.pathname] || [];
+    const currentKeepsList = keeps[currentConflictFile.pathname] || [];
 
     if (currentKeepsList.length === 0) {
       currentConflictFile.blocks = currentConflictFile.blocks.map((block) => {
@@ -153,7 +153,6 @@ const solveConflicts = (
               const [key, index] = currentKey.split('#');
               result.push(block.values[key][index] || '');
               return result;
-            // eslint-disable-next-line prettier/prettier
             }, [] as Array<string>),
           },
         };

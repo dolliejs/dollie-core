@@ -37,7 +37,6 @@ class DollieGeneratorBase extends Generator {
   /**
    * the name of the project, decides write scaffold contents into which directory
    */
-  // eslint-disable-next-line prettier/prettier
   public projectName: string;
   /**
    * the absolute pathname for storing scaffold contents
@@ -101,32 +100,6 @@ class DollieGeneratorBase extends Generator {
   }
 
   /**
-   * traverse files in destination dir and get the deletion pathname
-   * @returns Array<string>
-   */
-  private getDeletions(): Array<string> {
-    /**
-     * if there are items in `config.files.delete` options, then we should traverse
-     * it and remove the items
-     */
-    const deletionRegExps = getComposedArrayValue<string>(this.scaffold, 'files.delete');
-    return Object.keys(this.cacheTable).filter((pathname) => {
-      return (isPathnameInConfig(pathname, deletionRegExps));
-    });
-  }
-
-  /**
-   * get the conflicts not in the `deletions`
-   * @param deletions Array<string>
-   * @returns Array<Conflict>
-   */
-  private getConflicts(deletions: Array<string>): Array<Conflict> {
-    return this.conflicts.filter(
-      (conflict) => deletions.indexOf(conflict.pathname) === -1
-    );
-  }
-
-  /**
    * delete files from destination dir in mem-fs before committing
    * @param deletions Array<string>
    */
@@ -139,7 +112,7 @@ class DollieGeneratorBase extends Generator {
     }
   }
 
-  initializing() {
+  public initializing() {
     this.log(figlet.textSync('DOLLIE'));
     const packageJson =
     readJson(path.resolve(__dirname, '../../package.json')) || {};
@@ -166,7 +139,7 @@ class DollieGeneratorBase extends Generator {
     }
   }
 
-  default() {
+  public default() {
     const DESTINATION_PATH = path.resolve(process.cwd(), this.projectName);
 
     if (fs.existsSync(DESTINATION_PATH)) {
@@ -181,7 +154,7 @@ class DollieGeneratorBase extends Generator {
     this.destinationRoot(DESTINATION_PATH);
   }
 
-  async writing() {
+  public async writing() {
     try {
       this.log.info('Writing main scaffold...');
       /**
@@ -201,7 +174,7 @@ class DollieGeneratorBase extends Generator {
     }
   }
 
-  install() {
+  public install() {
     if (this.conflicts.length > 0) {
       return;
     }
@@ -230,7 +203,7 @@ class DollieGeneratorBase extends Generator {
     }
   }
 
-  end() {
+  public end() {
     /**
      * clean up scaffold directory
      * if the generator exits before invoking end() method,
@@ -303,6 +276,32 @@ class DollieGeneratorBase extends Generator {
         }
       });
     }
+  }
+
+  /**
+   * traverse files in destination dir and get the deletion pathname
+   * @returns Array<string>
+   */
+  private getDeletions(): Array<string> {
+    /**
+     * if there are items in `config.files.delete` options, then we should traverse
+     * it and remove the items
+     */
+    const deletionRegExps = getComposedArrayValue<string>(this.scaffold, 'files.delete');
+    return Object.keys(this.cacheTable).filter((pathname) => {
+      return (isPathnameInConfig(pathname, deletionRegExps));
+    });
+  }
+
+  /**
+   * get the conflicts not in the `deletions`
+   * @param deletions Array<string>
+   * @returns Array<Conflict>
+   */
+  private getConflicts(deletions: Array<string>): Array<Conflict> {
+    return this.conflicts.filter(
+      (conflict) => deletions.indexOf(conflict.pathname) === -1
+    );
   }
 }
 

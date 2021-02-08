@@ -311,11 +311,9 @@ export const parseScaffolds = async (
    * local template directory if it exist
    */
   if (fs.existsSync(dollieJsConfigPathname)) {
-    // eslint-disable-next-line prettier/prettier
     customScaffoldConfiguration = require(dollieJsConfigPathname) || {} as DollieScaffoldConfiguration;
   } else {
     if (fs.existsSync(dollieJsonConfigPathname)) {
-      // eslint-disable-next-line prettier/prettier
       customScaffoldConfiguration = (readJson(dollieJsonConfigPathname) || {}) as DollieScaffoldConfiguration;
     } else {
       customScaffoldConfiguration = { questions: [] };

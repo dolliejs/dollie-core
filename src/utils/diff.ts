@@ -7,6 +7,7 @@ import {
   DiffChange,
   PatchTable,
   CacheTable,
+  DollieScaffoldFileConfiguration,
 } from '../interfaces';
 import { isPathnameInConfig } from './scaffold';
 
@@ -36,7 +37,6 @@ const diff = (
        */
       .map((item) => _.omit({ ...currentItem, value: `${item}\n` }, 'count'));
     return result.concat(lines);
-    // eslint-disable-next-line prettier/prettier
   }, []);
   const result: Array<DiffChange> = [];
   let lineNumber = 0;
@@ -112,6 +112,17 @@ const merge = (
 
     for (const matchedLineNumber of _.uniq(addedChangeLineNumbers)) {
       patchTable[matchedLineNumber].modifyLength += 1;
+    }
+  }
+
+  for (const patchIndex of Object.keys(patchTable)) {
+    const currentPatchItem = patchTable[patchIndex];
+    if (currentPatchItem.modifyLength > 1) {
+      currentPatchItem.changes = currentPatchItem.changes.map((change) => ({
+        ...change,
+        conflicted: true,
+        conflictGroup: 'current',
+      }));
     }
   }
 
@@ -223,8 +234,7 @@ const checkFileAction = (
   relativePathname: string,
   cacheTable: CacheTable
 ): FileAction => {
-  const scaffoldFilesConfig =
-    scaffold.configuration && scaffold.configuration.files;
+  const scaffoldFilesConfig = _.get(scaffold, 'configuration.files') as DollieScaffoldFileConfiguration;
 
   /**
    * if current scaffold does not have parent scaffold, which means it is the top-level scaffold
@@ -246,8 +256,8 @@ const checkFileAction = (
     return cacheExistence ? 'DIRECT' : 'NIL';
   }
 
-  const mergeConfig = _.get(scaffold.configuration, 'files.merge') || [];
-  const addConfig = _.get(scaffold.configuration, 'files.add') || [];
+  const mergeConfig = _.get(scaffold, 'configuration.files.merge') || [];
+  const addConfig = _.get(scaffold, 'configuration.files.add') || [];
 
   /**
    * if current file pathname matches `config.files.merge`, which means scaffold's author hope

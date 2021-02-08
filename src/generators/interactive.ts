@@ -12,12 +12,12 @@ import { ConflictKeepsTable, DollieBasicProps, DollieScaffold } from '../interfa
 import { stringifyBlocks } from '../utils/diff';
 
 class DollieInteractiveGenerator extends DollieGeneratorBase {
-  initializing() {
+  public initializing() {
     this.cliName = 'Dollie';
     super.initializing.call(this);
   }
 
-  async prompting() {
+  public async prompting() {
     try {
       // default and essential questions
       // it is hard-coded in the generator, DO NOT MODIFY IT
@@ -38,7 +38,6 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
       ];
 
       // get props from user's input
-      // eslint-disable-next-line prettier/prettier
       const props = await this.prompt(defaultQuestions) as DollieBasicProps;
 
       if (!props.name || !props.scaffold) {
@@ -60,11 +59,11 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
     }
   }
 
-  default() {
+  public default() {
     super.default.call(this);
   }
 
-  async writing() {
+  public async writing() {
     await super.writing.call(this);
 
     if (this.conflicts.length === 0) { return; }
@@ -107,11 +106,11 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
     }
   }
 
-  install() {
+  public install() {
     super.install.call(this);
   }
 
-  end() {
+  public end() {
     super.end.call(this);
   }
 }

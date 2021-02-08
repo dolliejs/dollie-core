@@ -4,7 +4,6 @@ import { Question } from 'yeoman-generator';
 export interface DiffChange extends Change {
   conflicted?: boolean;
   conflictGroup?: 'former' | 'current';
-  conflictIgnored?: boolean;
   lineNumber: number;
 }
 
