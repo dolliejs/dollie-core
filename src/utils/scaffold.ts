@@ -1,6 +1,5 @@
 import path from 'path';
 import {
-  ConflictKeepsTable,
   DollieScaffoldNameParser,
   MergeBlock,
   Conflict,

@@ -6,7 +6,7 @@
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
 import DollieGeneratorBase from './base';
-import { DollieScaffold, ComposedConflictKeepsTable, ConflictKeepsTable } from '../interfaces';
+import { DollieScaffold, ComposedConflictKeepsTable, ConflictSolveTable } from '../interfaces';
 import { parseScaffolds } from '../utils/generator';
 import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
 import { APP_COMPOSE_CONFIG_MAP } from '../constants';
@@ -66,7 +66,7 @@ class DollieComposeGenerator extends DollieGeneratorBase {
         });
         result[currentPathname] = (result[currentPathname] || []).concat(values);
         return result;
-      }, {} as ConflictKeepsTable);
+      }, {} as ConflictSolveTable);
 
     const solvedConflicts = solveConflicts(this.conflicts, keepsTable);
     this.conflicts = solvedConflicts.ignored || [];

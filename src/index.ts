@@ -24,7 +24,6 @@ import {
   MergeResult,
   MergeBlock,
   Conflict,
-  ConflictKeepsTable,
   ComposedConflictKeepsTable,
 } from './interfaces';
 import {
@@ -67,7 +66,6 @@ export {
   MergeResult,
   MergeBlock,
   Conflict,
-  ConflictKeepsTable,
   ComposedConflictKeepsTable,
   FileAction,
   // constants

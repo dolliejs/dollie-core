@@ -69,7 +69,6 @@ export interface Conflict {
   blocks: Array<MergeBlock>;
 }
 
-export type ConflictKeepsTable = Record<string, Array<Array<string>>>;
 export type ConflictSolveItem = Array<string> | string | 'current' | 'former' | 'all' | 'none' | 'skip';
 export type ConflictSolveTable = Record<string, Array<ConflictSolveItem>>;
 export type ComposedConflictKeepsTable = Record<
