@@ -38,6 +38,7 @@
     "@typescript-eslint/eslint-plugin": "^4.11.1",
     "@typescript-eslint/parser": "^4.11.1",
     "coveralls": "^3.0.5",
+    "dumi": "^1.1.4",
     "eslint": "^7.12.1",
     "eslint-config-alloy": "^3.10.0",
     "husky": "^3.0.1",
@@ -101,7 +102,9 @@
     "test": "exit 0",
     "checksum": "node scripts/check.js",
     "clean:build": "rimraf lib",
-    "build": "npm run clean:build && tsc"
+    "build": "npm run clean:build && tsc",
+    "docs:start": "dumi dev",
+    "docs:build": "dumi build"
   },
   "repository": "https://github.com/dolliejs/dollie-core.git",
   "license": "MIT"

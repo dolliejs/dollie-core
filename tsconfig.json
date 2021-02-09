@@ -34,5 +34,6 @@
     "scripts/**/*",
     "__tests__/**/*",
     "src/**/*.js",
+    ".umirc.ts"
   ]
 }
