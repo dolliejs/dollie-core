@@ -12,6 +12,7 @@ jobs:
       - checkout
       - run: npm install
       - run: npm run checksum
+      - run: npm run pretest
       - save_cache:
           paths:
             - node_modules
