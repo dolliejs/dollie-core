@@ -8,10 +8,13 @@ declare interface GitCloneOptions {
 }
 
 declare module 'download-git-repo' {
+  import * as Got from 'got';
+  import * as Download from 'download';
+
   function clone(
     repository: string,
     destination: string,
-    options?: GitCloneOptions,
+    options?: GitCloneOptions & Got.Options & Download.DownloadOptions,
     cb?: (error?: Error) => void,
   ): void;
 
