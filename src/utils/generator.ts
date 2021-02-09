@@ -292,7 +292,7 @@ export const parseScaffolds = async (
    * Dollie's scaffold, e.g. `test` will become `dolliejs/scaffold-test` while
    * in depended scaffolds, it will become as `dolliejs/extend-scaffold-test`
    */
-  const githubRepositoryId = `github:${scaffoldName}#master`;
+  const githubRepositoryId = `github:${scaffoldName}`;
 
   context.log.info(`Downloading scaffold: https://github.com/${scaffoldName}.git`);
   /**
