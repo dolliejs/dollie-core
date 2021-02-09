@@ -31,22 +31,45 @@ const createScaffoldNameParser = (
   defaultNamespace = APP_SCAFFOLD_NAMESPACE,
 ): DollieScaffoldNameParser => {
   return (name: string) => {
-    if (/\//.test(name)) {
-      const templateNameChunks = name.split('/');
-      return templateNameChunks.reduce((result, currentValue, currentIndex) => {
-        return `${currentIndex !== 0 ? `${result}/` : result}${
-          currentIndex === templateNameChunks.length - 1
-            ? currentValue.startsWith(scaffoldPrefix)
-              ? currentValue
-              : `${scaffoldPrefix}${currentValue}`
-            : currentValue
-        }`.trim();
-      }, '');
+    let namespace = '';
+    let repoName = '';
+    let branchName = '';
+
+    if (name.split('/').length === 2) {
+      [namespace, repoName] = name.split('/');
     } else {
-      return name.startsWith(scaffoldPrefix)
-        ? `${defaultNamespace}/${name}`
-        : `${defaultNamespace}/${scaffoldPrefix}${name}`;
+      repoName = name;
+      namespace = defaultNamespace;
     }
+
+    if (!repoName.startsWith(scaffoldPrefix)) {
+      repoName = `${scaffoldPrefix}${repoName}`;
+    }
+
+    if (repoName.split('#').length === 2) {
+      [repoName, branchName] = repoName.split('#');
+    } else {
+      branchName = 'master';
+    }
+
+    return `${namespace}/${repoName}#${branchName}`;
+
+    // if (/\//.test(repoName)) {
+    //   const [namespace, repoName] = repoName.split('/');
+    //   return templateNameChunks.reduce((result, currentValue, currentIndex) => {
+    //     return `${currentIndex !== 0 ? `${result}/` : result}${
+    //       currentIndex === templateNameChunks.length - 1
+    //         ? currentValue.startsWith(scaffoldPrefix)
+    //           ? currentValue
+    //           : `${scaffoldPrefix}${currentValue}`
+    //         : currentValue
+    //     }`.trim();
+    //   }, '');
+    // } else {
+    //   return repoName.startsWith(scaffoldPrefix)
+    //     ? `${defaultNamespace}/${repoName}`
+    //     : `${defaultNamespace}/${scaffoldPrefix}${repoName}`;
+    // }
   };
 };
 
