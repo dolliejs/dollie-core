@@ -6,17 +6,16 @@
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
 import DollieGeneratorBase from './base';
-import { DollieScaffold, ComposedConflictKeepsTable, ConflictKeepsTable } from '../interfaces';
+import { DollieScaffold, ComposedConflictKeepsTable, ConflictSolveTable } from '../interfaces';
 import { parseScaffolds } from '../utils/generator';
 import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
 import { APP_COMPOSE_CONFIG_MAP } from '../constants';
 import { stringifyBlocks } from '../utils/diff';
 
 class DollieComposeGenerator extends DollieGeneratorBase {
-  initializing() {
+  public initializing() {
     this.cliName = 'Dollie Compose';
     super.initializing.call(this);
-    // eslint-disable-next-line prettier/prettier
     const scaffold = _.get(this, 'options.dollieScaffoldConfig') as DollieScaffold;
     if (!scaffold) {
       this.log.error('Cannot read configuration for Dollie Compose');
@@ -30,10 +29,9 @@ class DollieComposeGenerator extends DollieGeneratorBase {
     this.projectName = projectName;
   }
 
-  async default() {
+  public async default() {
     super.default.call(this);
 
-    // eslint-disable-next-line prettier/prettier
     const scaffold = _.get(this.options, APP_COMPOSE_CONFIG_MAP.dollie_scaffold_config) as DollieScaffold;
     scaffold.scaffoldName = parseScaffoldName(scaffold.scaffoldName);
     const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
@@ -46,7 +44,7 @@ class DollieComposeGenerator extends DollieGeneratorBase {
     this.scaffold = await createDetailedScaffold(scaffold);
   }
 
-  async writing() {
+  public async writing() {
     await super.writing.call(this);
 
     if (this.conflicts.length === 0) { return; }
@@ -60,15 +58,18 @@ class DollieComposeGenerator extends DollieGeneratorBase {
       .reduce((result, currentPathname) => {
         const currentComposedKeepsList = composedKeepsTable[currentPathname];
         const values = currentComposedKeepsList.map((keep) => {
+          if (typeof keep === 'string') {
+            return keep;
+          }
           return ['former', 'current'].reduce((keepsResult, currentKey) => {
             return keepsResult.concat(
-              (keep[currentKey] as Array<string | number> || []).map((value) => `${currentKey}#${value}`)
+              (keep[currentKey] as Array<string | number> || []).map((value) => `${currentKey}#${value}`),
             );
           }, []);
         });
         result[currentPathname] = (result[currentPathname] || []).concat(values);
         return result;
-      }, {} as ConflictKeepsTable);
+      }, {} as ConflictSolveTable);
 
     const solvedConflicts = solveConflicts(this.conflicts, keepsTable);
     this.conflicts = solvedConflicts.ignored || [];
@@ -80,11 +81,11 @@ class DollieComposeGenerator extends DollieGeneratorBase {
     }
   }
 
-  install() {
+  public install() {
     super.install.call(this);
   }
 
-  end() {
+  public end() {
     super.end.call(this);
   }
 }

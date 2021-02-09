@@ -62,3 +62,9 @@ export const APP_COMPOSE_CONFIG_MAP = {
   conflict_keeps_table: 'keepsTable',
   project_name: 'projectName',
 };
+/**
+ * template file prefix for Dollie to read
+ * if a filename is `__template.foo.txt`, it will be considered by Dollie as
+ * a template file
+ */
+export const TEMPLATE_FILE_PREFIX = '__template.';

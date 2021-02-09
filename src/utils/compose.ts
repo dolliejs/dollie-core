@@ -13,7 +13,6 @@ const parseComposeConfig = (content: string): Record<string, any> => {
       .split(`${key}:`)
       .join(`${APP_COMPOSE_CONFIG_MAP[key]}:`);
   }
-  // eslint-disable-next-line prettier/prettier
   return YAML.parse(resolvedContentString);
 };
 

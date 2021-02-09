@@ -1,4 +1,19 @@
+import { Change } from 'diff';
 import { Question } from 'yeoman-generator';
+
+export interface DiffChange extends Change {
+  conflicted?: boolean;
+  conflictGroup?: 'former' | 'current';
+  lineNumber: number;
+}
+
+export interface PatchTableItem {
+  changes: Array<DiffChange>;
+  modifyLength: number;
+}
+
+export type PatchTable = Record<string, PatchTableItem>;
+export type CacheTable = Record<string, Array<Array<DiffChange>>>;
 
 export interface DollieBasicProps {
   name: string;
@@ -49,15 +64,16 @@ export interface MergeResult {
   text: string;
 }
 
-export interface MergeConflictRecord {
+export interface Conflict {
   pathname: string;
   blocks: Array<MergeBlock>;
 }
 
-export type ConflictKeepsTable = Record<string, Array<Array<string>>>;
+export type ConflictSolveItem = Array<string> | string | 'current' | 'former' | 'all' | 'none' | 'skip';
+export type ConflictSolveTable = Record<string, Array<ConflictSolveItem>>;
 export type ComposedConflictKeepsTable = Record<
   string,
-  Array<{ former?: Array<number | string>, current?: Array<number | string> }>
+  Array<{ former?: Array<number | string>, current?: Array<number | string> } | string>
 >;
 
 export interface TraverseResultItem {

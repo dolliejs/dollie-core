@@ -1,13 +1,15 @@
+import path from 'path';
 import {
-  ConflictKeepsTable,
   DollieScaffoldNameParser,
   MergeBlock,
-  MergeConflictRecord,
+  Conflict,
+  ConflictSolveTable,
 } from '../interfaces';
 import {
   APP_SCAFFOLD_NAMESPACE,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
+  TEMPLATE_FILE_PREFIX,
 } from '../constants';
 
 /**
@@ -18,15 +20,15 @@ import {
  *
  * @example
  * ```
- * const parse = createParser('scaffold-', 'dolliejs');
+ * const parse = createScaffoldNameParser('scaffold-', 'dolliejs');
  * parse('test'); -> dolliejs/scaffold-test
  * parse('lenconda/test') -> lenconda/scaffold-test
  * parse('lenconda/scaffold-test') -> lenconda/scaffold-test
  * ```
  */
-const createParser = (
+const createScaffoldNameParser = (
   scaffoldPrefix: string,
-  defaultNamespace = APP_SCAFFOLD_NAMESPACE
+  defaultNamespace = APP_SCAFFOLD_NAMESPACE,
 ): DollieScaffoldNameParser => {
   return (name: string) => {
     if (/\//.test(name)) {
@@ -48,8 +50,22 @@ const createParser = (
   };
 };
 
-const parseScaffoldName = createParser(APP_SCAFFOLD_PREFIX);
-const parseExtendScaffoldName = createParser(APP_EXTEND_SCAFFOLD_PREFIX);
+const parseScaffoldName = createScaffoldNameParser(APP_SCAFFOLD_PREFIX);
+const parseExtendScaffoldName = createScaffoldNameParser(APP_EXTEND_SCAFFOLD_PREFIX);
+
+const parseFilePathname = (pathname: string): string => {
+  if (!pathname || pathname === '') {
+    return '';
+  }
+  const pathnameGroup = pathname.split(path.sep);
+  const filename = pathnameGroup.pop();
+  if (filename.startsWith(TEMPLATE_FILE_PREFIX)) {
+    pathnameGroup.push(filename.slice(11));
+  } else {
+    pathnameGroup.push(filename);
+  }
+  return pathnameGroup.join(path.sep);
+};
 
 /**
  * check if a pathname in config array or not
@@ -58,7 +74,7 @@ const parseExtendScaffoldName = createParser(APP_EXTEND_SCAFFOLD_PREFIX);
  */
 const isPathnameInConfig = (
   pathname: string,
-  configItems: Array<string>
+  configItems: Array<string>,
 ): boolean => {
   for (const item of configItems) {
     if (item && new RegExp(item).test(pathname)) {
@@ -81,8 +97,8 @@ const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
 /**
  * solve conflicts for a group of files, and return the solved files and
  * also the files that still has conflicts
- * @param conflicts Array<MergeConflictRecord>
- * @param keepsTable ConflictKeepsTable
+ * @param conflicts Array<Conflict>
+ * @param keeps ConflictKeepsTable
  * @returns object
  *
  * since Dollie uses an technique (or algorithm) inspired by three-way merge
@@ -92,20 +108,21 @@ const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
  * - THEIRS: the content of current file in the destination dir, we call it as ``
  */
 const solveConflicts = (
-  conflicts: Array<MergeConflictRecord>,
-  keepsTable: ConflictKeepsTable
-): { result: Array<MergeConflictRecord>, ignored: Array<MergeConflictRecord> } => {
+  conflicts: Array<Conflict>,
+  keeps: ConflictSolveTable,
+): { result: Array<Conflict>, ignored: Array<Conflict> } => {
   const result = [];
   const ignored = [];
   const remainedConflicts = Array.from(conflicts);
+
   while (
     remainedConflicts.filter(
-      (conflict) => checkConflictBlockCount(conflict.blocks) > 0
+      (conflict) => checkConflictBlockCount(conflict.blocks) > 0,
     ).length !== 0
   ) {
     const currentConflictFile = remainedConflicts.shift();
     const currentBlocks = [];
-    const currentKeepsList = keepsTable[currentConflictFile.pathname] || [];
+    const currentKeepsList = keeps[currentConflictFile.pathname];
 
     if (currentKeepsList.length === 0) {
       currentConflictFile.blocks = currentConflictFile.blocks.map((block) => {
@@ -125,10 +142,44 @@ const solveConflicts = (
         currentBlocks.push(block);
         continue;
       }
-      const keeps = currentKeepsList[currentCursor] || [];
-      if (keeps.length === 0) {
-        currentBlocks.push({ ...block, ignored: true });
-      } else {
+
+      const keeps = currentKeepsList[currentCursor];
+
+      if (typeof keeps === 'string') {
+        if (keeps === 'skip') {
+          block.status = 'CONFLICT';
+          block.ignored = true;
+        } else if (['current', 'former', 'all', 'none'].indexOf(keeps) !== -1) {
+          switch (keeps) {
+            case 'current': {
+              block.values.former = [];
+              break;
+            }
+            case 'former': {
+              block.values.current = [];
+              break;
+            }
+            case 'all': {
+              break;
+            }
+            case 'none': {
+              block.values.former = [];
+              block.values.current = [];
+              break;
+            }
+            default:
+              break;
+          }
+          block.status = 'OK';
+          block.values.current = block.values.former.concat(block.values.current);
+        } else {
+          block.status = 'OK';
+          const currentContent = keeps.endsWith('\n') ? keeps.slice(0, -1) : keeps;
+          block.values.current = currentContent.split('\n').map((value) => `${value}\n`);
+          block.values.former = [];
+        }
+        currentBlocks.push(block);
+      } else if (Array.isArray(keeps)) {
         const solvedBlock: MergeBlock = {
           status: 'OK',
           values: {
@@ -137,7 +188,6 @@ const solveConflicts = (
               const [key, index] = currentKey.split('#');
               result.push(block.values[key][index] || '');
               return result;
-            // eslint-disable-next-line prettier/prettier
             }, [] as Array<string>),
           },
         };
@@ -145,13 +195,16 @@ const solveConflicts = (
       }
       currentCursor += 1;
     }
+
     currentConflictFile.blocks = currentBlocks;
+
     if (checkConflictBlockCount(currentBlocks) > 0) {
       ignored.push(currentConflictFile);
     } else {
       result.push(currentConflictFile);
     }
   }
+
   return { result, ignored };
 };
 
@@ -161,4 +214,5 @@ export {
   isPathnameInConfig,
   checkConflictBlockCount,
   solveConflicts,
+  parseFilePathname,
 };
