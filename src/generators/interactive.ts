@@ -105,12 +105,10 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
               default:
                 break;
             }
-            return former.concat(current).map((value) => value.trim()).join('');
+            return former.concat(current).join('');
           }
 
-          if (typeof keeps === 'string') {
-            return keeps;
-          }
+          return keeps;
         };
 
         let currentOperation = '';
@@ -163,7 +161,7 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
           return currentOperation;
         }
 
-        if (['all', 'former', 'current', 'none'].indexOf(currentOperation)) {
+        if (['all', 'former', 'current', 'none'].indexOf(currentOperation) !== -1) {
           tempResult = getTempResult(currentOperation);
           currentKeeps = currentOperation;
         }
@@ -177,7 +175,19 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
               choices: lineChoices,
             },
           ])) as { keeps: Array<string> };
-          tempResult = getTempResult(keeps);
+          tempResult = lineChoices
+            .filter((choice) => keeps.indexOf(choice.value) !== -1)
+            .map((line) => line.name)
+            .map((line) => {
+              if (line.startsWith('[current] ')) {
+                return line.slice(10);
+              } else if (line.startsWith('[former] ')) {
+                return line.slice(9);
+              }
+              return line;
+            })
+            .map((line) => `${line}\n`)
+            .join('');
           currentKeeps = keeps;
         }
 
@@ -213,7 +223,7 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
         const lineChoices = ['former', 'current'].reduce((result, currentKey) => {
           const choices = (block.values[currentKey] as Array<string> || []).map((value, index) => {
             return {
-              name: `[${currentKey}] ${value.trim()}`,
+              name: `[${currentKey}] ${value.slice(0, -1)}`,
               value: `${currentKey}#${index}`,
             };
           });

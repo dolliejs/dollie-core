@@ -147,8 +147,8 @@ const solveConflicts = (
 
       if (typeof keeps === 'string') {
         if (keeps === 'skip') {
-          block.status = keeps === 'skip' ? 'CONFLICT' : 'OK';
-          block.ignored = keeps === 'skip' ? true : false;
+          block.status = 'CONFLICT';
+          block.ignored = true;
         } else if (['current', 'former', 'all', 'none'].indexOf(keeps) !== -1) {
           switch (keeps) {
             case 'current': {
@@ -170,6 +170,8 @@ const solveConflicts = (
             default:
               break;
           }
+          block.status = 'OK';
+          block.values.current = block.values.former.concat(block.values.current);
         } else {
           block.status = 'OK';
           const currentContent = keeps.endsWith('\n') ? keeps.slice(0, -1) : keeps;
