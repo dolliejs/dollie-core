@@ -8,30 +8,6 @@ dollie_scaffold_config:
     - scaffold_name: react-dva
 
 conflict_keeps_table:
-  config/webpack.config.js:
-    - former:
-      - 0
-    - former:
-      - 0
-    - former:
-      - 0
-    - former:
-      - 0
   package.json:
     -
-      former:
-        - 0
-      current:
-        - 0
-        - 1
-        - 2
-        - 3
-  src/App.tsx:
-    -
-      former:
-        - 0
-      current:
-        - 0
-        - 1
-        - 2
-        - 3
+      all

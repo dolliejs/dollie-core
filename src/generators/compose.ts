@@ -58,6 +58,9 @@ class DollieComposeGenerator extends DollieGeneratorBase {
       .reduce((result, currentPathname) => {
         const currentComposedKeepsList = composedKeepsTable[currentPathname];
         const values = currentComposedKeepsList.map((keep) => {
+          if (typeof keep === 'string') {
+            return keep;
+          }
           return ['former', 'current'].reduce((keepsResult, currentKey) => {
             return keepsResult.concat(
               (keep[currentKey] as Array<string | number> || []).map((value) => `${currentKey}#${value}`),

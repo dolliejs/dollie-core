@@ -197,7 +197,10 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
               type: 'editor',
               name: 'content',
               message: 'Edit conflicts with editor',
-              default: block.values.former.concat(block.values.current).map((value) => value.slice(0, -1)).join('\n'),
+              default: block.values.former
+                .concat(block.values.current)
+                .map((value) => value.slice(0, -1))
+                .join('\n'),
             },
           ])) as { content: string };
           tempResult = getTempResult(`${(content || '')}`);
