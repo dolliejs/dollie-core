@@ -49,8 +49,7 @@ class DollieGeneratorBase extends Generator {
    */
   public appTempPath: string;
   /**
-   * it is a `(string, string)` tuple, which saves content text of files
-   * that is `config.files.merge`
+   * it is a `(string, string)` tuple, stores all the files content and its diffs
    */
   public cacheTable: CacheTable = {};
   /**

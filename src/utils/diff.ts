@@ -177,6 +177,11 @@ const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
   }, '');
 };
 
+/**
+ * parse a diff changes into merge blocks
+ * @param mergeResult Array<DiffChange>
+ * @returns Array<MergeBlock>
+ */
 const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
   const mergeBlocks: Array<MergeBlock> = [];
   for (const line of mergeResult) {
@@ -225,8 +230,8 @@ const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
  * @param relativePathname string
  * @param cacheTable CacheTable
  *
- * @description `DIRECT` write file to destination pathname directory
- * @description `MERGE` merge current text from destination file and new text
+ * @description `DIRECT` write file and replace content to cache table
+ * @description `MERGE` push diff between current file and the original file content to cache table
  * @description `NIL` do nothing
  */
 const checkFileAction = (
@@ -262,8 +267,7 @@ const checkFileAction = (
   /**
    * if current file pathname matches `config.files.merge`, which means scaffold's author hope
    * comparing this file's content with destination file's
-   * so if the file exists in destination dir, we should return `MERGE`, otherwise Dollie will
-   * consider adding it, that means, returns `DIRECT`
+   * so if the file exists in destination dir, we should return `MERGE`
    */
   if (isPathnameInConfig(relativePathname, mergeConfig)) {
     if (cacheExistence) {

@@ -168,14 +168,8 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
       /**
        * if action for current file is `MERGE`, which means we should take previous content
        * into concern, so Dollie will do these things:
-       * 1. read the content text from `context.mergeTable` by the same filename as `content1`
-       * 2. read current file content from destination dir as `content2`
-       * 3. read current file content from current scaffold's temp dir as `content3`
-       * 4. diff `content1` and `content2` as `diff1`
-       * 5. diff `content1` and `content3` as `diff2`
-       * 6. merge with `diff1` and `diff2` as `result`
-       * 7. write `result` into destination file
-       * 8. if merge result becomes a conflict, then add current file and its blocks into `context.conflicts`
+       * 1. get diff between current file content and the original content
+       * 2. push the diff to cache table
        */
       case 'MERGE': {
         const cacheTableItem = context.cacheTable[relativePathname];
@@ -210,6 +204,10 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
   }
 };
 
+/**
+ * write all the files from cache table to physical dir
+ * @param context DollieBaseGenerator
+ */
 export const writeToDestinationPath = (context: DollieBaseGenerator) => {
   for (const pathname of Object.keys(context.cacheTable)) {
     if (!context.cacheTable[pathname]) { continue; }

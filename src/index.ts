@@ -12,10 +12,17 @@ import {
   getExtendedPropsFromParentScaffold,
 } from './utils/generator';
 import { parseComposeConfig, stringifyComposeConfig } from './utils/compose';
-import { diff, merge, checkFileAction, stringifyBlocks } from './utils/diff';
+import { diff, merge, checkFileAction, stringifyBlocks, parseDiff } from './utils/diff';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
 import {
+  DiffChange,
+  PatchTableItem,
+  PatchTable,
+  CacheTable,
+  ConflictSolveItem,
+  ConflictSolveTable,
+  TraverseResultItem,
   DollieScaffold,
   DollieScaffoldProps,
   DollieScaffoldConfiguration,
@@ -55,10 +62,18 @@ export {
   stringifyBlocks,
   checkConflictBlockCount,
   solveConflicts,
+  parseDiff,
   // classes
   DollieInteractiveGenerator,
   DollieComposeGenerator,
   // interfaces and types
+  DiffChange,
+  PatchTableItem,
+  PatchTable,
+  CacheTable,
+  ConflictSolveItem,
+  ConflictSolveTable,
+  TraverseResultItem,
   DollieScaffoldConfiguration,
   DollieScaffoldProps,
   DollieScaffold,
@@ -96,6 +111,7 @@ export default {
   stringifyBlocks,
   checkConflictBlockCount,
   solveConflicts,
+  parseDiff,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
   APP_NAME,
