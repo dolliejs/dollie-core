@@ -6,7 +6,10 @@ hero:
   actions:
     - text: 用户文档
       link: /zh/guide
-footer: 遵循 MIT 开源协议 | 版权所有 © 2021<br />由 [dumi](https://d.umijs.org) 提供支持
+footer:
+  遵循 MIT 开源协议
+  <br />版权所有 © 2021 至今 Dollie.js 及其贡献者
+  <br />由 [dumi](https://d.umijs.org) 提供支持
 ---
 
 <div style="height: 20px;"></div>
