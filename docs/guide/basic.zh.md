@@ -118,8 +118,8 @@ Dollie 约定：凡是以 `__template.`开头的字符串作为文件名的文�
 
 例子：
 
-**`__template.package.json`**
 ```json
+// __template.package.json
 {
   "name": "<%= name %>",
   "dependencies": {
@@ -133,8 +133,8 @@ Dollie 约定：凡是以 `__template.`开头的字符串作为文件名的文�
 
 使用 `{ name: 'my-project' }` 注入时，输出文件将会是：
 
-**`package.json`**
 ```json
+// package.json
 {
   "name": "my-project",
   "dependencies": {
