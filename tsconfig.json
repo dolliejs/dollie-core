@@ -11,6 +11,7 @@
     "allowJs": false,
     "esModuleInterop": true,
     "experimentalDecorators": true,
+    "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "declaration": true,
     "resolveJsonModule": true,
