@@ -22,7 +22,8 @@ switch (type) {
       encoding: 'utf-8',
     });
     const config = parseComposeConfig(content);
-    env.run('dollie:compose', config, null);
+    console.log(config);
+    // env.run('dollie:compose', config, null);
     break;
   default:
     break;

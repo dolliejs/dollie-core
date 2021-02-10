@@ -23,3 +23,9 @@ lib
 
 # checksum file for Circle CI
 checksum.txt
+
+# umi
+.umi
+
+# docs
+docs/dist
