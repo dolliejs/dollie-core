@@ -59,6 +59,18 @@ jobs:
       - run: ls -al
       - run: npm publish --access public
 
+  deploy_docs:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: ~/repo
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "checksum.txt" }}
+            - v1-dependencies-
+      - run: npm run docs:build
+      - run: npm run docs:deploy
+
 workflows:
   version: 2
   build_and_deploy:
@@ -80,5 +92,14 @@ workflows:
             tags:
               only:
                 - /^v.*/
+            branches:
+              ignore: /.*/
+      - deploy_docs:
+          requires:
+            - install
+          filters:
+            tags:
+              only:
+                - /^docs-.*/
             branches:
               ignore: /.*/

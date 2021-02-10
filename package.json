@@ -39,6 +39,7 @@
     "@types/yeoman-generator": "^4.11.3",
     "@typescript-eslint/eslint-plugin": "^4.11.1",
     "@typescript-eslint/parser": "^4.11.1",
+    "aliyun-oss-deploy": "^0.1.5",
     "coveralls": "^3.0.5",
     "dumi": "^1.1.4",
     "eslint": "^7.12.1",
@@ -108,7 +109,8 @@
     "clean:build": "rimraf lib",
     "build": "npm run clean:build && tsc",
     "docs:start": "dumi dev",
-    "docs:build": "dumi build"
+    "docs:build": "dumi build",
+    "docs:deploy": "node scripts/docs.js"
   },
   "repository": "https://github.com/dolliejs/dollie-core.git",
   "license": "MIT"
