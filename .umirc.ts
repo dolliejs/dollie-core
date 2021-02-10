@@ -21,8 +21,8 @@ export default defineConfig({
     '@c-primary': '#457b9d',
   },
   styles: [
-    'img { max-width: 720px !important; }',
-    '.__dumi-default-locale-select, .__dumi-default-search-input { border-radius: 0 !important; }',
+    'img { max-width: 680px !important; }',
+    '.__dumi-default-locale-select, .__dumi-default-search-input { border-radius: 2px !important; }',
     '.__dumi-default-locale-select, .__dumi-default-search-input:focus { border: 1px solid rgba(255, 255, 255, .4) !important; }',
     '.__dumi-default-search-input { border: 1px solid transparent !important; }',
     '.__dumi-default-menu-doc-locale { display: none !important; }',
@@ -36,6 +36,8 @@ export default defineConfig({
     '.__dumi-default-menu[data-mode=\'site\'] .__dumi-default-menu-list > li > a::after { display: none !important; }',
     '.__dumi-default-menu[data-mode=\'site\'] .__dumi-default-menu-list > li > a.active { background: rgba(69, 123, 157, .3) !important; }',
     '.__dumi-default-menu-inner ul li a::before, .__dumi-default-menu-inner ul li > span::before { display: none !important; }',
+    '.__dumi-default-layout-hero button { border-radius: 4px !important; }',
+    '.__dumi-default-menu[data-mode=\'site\'] { background: white !important; }'
   ],
   favicon: '/public/images/favicon.ico',
   resolve: {

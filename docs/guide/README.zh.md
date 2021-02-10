@@ -3,7 +3,7 @@ order: 0
 toc: 'menu'
 title: '指南'
 nav:
-  title: '指南'
+  title: '用户文档'
   order: 0
 ---
 
