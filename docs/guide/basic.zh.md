@@ -16,7 +16,7 @@ title: '基础用法'
 
 ### 命名规范
 
-Dollie 根据用户输入的脚手架名称确定脚手架在 GitHub 上的 URL。主脚手架命名格式为 `$NAMESPACE/scaffold-$SCAFFOLD_NAME#$BRANCH`，扩展脚手架命名格式为 `$NAMESPACE/extend-scaffold-$SCAFFOLD_NAME#$BRANCH`。其中变量的含义如下：
+Dollie 根据用户输入的脚手架名称确定脚手架在 GitHub 上的 URL。主脚手架命名格式为 `$NAMESPACE/scaffold-$SCAFFOLD_NAME#$BRANCH`。其中变量的含义如下：
 
 - `$NAMESPACE`：脚手架所在的 GitHub 命名空间，可以映射到 `https://github.com/$NAMESPACE`。其默认值为 `dolliejs`
 - `$SCAFFOLD_NAME`：脚手架名称，例如 `react`、`react-ts`

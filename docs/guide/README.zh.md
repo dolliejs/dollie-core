@@ -44,27 +44,3 @@ $ dollie
 根据提示回答完所有交互问题即可：
 
 ![dollie_quickstart_interactive](/public/images/dollie_quickstart_interactive.gif)
-
-#### Compose 模式
-
-编写 YAML 配置文件 `config.yml`：
-
-```yml
-project_name: project
-
-dollie_scaffold_config:
-  scaffold_name: react
-  dependencies:
-    - scaffold_name: react-ts
-    - scaffold_name: react-less
-```
-
-执行
-
-```bash
-$ dollie compose ./config.yml
-```
-
-Dollie Compose 读取配置文件后将会递归拉取所有脚手架：
-
-![dollie_quickstart_compose](/public/images/dollie_quickstart_compose.gif)

@@ -38,7 +38,7 @@ export default defineConfig({
     '.__dumi-default-menu-inner ul li a::before, .__dumi-default-menu-inner ul li > span::before { display: none !important; }',
     '.__dumi-default-layout-hero button { border-radius: 4px !important; }',
     '.__dumi-default-menu[data-mode=\'site\'] { background: white !important; }',
-    'code, pre { color: #457b9d !important; font-family: Menlo, Consolas, Courier, monospace !important; font-size: 14px !important; }',
+    'code, pre { color: #457b9d !important; font-family: Menlo, Consolas, Courier, monospace !important; font-size: 14px; background: transparent !important; }',
     'h1 code, h2 code, h3 code, h4 code, h5 code, h6 code { font-size: inherit; }',
     'https://cdn.jsdelivr.net/npm/prism-themes@1.5.0/themes/prism-vs.css',
   ],
