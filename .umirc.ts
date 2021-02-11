@@ -53,14 +53,14 @@ export default defineConfig({
       null,
       {
         title: 'GitHub',
-        path: 'https://github.com/dolliejs/dollie',
+        path: 'https://github.com/dolliejs/dollie-core',
       },
     ],
     zh: [
       null,
       {
         title: 'GitHub',
-        path: 'https://github.com/dolliejs/dollie',
+        path: 'https://github.com/dolliejs/dollie-core',
       },
     ],
   },
