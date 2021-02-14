@@ -20,6 +20,7 @@ module.exports = {
     'max-params': 'off',
     'prefer-regex-literals': 'off',
     'no-useless-call': 'off',
+    'complexity': 'off',
     'no-new-func': 'off',
     'comma-spacing': ['error', { 'before': false, 'after': true }],
     'key-spacing': [2, { 'beforeColon': false, 'afterColon': true, 'mode': 'strict' }],

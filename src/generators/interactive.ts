@@ -5,10 +5,16 @@
 
 import { Questions } from 'yeoman-generator';
 import { v4 as uuid } from 'uuid';
-import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
+import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
 import { parseScaffolds } from '../utils/generator';
 import DollieGeneratorBase from './base';
-import { ConflictSolveItem, ConflictSolveTable, DollieBasicProps, DollieScaffold, MergeBlock } from '../interfaces';
+import {
+  ConflictSolveItem,
+  ConflictSolveTable,
+  DollieBasicProps,
+  DollieScaffold,
+  MergeBlock,
+} from '../interfaces';
 import { stringifyBlocks } from '../utils/diff';
 
 class DollieInteractiveGenerator extends DollieGeneratorBase {
@@ -48,7 +54,7 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
 
       const scaffold: DollieScaffold = {
         uuid: uuid(),
-        scaffoldName: parseScaffoldName(props.scaffold),
+        scaffoldName: parseRepoDescription(parseScaffoldName(props.scaffold)).original,
         dependencies: [],
       };
       await parseScaffolds(scaffold, this);

@@ -50,7 +50,7 @@ export const APP_EXTEND_SCAFFOLD_PREFIX = 'extend-scaffold-';
  * default namespace for `createParser`, used by:
  * - `src/utils/scaffold.ts`
  */
-export const APP_SCAFFOLD_NAMESPACE = `${APP_NAME}js`;
+export const APP_SCAFFOLD_DEFAULT_OWNER = `${APP_NAME}js`;
 /**
  * configuration map under `compose` mode, used by:
  * - `src/utils/compose.ts`

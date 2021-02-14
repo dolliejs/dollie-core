@@ -1,12 +1,16 @@
 import path from 'path';
+import ejs from 'ejs';
+import { isBinaryFileSync } from 'isbinaryfile';
 import {
   DollieScaffoldNameParser,
   MergeBlock,
   Conflict,
   ConflictSolveTable,
+  ScaffoldRepoDescription,
+  RepoOrigin,
 } from '../interfaces';
 import {
-  APP_SCAFFOLD_NAMESPACE,
+  APP_SCAFFOLD_DEFAULT_OWNER,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   TEMPLATE_FILE_PREFIX,
@@ -16,7 +20,8 @@ import {
  * parse scaffold name and return a function as parser, which can return a string that
  * matches the pattern of Dollie scaffold's standard
  * @param scaffoldPrefix string
- * @param defaultNamespace string
+ * @param defaultOwner string
+ * @returns Function
  *
  * @example
  * ```
@@ -28,53 +33,75 @@ import {
  */
 const createScaffoldNameParser = (
   scaffoldPrefix: string,
-  defaultNamespace = APP_SCAFFOLD_NAMESPACE,
+  defaultOwner = APP_SCAFFOLD_DEFAULT_OWNER,
 ): DollieScaffoldNameParser => {
-  return (name: string) => {
-    let namespace = '';
-    let repoName = '';
-    let branchName = '';
+  return (repo: string) => {
+    let origin: RepoOrigin = 'github';
+    let owner = '';
+    let name = '';
+    let checkout = '';
 
-    if (name.split('/').length === 2) {
-      [namespace, repoName] = name.split('/');
+    if (repo.split('/').length === 2) {
+      [owner, name] = repo.split('/');
     } else {
-      repoName = name;
-      namespace = defaultNamespace;
+      name = repo;
+      owner = defaultOwner;
     }
 
-    if (!repoName.startsWith(scaffoldPrefix)) {
-      repoName = `${scaffoldPrefix}${repoName}`;
+    if (!name.startsWith(scaffoldPrefix)) {
+      name = `${scaffoldPrefix}${name}`;
     }
 
-    if (repoName.split('#').length === 2) {
-      [repoName, branchName] = repoName.split('#');
+    if (name.split('#').length === 2) {
+      [name, checkout] = name.split('#');
     } else {
-      branchName = 'master';
+      checkout = 'master';
     }
 
-    return `${namespace}/${repoName}#${branchName}`;
+    if (checkout.split('@').length === 2) {
+      [checkout, origin] = checkout.split('@') as [string, RepoOrigin];
+    }
 
-    // if (/\//.test(repoName)) {
-    //   const [namespace, repoName] = repoName.split('/');
-    //   return templateNameChunks.reduce((result, currentValue, currentIndex) => {
-    //     return `${currentIndex !== 0 ? `${result}/` : result}${
-    //       currentIndex === templateNameChunks.length - 1
-    //         ? currentValue.startsWith(scaffoldPrefix)
-    //           ? currentValue
-    //           : `${scaffoldPrefix}${currentValue}`
-    //         : currentValue
-    //     }`.trim();
-    //   }, '');
-    // } else {
-    //   return repoName.startsWith(scaffoldPrefix)
-    //     ? `${defaultNamespace}/${repoName}`
-    //     : `${defaultNamespace}/${scaffoldPrefix}${repoName}`;
-    // }
+    return { origin, owner, name, checkout };
   };
 };
 
 const parseScaffoldName = createScaffoldNameParser(APP_SCAFFOLD_PREFIX);
 const parseExtendScaffoldName = createScaffoldNameParser(APP_EXTEND_SCAFFOLD_PREFIX);
+
+const parseRepoDescription = (
+  description: ScaffoldRepoDescription,
+): { repo: string, zip: string, original: string } => {
+  const { owner, name, origin, checkout } = description;
+  const urlMap = {
+    github: () => {
+      return {
+        zip: `https://github.com/${owner}/${name}/archive/${checkout}.zip`,
+        repo: `https://github.com/${owner}/${name}/tree/${checkout}`,
+      };
+    },
+    gitlab: () => {
+      return {
+        zip: `https://gitlab.com/${owner}/${name}/repository/archive.zip?ref=${checkout}`,
+        repo: `https://gitlab.com/${owner}/${name}/-/tree/${checkout}`,
+      };
+    },
+    bitbucket: () => {
+      return {
+        zip: `https://bitbucket.org/${owner}/${name}/get/${checkout}.zip`,
+        repo: `https://bitbucket.org/${owner}/${name}/src/${checkout}`,
+      };
+    },
+  };
+  if (!urlMap[origin]) {
+    return {
+      zip: '',
+      original: '',
+      repo: '',
+    };
+  }
+  return { ...urlMap[origin](), original: `${owner}/${name}#${checkout}@${origin}` };
+};
 
 const parseFilePathname = (pathname: string): string => {
   if (!pathname || pathname === '') {
@@ -231,6 +258,16 @@ const solveConflicts = (
   return { result, ignored };
 };
 
+const renderTemplate = (contents: any, data: object) => {
+  const contentsBuffer = Buffer.from(contents, 'binary');
+
+  if (isBinaryFileSync(contentsBuffer, contentsBuffer.length)) {
+    return contentsBuffer;
+  } else {
+    return ejs.render(contentsBuffer.toString(), data);
+  }
+};
+
 export {
   parseScaffoldName,
   parseExtendScaffoldName,
@@ -238,4 +275,6 @@ export {
   checkConflictBlockCount,
   solveConflicts,
   parseFilePathname,
+  parseRepoDescription,
+  renderTemplate,
 };

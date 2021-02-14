@@ -6,10 +6,10 @@ import DollieBaseGenerator from '../generators/base';
 import traverse from './traverse';
 import download from './download';
 import { diff, checkFileAction, parseDiff, stringifyBlocks, merge } from './diff';
-import { parseExtendScaffoldName, parseFilePathname } from './scaffold';
+import { parseExtendScaffoldName, parseFilePathname, renderTemplate, parseRepoDescription, parseScaffoldName } from './scaffold';
 import readJson from './read-json';
 import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY } from '../constants';
-import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
+import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps, ScaffoldRepoDescription } from '../interfaces';
 
 /**
  * get extended props from parent scaffold
@@ -60,7 +60,7 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
    * invoke `traverse` function in `src/utils/traverse.ts`, set the ignore pattern
    * to avoid copying `.dollie.js` to temporary dir
    */
-  const files = await traverse(path.resolve(scaffoldSourceDir), TRAVERSE_IGNORE_REGEXP);
+  const files = await traverse(path.resolve(scaffoldSourceDir), TRAVERSE_IGNORE_REGEXP, context);
 
   for (const file of files) {
     const { pathname, entity } = file;
@@ -77,14 +77,21 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
     const destinationPathname = path.resolve(destinationDir, relativePathname);
 
     if (entity.startsWith('__template.')) {
-      context.fs.copyTpl(
-        pathname,
-        destinationPathname,
-        scaffold.props || {},
-      );
+      const templateFileContent = context.volume.readFileSync(pathname, { encoding: 'utf8' });
+      const fileContent = renderTemplate(templateFileContent, scaffold.props || {});
+      context.fs.write(destinationPathname, fileContent);
+      // context.fs.copyTpl(
+      //   pathname,
+      //   destinationPathname,
+      //   scaffold.props || {},
+      // );
     } else {
       // otherwise, we should also copy the file, but just simple this.fs.copy
-      context.fs.copy(pathname, destinationPathname);
+      context.fs.write(
+        destinationPathname,
+        context.volume.readFileSync(pathname, { encoding: 'utf8' }),
+      );
+      // context.fs.copy(pathname, destinationPathname);
     }
   }
 
@@ -128,7 +135,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
    * get the folder structure from each nested scaffold
    */
 
-  const files = await traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP);
+  const files = await traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP, context);
   for (const file of files) {
     const { pathname } = file;
     /**
@@ -292,13 +299,19 @@ export const parseScaffolds = async (
    * Dollie's scaffold, e.g. `test` will become `dolliejs/scaffold-test` while
    * in depended scaffolds, it will become as `dolliejs/extend-scaffold-test`
    */
-  const githubRepositoryId = `github:${scaffoldName}`;
+  let repoDescription: ScaffoldRepoDescription;
+  if (!scaffold.parent) {
+    repoDescription = parseScaffoldName(scaffoldName);
+  } else {
+    repoDescription = parseExtendScaffoldName(scaffoldName);
+  }
 
-  context.log.info(`Downloading scaffold: https://github.com/${scaffoldName}.git`);
+  context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription).repo}`);
   /**
    * download scaffold from GitHub repository and count the duration
    */
-  const duration = await download(githubRepositoryId, scaffoldDir);
+  const duration = await download(repoDescription, scaffoldDir, 0, context.volume);
+  console.log(context.volume.toJSON());
   context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
   context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
@@ -397,7 +410,8 @@ export const parseScaffolds = async (
          * cause current scaffold is a dependency, so we should invoke `parseExtendScaffoldName`
          * to parse the scaffold's name
          */
-        dependence.scaffoldName = parseExtendScaffoldName(dependence.scaffoldName);
+        dependence.scaffoldName
+          = parseRepoDescription(parseExtendScaffoldName(dependence.scaffoldName)).original;
         await parseScaffolds(dependence, context, scaffold, true);
       }
     }
@@ -442,7 +456,7 @@ export const parseScaffolds = async (
     const dependenceUuid = uuid();
     const currentDependence: DollieScaffold = {
       uuid: dependenceUuid,
-      scaffoldName: parseExtendScaffoldName(dependencies[dependenceKey]),
+      scaffoldName: parseRepoDescription(parseExtendScaffoldName(dependencies[dependenceKey])).original,
       dependencies: [],
     };
     scaffold.dependencies.push(currentDependence);

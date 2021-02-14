@@ -8,7 +8,7 @@ import _ from 'lodash';
 import DollieGeneratorBase from './base';
 import { DollieScaffold, ComposedConflictKeepsTable, ConflictSolveTable } from '../interfaces';
 import { parseScaffolds } from '../utils/generator';
-import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
+import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
 import { APP_COMPOSE_CONFIG_MAP } from '../constants';
 import { stringifyBlocks } from '../utils/diff';
 
@@ -32,8 +32,10 @@ class DollieComposeGenerator extends DollieGeneratorBase {
   public async default() {
     super.default.call(this);
 
-    const scaffold = _.get(this.options, APP_COMPOSE_CONFIG_MAP.dollie_scaffold_config) as DollieScaffold;
-    scaffold.scaffoldName = parseScaffoldName(scaffold.scaffoldName);
+    const scaffold
+      = _.get(this.options, APP_COMPOSE_CONFIG_MAP.dollie_scaffold_config) as DollieScaffold;
+    scaffold.scaffoldName
+      = parseRepoDescription(parseScaffoldName(scaffold.scaffoldName)).original;
     const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
       const result: DollieScaffold = scaffold;
       result.uuid = uuid();

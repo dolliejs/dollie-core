@@ -21,6 +21,7 @@ import _ from 'lodash';
 import chalk from 'chalk';
 import { execSync } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
+import { Volume } from 'memfs';
 import {
   removeTempFiles,
   writeTempFiles,
@@ -30,7 +31,7 @@ import {
 } from '../utils/generator';
 import readJson from '../utils/read-json';
 import { HOME_DIR, CACHE_DIR, TEMP_DIR } from '../constants';
-import { CacheTable, DollieScaffold, Conflict } from '../interfaces';
+import { CacheTable, DollieScaffold, Conflict, DollieMemoryFileSystem } from '../interfaces';
 import { isPathnameInConfig } from '../utils/scaffold';
 
 class DollieGeneratorBase extends Generator {
@@ -52,6 +53,10 @@ class DollieGeneratorBase extends Generator {
    * it is a `(string, string)` tuple, stores all the files content and its diffs
    */
   public cacheTable: CacheTable = {};
+  /**
+   * store temp files into `memfs`
+   */
+  public volume: DollieMemoryFileSystem;
   /**
    * saves all the conflicts in this array.
    * when a file from destination dir is written by more than two scaffold,
@@ -122,20 +127,9 @@ class DollieGeneratorBase extends Generator {
     }
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
     this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
-    if (fs.existsSync(this.appBasePath) && fs.readdirSync(this.appBasePath).length !== 0) {
-      this.log.info(`Cleaning cache dir ${this.appBasePath}...`);
-      fs.removeSync(this.appBasePath);
-    }
-    if (!fs.existsSync(this.appBasePath)) {
-      fs.mkdirpSync(this.appBasePath);
-    }
-    if (fs.existsSync(this.appTempPath) && fs.readdirSync(this.appTempPath).length !== 0) {
-      this.log.info(`Cleaning temp dir ${this.appTempPath}...`);
-      fs.removeSync(this.appTempPath);
-    }
-    if (!fs.existsSync(this.appTempPath)) {
-      fs.mkdirpSync(this.appTempPath);
-    }
+    this.volume = new Volume();
+    this.volume.mkdirpSync(this.appBasePath);
+    this.volume.mkdirpSync(this.appTempPath);
   }
 
   public default() {
@@ -168,6 +162,7 @@ class DollieGeneratorBase extends Generator {
       writeToDestinationPath(this);
       this.fs.delete(path.resolve(this.appTempPath));
     } catch (e) {
+      console.log(e);
       this.log.error(e.message || e.toString());
       process.exit(1);
     }
