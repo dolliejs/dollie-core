@@ -300,7 +300,7 @@ export const parseScaffolds = async (
    * in depended scaffolds, it will become as `dolliejs/extend-scaffold-test`
    */
   let repoDescription: ScaffoldRepoDescription;
-  if (!scaffold.parent) {
+  if (!parentScaffold) {
     repoDescription = parseScaffoldName(scaffoldName);
   } else {
     repoDescription = parseExtendScaffoldName(scaffoldName);
@@ -311,7 +311,6 @@ export const parseScaffolds = async (
    * download scaffold from GitHub repository and count the duration
    */
   const duration = await download(repoDescription, scaffoldDir, 0, context.volume);
-  console.log(context.volume.toJSON());
   context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
   context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
@@ -321,11 +320,12 @@ export const parseScaffolds = async (
    * after downloading scaffold, then we should read `.dollie.js` from its
    * local template directory if it exist
    */
-  if (fs.existsSync(dollieJsConfigPathname)) {
+  if (context.volume.existsSync(dollieJsConfigPathname)) {
     customScaffoldConfiguration = require(dollieJsConfigPathname) || {} as DollieScaffoldConfiguration;
   } else {
-    if (fs.existsSync(dollieJsonConfigPathname)) {
-      customScaffoldConfiguration = (readJson(dollieJsonConfigPathname) || {}) as DollieScaffoldConfiguration;
+    if (context.volume.existsSync(dollieJsonConfigPathname)) {
+      customScaffoldConfiguration =
+        (readJson(dollieJsonConfigPathname, context.volume) || {}) as DollieScaffoldConfiguration;
     } else {
       customScaffoldConfiguration = { questions: [] };
     }
