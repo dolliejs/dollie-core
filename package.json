@@ -28,6 +28,7 @@
   ],
   "devDependencies": {
     "@types/chalk": "^2.2.0",
+    "@types/decompress": "^4.2.3",
     "@types/diff": "^5.0.0",
     "@types/ejs": "^3.0.5",
     "@types/figlet": "^1.2.1",
@@ -62,6 +63,7 @@
   },
   "dependencies": {
     "chalk": "^4.1.0",
+    "decompress": "^4.2.1",
     "diff": "^5.0.0",
     "ejs": "^3.1.6",
     "figlet": "^1.5.0",
@@ -71,7 +73,6 @@
     "lodash": "^4.17.20",
     "memfs": "^3.2.0",
     "require-from-string": "^2.0.2",
-    "unzip-stream": "^0.3.1",
     "uuid": "^8.3.2",
     "yaml": "^1.10.0",
     "yeoman-generator": "^2.0.1"

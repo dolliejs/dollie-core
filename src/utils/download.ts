@@ -1,5 +1,6 @@
 import path from 'path';
-import unzip from 'unzip-stream';
+import { v4 as uuidv4 } from 'uuid';
+import decompress from 'decompress';
 import _ from 'lodash';
 import got, { Options as GotOptions } from 'got';
 import { parseRepoDescription } from './scaffold';
@@ -26,7 +27,7 @@ const downloadZipFile = async (
   const startTimestamp = Date.now();
   return new Promise((resolve, reject) => {
     volume.mkdirpSync(destination);
-    const entries = [];
+    const filename = `/${uuidv4()}.zip`;
 
     const getAbsolutePath = (filePath: string) => {
       const relativePathname = filePath.split('/').slice(1).join('/');
@@ -41,7 +42,6 @@ const downloadZipFile = async (
         isStream: true,
       },
     );
-    const unzipParser = unzip.Parse();
 
     downloader.on('error', (error) => {
       const errorMessage = error.toString() as string;
@@ -52,28 +52,24 @@ const downloadZipFile = async (
       newError.message = errorMessage;
       reject(newError);
     });
-    unzipParser.on('error', (error) => reject(error));
 
-    downloader.pipe(unzipParser);
-
-    unzipParser
-      .on('entry', (entry) => entries.push(entry))
-      .on('finish', () => {
-        Promise.all(entries.map((entry) => new Promise<void>((resolve1) => {
-          const { path: filePath, type } = entry;
-          if (type === 'Directory') {
+    downloader.pipe(volume.createWriteStream(filename)).on('finish', () => {
+      const fileBuffer = volume.readFileSync(filename);
+      decompress(fileBuffer).then((files) => {
+        for (const file of files) {
+          const { type, path: filePath, data } = file;
+          if (type === 'directory') {
             volume.mkdirpSync(getAbsolutePath(filePath));
-            resolve1();
-          } else if (type === 'File') {
-            entry
-              .pipe(volume.createWriteStream(getAbsolutePath(filePath)))
-              .on('finish', () => resolve1())
-              .on('error', () => resolve1());
-          } else {
-            resolve1();
+          } else if (type === 'file') {
+            volume.writeFileSync(getAbsolutePath(filePath), data, { encoding: 'utf8' });
           }
-        }))).then(() => resolve(Date.now() - startTimestamp));
+        }
+        return;
+      }).then(() => {
+        volume.unlinkSync(filename);
+        resolve(Date.now() - startTimestamp);
       });
+    });
   });
 };
 
