@@ -1,7 +1,7 @@
 import path from 'path';
 import unzip from 'unzip-stream';
 import _ from 'lodash';
-import download, { DownloadOptions } from 'download';
+import got, { Options as GotOptions } from 'got';
 import { parseRepoDescription } from './scaffold';
 import {
   ScaffoldRepoDescription,
@@ -21,7 +21,7 @@ const downloadZipFile = async (
   url: string,
   volume: DollieMemoryFileSystem,
   destination: string,
-  options?: DownloadOptions,
+  options?: GotOptions,
 ): Promise<number> => {
   const startTimestamp = Date.now();
   return new Promise((resolve, reject) => {
@@ -33,19 +33,24 @@ const downloadZipFile = async (
       return path.resolve(destination, relativePathname);
     };
 
-    const downloader = download(url, '', _.merge({ timeout: 10000 }, options || {}));
+    const downloader = got.stream(
+      url,
+      {
+        timeout: 10000,
+        ...((options || {}) as GotOptions),
+        isStream: true,
+      },
+    );
     const unzipParser = unzip.Parse();
 
-    downloader.catch((error) => {
-      if (error.statusCode === 404) {
-        error.code = 'ENOTFOUND';
-        reject(error);
-      }
-    });
     downloader.on('error', (error) => {
-      if (error.statusCode !== 404) {
-        reject(error);
+      const errorMessage = error.toString() as string;
+      const newError = new Error() as any;
+      if (errorMessage.indexOf('404') !== -1) {
+        newError.code = 'ENOTFOUND';
       }
+      newError.message = errorMessage;
+      reject(newError);
     });
     unzipParser.on('error', (error) => reject(error));
 
@@ -92,7 +97,7 @@ const downloadScaffold = async (
       if (retries < 3) {
         return await downloadScaffold(repoDescription, destination, retries + 1, volume);
       } else {
-        throw new Error(error?.originalError?.message || 'download scaffold timed out');
+        throw new Error(error?.message || 'download scaffold timed out');
       }
     } else if (error.code === 'ENOTFOUND') {
       if (repoDescription.checkout === 'master') {
@@ -103,7 +108,7 @@ const downloadScaffold = async (
           volume,
         );
       } else {
-        throw new Error('current scaffold repository not found');
+        throw new Error(error?.message || 'current scaffold repository not found');
       }
     } else {
       throw error;
