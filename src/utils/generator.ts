@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
+import requireFromString from 'require-from-string';
 import DollieBaseGenerator from '../generators/base';
 import traverse from './traverse';
 import download from './download';
@@ -321,7 +322,9 @@ export const parseScaffolds = async (
    * local template directory if it exist
    */
   if (context.volume.existsSync(dollieJsConfigPathname)) {
-    customScaffoldConfiguration = require(dollieJsConfigPathname) || {} as DollieScaffoldConfiguration;
+    customScaffoldConfiguration = requireFromString(context.volume.readFileSync(dollieJsConfigPathname).toString()) || {};
+    // customScaffoldConfiguration = require(dollieJsConfigPathname) || {} as DollieScaffoldConfiguration;
+    // customScaffoldConfiguration = { questions: [] };
   } else {
     if (context.volume.existsSync(dollieJsonConfigPathname)) {
       customScaffoldConfiguration =

@@ -22,7 +22,6 @@ import chalk from 'chalk';
 import { execSync } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { Volume } from 'memfs';
-import { patchRequire } from 'fs-monkey';
 import {
   removeTempFiles,
   writeTempFiles,
@@ -129,7 +128,6 @@ class DollieGeneratorBase extends Generator {
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
     this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
     this.volume = new Volume();
-    patchRequire(this.volume);
     this.volume.mkdirpSync(this.appBasePath);
     this.volume.mkdirpSync(this.appTempPath);
   }
