@@ -6,6 +6,9 @@ import {
   parseExtendScaffoldName,
   checkConflictBlockCount,
   solveConflicts,
+  parseRepoDescription,
+  parseFilePathname,
+  isPathnameInConfig,
 } from './utils/scaffold';
 import {
   getComposedArrayValue,
@@ -63,6 +66,9 @@ export {
   checkConflictBlockCount,
   solveConflicts,
   parseDiff,
+  parseRepoDescription,
+  parseFilePathname,
+  isPathnameInConfig,
   // classes
   DollieInteractiveGenerator,
   DollieComposeGenerator,
@@ -112,6 +118,9 @@ export default {
   checkConflictBlockCount,
   solveConflicts,
   parseDiff,
+  parseRepoDescription,
+  parseFilePathname,
+  isPathnameInConfig,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
   APP_NAME,

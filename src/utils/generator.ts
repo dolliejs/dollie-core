@@ -1,5 +1,4 @@
 import path from 'path';
-import fs from 'fs-extra';
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
 import requireFromString from 'require-from-string';
@@ -9,7 +8,7 @@ import download from './download';
 import { diff, checkFileAction, parseDiff, stringifyBlocks, merge } from './diff';
 import { parseExtendScaffoldName, parseFilePathname, renderTemplate, parseRepoDescription, parseScaffoldName } from './scaffold';
 import readJson from './read-json';
-import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY } from '../constants';
+import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY, TEMPLATE_FILE_PREFIX } from '../constants';
 import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps, ScaffoldRepoDescription } from '../interfaces';
 
 /**
@@ -77,22 +76,23 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
     const relativePathname = path.relative(scaffoldSourceDir, absolutePathname);
     const destinationPathname = path.resolve(destinationDir, relativePathname);
 
-    if (entity.startsWith('__template.')) {
+    const fileDir = destinationPathname.split(path.sep).slice(0, -1).join(path.sep);
+
+    if (!context.volume.existsSync(fileDir)) {
+      context.volume.mkdirpSync(fileDir);
+    }
+
+    if (entity.startsWith(TEMPLATE_FILE_PREFIX)) {
       const templateFileContent = context.volume.readFileSync(pathname, { encoding: 'utf8' });
       const fileContent = renderTemplate(templateFileContent, scaffold.props || {});
-      context.fs.write(destinationPathname, fileContent);
-      // context.fs.copyTpl(
-      //   pathname,
-      //   destinationPathname,
-      //   scaffold.props || {},
-      // );
+      context.volume.writeFileSync(destinationPathname, fileContent, { encoding: 'utf8' });
     } else {
       // otherwise, we should also copy the file, but just simple this.fs.copy
-      context.fs.write(
+      context.volume.writeFileSync(
         destinationPathname,
-        context.volume.readFileSync(pathname, { encoding: 'utf8' }),
+        context.volume.readFileSync(pathname, 'utf8'),
+        { encoding: 'utf8' },
       );
-      // context.fs.copy(pathname, destinationPathname);
     }
   }
 
@@ -156,9 +156,11 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
     /**
      * read current file from temporary dir on mem-fs
      */
-    const currentTempFileContent = context.fs.read(
+    const currentTempFileBuffer = context.volume.readFileSync(
       path.resolve(scaffoldTempDir, relativePathname),
     );
+    const currentTempFileContent = currentTempFileBuffer.toString();
+
     switch (action) {
       /**
        * if action for current file is `DIRECT`, which means we can directly write
@@ -239,40 +241,6 @@ export const writeToDestinationPath = (context: DollieBaseGenerator) => {
 };
 
 /**
- * remove file from destination recursively
- * @param scaffold DollieScaffold
- * @param context DollieBaseGenerator
- *
- * gives a scaffold configuration with tree data structure
- * and traverse all of the nodes on it and remove the cache paths
- * of them from file system
- */
-export const removeTempFiles = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
-  /**
-   * remove current scaffold node's cache path
-   * `context.appBasePath` and `scaffold.uuid` is mentioned above
-   * use `path#resolve` combined with them would become the cache pathname for
-   * current scaffold.
-   */
-  fs.removeSync(path.resolve(context.appBasePath, scaffold.uuid));
-  fs.removeSync(path.resolve(context.appTempPath, scaffold.uuid));
-  /**
-   * if there are dependencies depended by current scaffold, we should traverse
-   * and invoke `removeTempFiles` recursively to deal with them
-   */
-  if (
-    scaffold.dependencies &&
-    Array.isArray(scaffold.dependencies) &&
-    scaffold.dependencies.length > 0
-  ) {
-    for (const dependence of scaffold.dependencies) {
-      // invoke `removeTempFiles` to deal with each dependence
-      removeTempFiles(dependence, context);
-    }
-  }
-};
-
-/**
  * parse scaffold tree structure as a program-readable structure
  * @param scaffold DollieScaffold
  * @param context DollieBaseGenerator
@@ -323,8 +291,6 @@ export const parseScaffolds = async (
    */
   if (context.volume.existsSync(dollieJsConfigPathname)) {
     customScaffoldConfiguration = requireFromString(context.volume.readFileSync(dollieJsConfigPathname).toString()) || {};
-    // customScaffoldConfiguration = require(dollieJsConfigPathname) || {} as DollieScaffoldConfiguration;
-    // customScaffoldConfiguration = { questions: [] };
   } else {
     if (context.volume.existsSync(dollieJsonConfigPathname)) {
       customScaffoldConfiguration =

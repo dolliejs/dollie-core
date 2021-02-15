@@ -23,7 +23,6 @@ import { execSync } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { Volume } from 'memfs';
 import {
-  removeTempFiles,
   writeTempFiles,
   getComposedArrayValue,
   writeCacheTable,
@@ -197,15 +196,6 @@ class DollieGeneratorBase extends Generator {
   }
 
   public end() {
-    /**
-     * clean up scaffold directory
-     * if the generator exits before invoking end() method,
-     * the content inside scaffold directory might not be cleaned, but
-     * it would be cleaned when next generator is initializing
-     */
-    this.log.info('Cleaning scaffold cache...');
-    removeTempFiles(this.scaffold, this);
-
     /**
      * if there are items in `config.endScripts` options, then we should traverse
      * there are two types for `config.endScripts` option: `string` and `Function`
