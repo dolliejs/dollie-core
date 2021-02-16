@@ -6,10 +6,21 @@ import DollieBaseGenerator from '../generators/base';
 import traverse from './traverse';
 import download from './download';
 import { diff, checkFileAction, parseDiff, stringifyBlocks, merge } from './diff';
-import { parseExtendScaffoldName, parseFilePathname, renderTemplate, parseRepoDescription, parseScaffoldName } from './scaffold';
+import {
+  parseExtendScaffoldName,
+  parseFilePathname,
+  renderTemplate,
+  parseRepoDescription,
+  parseScaffoldName,
+} from './scaffold';
 import readJson from './read-json';
 import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY, TEMPLATE_FILE_PREFIX } from '../constants';
-import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps, ScaffoldRepoDescription } from '../interfaces';
+import {
+  DollieScaffold,
+  DollieScaffoldConfiguration,
+  DollieScaffoldProps,
+  ScaffoldRepoDescription,
+} from '../interfaces';
 
 /**
  * get extended props from parent scaffold
@@ -290,7 +301,9 @@ export const parseScaffolds = async (
    * local template directory if it exist
    */
   if (context.volume.existsSync(dollieJsConfigPathname)) {
-    customScaffoldConfiguration = requireFromString(context.volume.readFileSync(dollieJsConfigPathname).toString()) || {};
+    customScaffoldConfiguration = requireFromString(
+      context.volume.readFileSync(dollieJsConfigPathname).toString(),
+    ) || {};
   } else {
     if (context.volume.existsSync(dollieJsonConfigPathname)) {
       customScaffoldConfiguration =
