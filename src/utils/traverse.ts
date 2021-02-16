@@ -3,10 +3,10 @@ import DollieGeneratorBase from '../generators/base';
 import { TraverseResultItem } from '../interfaces';
 
 /**
- * @author lenconda <i@lenconda.top>
- * @param startPath string
- * @param callbackReg Regexp
- * @param lastResult Array<TraverseResultItem>
+ * @param {string} startPath
+ * @param {RegExp} callbackReg
+ * @param {Array<TraverseResultItem} lastResult
+ * @returns {Promise<Array<TraverseResultItem>>}
  *
  * traverse a specified directory, and invoke callback when
  * current entity is a file and matches regexp

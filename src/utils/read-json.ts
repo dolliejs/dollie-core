@@ -3,8 +3,8 @@ import { DollieMemoryFileSystem } from '../interfaces';
 
 /**
  * get json file content and returns as a JavaScript object
- * @param filePath string
- * @returns Record<string, any>
+ * @param {string} filePath
+ * @returns {object}
  *
  * @example
  * imagine a JSON file named `/tmp/file.json` with content:

@@ -19,9 +19,9 @@ import {
 /**
  * parse scaffold name and return a function as parser, which can return a string that
  * matches the pattern of Dollie scaffold's standard
- * @param scaffoldPrefix string
- * @param defaultOwner string
- * @returns Function
+ * @param {string} scaffoldPrefix
+ * @param {string} defaultOwner
+ * @returns {Function}
  *
  * @example
  * ```
@@ -69,6 +69,11 @@ const createScaffoldNameParser = (
 const parseScaffoldName = createScaffoldNameParser(APP_SCAFFOLD_PREFIX);
 const parseExtendScaffoldName = createScaffoldNameParser(APP_EXTEND_SCAFFOLD_PREFIX);
 
+/**
+ * parse scaffold repository description to strings
+ * @param {ScaffoldRepoDescription} description
+ * @returns {object}
+ */
 const parseRepoDescription = (
   description: ScaffoldRepoDescription,
 ): { repo: string, zip: string, original: string } => {
@@ -103,6 +108,10 @@ const parseRepoDescription = (
   return { ...urlMap[origin](), original: `${owner}/${name}#${checkout}@${origin}` };
 };
 
+/**
+ * parse template file pathname and return pathname without `__template.`
+ * @param {string} pathname
+ */
 const parseFilePathname = (pathname: string): string => {
   if (!pathname || pathname === '') {
     return '';
@@ -119,8 +128,8 @@ const parseFilePathname = (pathname: string): string => {
 
 /**
  * check if a pathname in config array or not
- * @param pathname string
- * @param configItems string
+ * @param {string} pathname
+ * @param {string} configItems
  */
 const isPathnameInConfig = (
   pathname: string,
@@ -136,8 +145,8 @@ const isPathnameInConfig = (
 
 /**
  * check and count the quantity of conflicted blocks in a file
- * @param blocks Array<MergeBlock>
- * @returns number
+ * @param {Array<MergeBlock>} blocks
+ * @returns {number}
  */
 const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
   const validBlocks = blocks.filter((block) => block.status === 'CONFLICT');
@@ -147,9 +156,9 @@ const checkConflictBlockCount = (blocks: Array<MergeBlock>): number => {
 /**
  * solve conflicts for a group of files, and return the solved files and
  * also the files that still has conflicts
- * @param conflicts Array<Conflict>
- * @param keeps ConflictKeepsTable
- * @returns object
+ * @param {Array<Conflict>} conflicts Array<Conflict>
+ * @param {ConflictSolveTable} keeps
+ * @returns {object}
  *
  * since Dollie uses an technique (or algorithm) inspired by three-way merge
  * (http://www.cis.upenn.edu/~bcpierce/papers/diff3-short.pdf), there would be
@@ -258,6 +267,12 @@ const solveConflicts = (
   return { result, ignored };
 };
 
+/**
+ * render template file with ejs
+ * @param {any} contents
+ * @param {object} data
+ * @returns {string | Buffer}
+ */
 const renderTemplate = (contents: any, data: object) => {
   const contentsBuffer = Buffer.from(contents, 'binary');
 

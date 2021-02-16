@@ -157,8 +157,8 @@ const merge = (
 
 /**
  * parse file blocks with conflict flags
- * @param blocks Array<MergeBlock>
- * @returns string
+ * @param {Array<MergeBlock>} blocks
+ * @returns {string}
  */
 const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
   return blocks.reduce((result, currentBlock) => {
@@ -226,9 +226,9 @@ const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
 /**
  * parse scaffold tree, temp files of each scaffold and user's scaffold configuration
  * and return an appropriate file action strategy
- * @param scaffold DollieScaffold
- * @param relativePathname string
- * @param cacheTable CacheTable
+ * @param {DollieScaffold} scaffold - scaffold configuration tree
+ * @param {string} relativePathname
+ * @param {CacheTable} cacheTable
  *
  * @description `DIRECT` write file and replace content to cache table
  * @description `MERGE` push diff between current file and the original file content to cache table

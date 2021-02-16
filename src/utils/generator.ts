@@ -13,8 +13,8 @@ import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps, Scaff
 
 /**
  * get extended props from parent scaffold
- * @param scaffold DollieScaffold
- * @returns object
+ * @param {DollieScaffold} scaffold
+ * @returns {object}
  */
 export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Record<string, any> => {
   if (!scaffold.parent) {
@@ -36,8 +36,8 @@ export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Re
 
 /**
  * write file to destination recursively
- * @param scaffold DollieScaffold
- * @param context DollieBaseGenerator
+ * @param {DollieScaffold} scaffold
+ * @param {DollieBaseGenerator} context
  *
  * gives a scaffold configuration with tree data structure
  * and traverse all of the nodes in this tree recursively and process them
@@ -216,7 +216,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
 
 /**
  * write all the files from cache table to physical dir
- * @param context DollieBaseGenerator
+ * @param {DollieBaseGenerator} context
  */
 export const writeToDestinationPath = (context: DollieBaseGenerator) => {
   for (const pathname of Object.keys(context.cacheTable)) {
@@ -242,10 +242,10 @@ export const writeToDestinationPath = (context: DollieBaseGenerator) => {
 
 /**
  * parse scaffold tree structure as a program-readable structure
- * @param scaffold DollieScaffold
- * @param context DollieBaseGenerator
- * @param parentScaffold DollieScaffold
- * @param isCompose boolean
+ * @param {DollieScaffold} scaffold
+ * @param {DollieBaseGenerator} context
+ * @param {DollieScaffold} parentScaffold
+ * @param {boolean} isCompose
  *
  * this function will download the scaffold with scaffold id from github.com
  * and prompt out the questions in each scaffold
@@ -436,9 +436,9 @@ export const parseScaffolds = async (
 /**
  * get configuration values from scaffold tree structure, compose recursively as
  * an array and returns it
- * @param scaffold DollieScaffold
- * @param key string
- * @returns Array
+ * @param {DollieScaffold} scaffold
+ * @param {string} key
+ * @returns {Array<any>}
  *
  * since the `scaffold` is a nested structure, and every node could have its own configuration
  * value, but we supposed to get all of the values and make a aggregation (something just like
