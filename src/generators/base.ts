@@ -290,7 +290,7 @@ class DollieGeneratorBase extends Generator {
    * traverse files in destination dir and get the deletion pathname
    * @returns {Array<string>}
    */
-  private getDeletions(): Array<string> {
+  protected getDeletions(): Array<string> {
     /**
      * if there are items in `config.files.delete` options, then we should traverse
      * it and remove the items
@@ -306,7 +306,7 @@ class DollieGeneratorBase extends Generator {
    * @param {Array<string>} deletions - deletion regexps to be parsed
    * @returns {Array<Conflict>}
    */
-  private getConflicts(deletions: Array<string>): Array<Conflict> {
+  protected getConflicts(deletions: Array<string>): Array<Conflict> {
     return this.conflicts.filter(
       (conflict) => deletions.indexOf(conflict.pathname) === -1,
     );
