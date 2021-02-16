@@ -35,6 +35,7 @@ module.exports = {
     '@typescript-eslint/no-var-requires': 'off',
     '@typescript-eslint/consistent-type-assertions': 'off',
     '@typescript-eslint/no-require-imports': 'off',
+    '@typescript-eslint/no-parameter-properties': 'off',
     '@typescript-eslint/type-annotation-spacing': [
       'error',
       {

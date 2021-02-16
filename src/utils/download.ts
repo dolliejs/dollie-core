@@ -1,22 +1,28 @@
+/**
+ * @file provide download functions
+ * @author Lenconda <i@lenconda.top>
+ */
+
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import decompress from 'decompress';
 import _ from 'lodash';
-import got, { Options as GotOptions } from 'got';
+import got, { Options as GotOptions, RequestError } from 'got';
 import { parseRepoDescription } from './scaffold';
 import {
   ScaffoldRepoDescription,
   DollieMemoryFileSystem,
 } from '../interfaces';
+import { DollieError, ScaffoldNotFoundError, ScaffoldTimeoutError } from '../errors';
 
 /**
- * @author lenconda <i@lenconda.top>
- * @param repo string
- * @param destination string
- * @returns Promise<number>
- *
- * download a git repo into local filesystem, and returns
- * the whole duration of downloading process
+ * download and extract zip file into a memfs volume
+ * @name downloadZipFile
+ * @function
+ * @param {string} url - url for request and download
+ * @param {DollieMemoryFileSystem} volume - a `memfs.Volume` instance
+ * @param {string} destination - destination pathname for zip file's output
+ * @returns {Promise<number>}
  */
 const downloadZipFile = async (
   url: string,
@@ -34,25 +40,29 @@ const downloadZipFile = async (
       return path.resolve(destination, relativePathname);
     };
 
+    const downloaderOptions = _.merge({ timeout: 10000 }, options || {}, { isStream: true });
+
     const downloader = got.stream(
       url,
-      {
-        timeout: 10000,
-        ...((options || {}) as GotOptions),
-        isStream: true,
-      },
+      downloaderOptions as GotOptions & { isStream: true },
     );
 
-    downloader.on('error', (error) => {
+    downloader.on('error', (error: RequestError) => {
       const errorMessage = error.toString() as string;
-      const newError = new Error() as any;
       if (errorMessage.indexOf('404') !== -1) {
-        newError.code = 'ENOTFOUND';
+        reject(new ScaffoldNotFoundError());
       }
-      newError.message = errorMessage;
-      reject(newError);
+      if (error.code === 'ETIMEDOUT') {
+        reject(new ScaffoldTimeoutError(downloaderOptions.timeout));
+      }
+      const otherError = new DollieError(errorMessage);
+      otherError.code = error.code || 'E_UNKNOWN';
+      reject(new DollieError(errorMessage));
     });
 
+    /**
+     * pipe download stream to memfs volume
+     */
     downloader.pipe(volume.createWriteStream(filename)).on('finish', () => {
       const fileBuffer = volume.readFileSync(filename);
       decompress(fileBuffer).then((files) => {
@@ -89,13 +99,13 @@ const downloadScaffold = async (
   try {
     return await downloadZipFile(zip, volume, destination);
   } catch (error) {
-    if (error.code === 'ETIMEDOUT') {
+    if (error.code === 'E_SCAFFOLD_TIMEOUT' || error instanceof ScaffoldTimeoutError) {
       if (retries < 3) {
         return await downloadScaffold(repoDescription, destination, retries + 1, volume);
       } else {
         throw new Error(error?.message || 'download scaffold timed out');
       }
-    } else if (error.code === 'ENOTFOUND') {
+    } else if (error.code === 'E_SCAFFOLD_NOTFOUND' || error instanceof ScaffoldNotFoundError) {
       if (repoDescription.checkout === 'master') {
         return await downloadScaffold(
           { ...repoDescription, checkout: 'main' },
@@ -104,7 +114,7 @@ const downloadScaffold = async (
           volume,
         );
       } else {
-        throw new Error(error?.message || 'current scaffold repository not found');
+        throw error;
       }
     } else {
       throw error;
