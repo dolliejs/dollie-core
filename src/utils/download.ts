@@ -17,7 +17,6 @@ import { DollieError, ScaffoldNotFoundError, ScaffoldTimeoutError } from '../err
 
 /**
  * download and extract zip file into a memfs volume
- * @name downloadZipFile
  * @function
  * @param {string} url - url for request and download
  * @param {DollieMemoryFileSystem} volume - a `memfs.Volume` instance
@@ -85,15 +84,17 @@ const downloadZipFile = async (
 
 /**
  * download scaffold with retries of 3 times
- * @param repo string
- * @param destination string
- * @param retries number
+ * @function
+ * @param {ScaffoldRepoDescription} repoDescription - scaffold repository description
+ * @param {string} destination - destination pathname in memfs volume
+ * @param {DollieMemoryFileSystem} volume - memfs volume instance
+ * @param {number} retries - retry times count
  */
 const downloadScaffold = async (
   repoDescription: ScaffoldRepoDescription,
   destination: string,
-  retries = 0,
   volume,
+  retries = 0,
 ): Promise<number> => {
   const { zip } = parseRepoDescription(repoDescription);
   try {
@@ -101,7 +102,7 @@ const downloadScaffold = async (
   } catch (error) {
     if (error.code === 'E_SCAFFOLD_TIMEOUT' || error instanceof ScaffoldTimeoutError) {
       if (retries < 3) {
-        return await downloadScaffold(repoDescription, destination, retries + 1, volume);
+        return await downloadScaffold(repoDescription, destination, volume, retries + 1);
       } else {
         throw new Error(error?.message || 'download scaffold timed out');
       }
@@ -110,8 +111,8 @@ const downloadScaffold = async (
         return await downloadScaffold(
           { ...repoDescription, checkout: 'main' },
           destination,
-          0,
           volume,
+          0,
         );
       } else {
         throw error;

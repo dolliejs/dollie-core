@@ -33,27 +33,41 @@ import { HOME_DIR, CACHE_DIR, TEMP_DIR } from '../constants';
 import { CacheTable, DollieScaffold, Conflict, DollieMemoryFileSystem } from '../interfaces';
 import { isPathnameInConfig } from '../utils/scaffold';
 
+/**
+ * @class
+ * @name DollieGeneratorBase
+ */
 class DollieGeneratorBase extends Generator {
   /**
    * the name of the project, decides write scaffold contents into which directory
+   * @type {string}
+   * @public
    */
   public projectName: string;
   /**
    * the absolute pathname for storing scaffold contents
    * it is a composed pathname with `HOME_DIR` and `CACHE_DIR`
+   * @type {string}
+   * @public
    */
   public appBasePath: string;
   /**
    * the absolute pathname for storing scaffold contents temporarily
    * it is a composed pathname with `HOME_DIR` and `TEMP_DIR`
+   * @type {string}
+   * @public
    */
   public appTempPath: string;
   /**
    * it is a `(string, string)` tuple, stores all the files content and its diffs
+   * @type {CacheTable}
+   * @public
    */
   public cacheTable: CacheTable = {};
   /**
    * store temp files into `memfs`
+   * @type {DollieMemoryFileSystem}
+   * @public
    */
   public volume: DollieMemoryFileSystem;
   /**
@@ -61,25 +75,33 @@ class DollieGeneratorBase extends Generator {
    * when a file from destination dir is written by more than two scaffold,
    * there might become some conflicts. Dollie uses Myers diff and 3-merge algorithm
    * inspired by Git to save the conflict files during writing files
+   * @type {Array<Conflict>}
+   * @public
    */
   public conflicts: Array<Conflict> = [];
   /**
    * the nested tree structure of all scaffolds used during one lifecycle
    * the main scaffold is on the top level, which is supposed to be unique
+   * @type {DollieScaffold}
+   * @protected
    */
   protected scaffold: DollieScaffold;
   /**
    * the name to be shown as a prompt when CLI is initializing
+   * @type {string}
+   * @protected
    */
   protected cliName: string;
   /**
    * keys of dependencies
+   * @type {Array<string>}
+   * @private
    */
   private dependencyKeys: Array<string> = [];
 
   /**
    * create a unique dependency key and push to `this.dependencyKeys`
-   * @returns string
+   * @returns {string}
    */
   public createDependencyKey(): string {
     const uuid = uuidv4();
@@ -95,8 +117,9 @@ class DollieGeneratorBase extends Generator {
 
   /**
    * check if a key is in the `this.dependencyKeys` or not
-   * @param key string
-   * @returns boolean
+   * @param {string} key
+   * @returns {boolean}
+   * @public
    */
   public isDependencyKeyRegistered(key: string): boolean {
     return this.dependencyKeys.indexOf(key) !== -1;
@@ -104,7 +127,9 @@ class DollieGeneratorBase extends Generator {
 
   /**
    * delete files from destination dir in mem-fs before committing
-   * @param deletions Array<string>
+   * @param {Array<string>} deletions - the pathname for files to be deleted
+   * @returns {void}
+   * @public
    */
   public deleteCachedFiles(deletions: Array<string>) {
     for (const deletion of deletions) {
@@ -263,7 +288,7 @@ class DollieGeneratorBase extends Generator {
 
   /**
    * traverse files in destination dir and get the deletion pathname
-   * @returns Array<string>
+   * @returns {Array<string>}
    */
   private getDeletions(): Array<string> {
     /**
@@ -278,8 +303,8 @@ class DollieGeneratorBase extends Generator {
 
   /**
    * get the conflicts not in the `deletions`
-   * @param deletions Array<string>
-   * @returns Array<Conflict>
+   * @param {Array<string>} deletions - deletion regexps to be parsed
+   * @returns {Array<Conflict>}
    */
   private getConflicts(deletions: Array<string>): Array<Conflict> {
     return this.conflicts.filter(

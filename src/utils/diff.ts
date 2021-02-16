@@ -1,4 +1,4 @@
-import { diffLines } from 'diff';
+import { Change, diffLines } from 'diff';
 import _ from 'lodash';
 import {
   DollieScaffold,
@@ -13,9 +13,9 @@ import { isPathnameInConfig } from './scaffold';
 
 /**
  * optimize diff algorithm and returns a more appropriate result
- * @param originalContent string
- * @param newContent string
- * @returns Change[]
+ * @param {string} originalContent - the original content to be diffed
+ * @param {string} newContent - the incoming content to diff
+ * @returns {Array<Change>}
  *
  * this function uses diff algorithm from Myers: http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.4.6927
  * we diff two blocks of text with lines, and split the values with single lines
@@ -53,9 +53,9 @@ const diff = (
 
 /**
  * merge two changes records into one
- * @param currentChanges Change[]
- * @param newChanges Change[]
- * @returns MergeResult
+ * @param {Array<Change>} currentChanges
+ * @param {Array<Change>} newChanges
+ * @returns {MergeResult}
  *
  * `currentChanges` is the changes between original text and current text
  * `newChanges` is the changes between current text and new text

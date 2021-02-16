@@ -279,7 +279,7 @@ export const parseScaffolds = async (
   /**
    * download scaffold from GitHub repository and count the duration
    */
-  const duration = await download(repoDescription, scaffoldDir, 0, context.volume);
+  const duration = await download(repoDescription, scaffoldDir, context.volume);
   context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
   context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
