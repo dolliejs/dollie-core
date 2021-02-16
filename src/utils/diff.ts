@@ -1,4 +1,4 @@
-import { diffLines } from 'diff';
+import { Change, diffLines } from 'diff';
 import _ from 'lodash';
 import {
   DollieScaffold,
@@ -13,9 +13,9 @@ import { isPathnameInConfig } from './scaffold';
 
 /**
  * optimize diff algorithm and returns a more appropriate result
- * @param originalContent string
- * @param newContent string
- * @returns Change[]
+ * @param {string} originalContent - the original content to be diffed
+ * @param {string} newContent - the incoming content to diff
+ * @returns {Array<Change>}
  *
  * this function uses diff algorithm from Myers: http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.4.6927
  * we diff two blocks of text with lines, and split the values with single lines
@@ -53,9 +53,9 @@ const diff = (
 
 /**
  * merge two changes records into one
- * @param currentChanges Change[]
- * @param newChanges Change[]
- * @returns MergeResult
+ * @param {Array<Change>} currentChanges
+ * @param {Array<Change>} newChanges
+ * @returns {MergeResult}
  *
  * `currentChanges` is the changes between original text and current text
  * `newChanges` is the changes between current text and new text
@@ -157,8 +157,8 @@ const merge = (
 
 /**
  * parse file blocks with conflict flags
- * @param blocks Array<MergeBlock>
- * @returns string
+ * @param {Array<MergeBlock>} blocks
+ * @returns {string}
  */
 const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
   return blocks.reduce((result, currentBlock) => {
@@ -179,8 +179,8 @@ const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
 
 /**
  * parse a diff changes into merge blocks
- * @param mergeResult Array<DiffChange>
- * @returns Array<MergeBlock>
+ * @param {Array<DiffChange>} mergeResult
+ * @returns {Array<MergeBlock>}
  */
 const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
   const mergeBlocks: Array<MergeBlock> = [];
@@ -226,9 +226,9 @@ const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
 /**
  * parse scaffold tree, temp files of each scaffold and user's scaffold configuration
  * and return an appropriate file action strategy
- * @param scaffold DollieScaffold
- * @param relativePathname string
- * @param cacheTable CacheTable
+ * @param {DollieScaffold} scaffold - scaffold configuration tree
+ * @param {string} relativePathname
+ * @param {CacheTable} cacheTable
  *
  * @description `DIRECT` write file and replace content to cache table
  * @description `MERGE` push diff between current file and the original file content to cache table

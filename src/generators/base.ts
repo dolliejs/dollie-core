@@ -21,8 +21,8 @@ import _ from 'lodash';
 import chalk from 'chalk';
 import { execSync } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
+import { Volume } from 'memfs';
 import {
-  removeTempFiles,
   writeTempFiles,
   getComposedArrayValue,
   writeCacheTable,
@@ -30,52 +30,78 @@ import {
 } from '../utils/generator';
 import readJson from '../utils/read-json';
 import { HOME_DIR, CACHE_DIR, TEMP_DIR } from '../constants';
-import { CacheTable, DollieScaffold, Conflict } from '../interfaces';
+import { CacheTable, DollieScaffold, Conflict, DollieMemoryFileSystem } from '../interfaces';
 import { isPathnameInConfig } from '../utils/scaffold';
 
+/**
+ * @class
+ * @name DollieGeneratorBase
+ */
 class DollieGeneratorBase extends Generator {
   /**
    * the name of the project, decides write scaffold contents into which directory
+   * @type {string}
+   * @public
    */
   public projectName: string;
   /**
    * the absolute pathname for storing scaffold contents
    * it is a composed pathname with `HOME_DIR` and `CACHE_DIR`
+   * @type {string}
+   * @public
    */
   public appBasePath: string;
   /**
    * the absolute pathname for storing scaffold contents temporarily
    * it is a composed pathname with `HOME_DIR` and `TEMP_DIR`
+   * @type {string}
+   * @public
    */
   public appTempPath: string;
   /**
    * it is a `(string, string)` tuple, stores all the files content and its diffs
+   * @type {CacheTable}
+   * @public
    */
   public cacheTable: CacheTable = {};
+  /**
+   * store temp files into `memfs`
+   * @type {DollieMemoryFileSystem}
+   * @public
+   */
+  public volume: DollieMemoryFileSystem;
   /**
    * saves all the conflicts in this array.
    * when a file from destination dir is written by more than two scaffold,
    * there might become some conflicts. Dollie uses Myers diff and 3-merge algorithm
    * inspired by Git to save the conflict files during writing files
+   * @type {Array<Conflict>}
+   * @public
    */
   public conflicts: Array<Conflict> = [];
   /**
    * the nested tree structure of all scaffolds used during one lifecycle
    * the main scaffold is on the top level, which is supposed to be unique
+   * @type {DollieScaffold}
+   * @protected
    */
   protected scaffold: DollieScaffold;
   /**
    * the name to be shown as a prompt when CLI is initializing
+   * @type {string}
+   * @protected
    */
   protected cliName: string;
   /**
    * keys of dependencies
+   * @type {Array<string>}
+   * @private
    */
   private dependencyKeys: Array<string> = [];
 
   /**
    * create a unique dependency key and push to `this.dependencyKeys`
-   * @returns string
+   * @returns {string}
    */
   public createDependencyKey(): string {
     const uuid = uuidv4();
@@ -91,8 +117,9 @@ class DollieGeneratorBase extends Generator {
 
   /**
    * check if a key is in the `this.dependencyKeys` or not
-   * @param key string
-   * @returns boolean
+   * @param {string} key
+   * @returns {boolean}
+   * @public
    */
   public isDependencyKeyRegistered(key: string): boolean {
     return this.dependencyKeys.indexOf(key) !== -1;
@@ -100,7 +127,9 @@ class DollieGeneratorBase extends Generator {
 
   /**
    * delete files from destination dir in mem-fs before committing
-   * @param deletions Array<string>
+   * @param {Array<string>} deletions - the pathname for files to be deleted
+   * @returns {void}
+   * @public
    */
   public deleteCachedFiles(deletions: Array<string>) {
     for (const deletion of deletions) {
@@ -122,20 +151,9 @@ class DollieGeneratorBase extends Generator {
     }
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
     this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
-    if (fs.existsSync(this.appBasePath) && fs.readdirSync(this.appBasePath).length !== 0) {
-      this.log.info(`Cleaning cache dir ${this.appBasePath}...`);
-      fs.removeSync(this.appBasePath);
-    }
-    if (!fs.existsSync(this.appBasePath)) {
-      fs.mkdirpSync(this.appBasePath);
-    }
-    if (fs.existsSync(this.appTempPath) && fs.readdirSync(this.appTempPath).length !== 0) {
-      this.log.info(`Cleaning temp dir ${this.appTempPath}...`);
-      fs.removeSync(this.appTempPath);
-    }
-    if (!fs.existsSync(this.appTempPath)) {
-      fs.mkdirpSync(this.appTempPath);
-    }
+    this.volume = new Volume();
+    this.volume.mkdirpSync(this.appBasePath);
+    this.volume.mkdirpSync(this.appTempPath);
   }
 
   public default() {
@@ -204,15 +222,6 @@ class DollieGeneratorBase extends Generator {
 
   public end() {
     /**
-     * clean up scaffold directory
-     * if the generator exits before invoking end() method,
-     * the content inside scaffold directory might not be cleaned, but
-     * it would be cleaned when next generator is initializing
-     */
-    this.log.info('Cleaning scaffold cache...');
-    removeTempFiles(this.scaffold, this);
-
-    /**
      * if there are items in `config.endScripts` options, then we should traverse
      * there are two types for `config.endScripts` option: `string` and `Function`
      */
@@ -279,7 +288,7 @@ class DollieGeneratorBase extends Generator {
 
   /**
    * traverse files in destination dir and get the deletion pathname
-   * @returns Array<string>
+   * @returns {Array<string>}
    */
   private getDeletions(): Array<string> {
     /**
@@ -294,8 +303,8 @@ class DollieGeneratorBase extends Generator {
 
   /**
    * get the conflicts not in the `deletions`
-   * @param deletions Array<string>
-   * @returns Array<Conflict>
+   * @param {Array<string>} deletions - deletion regexps to be parsed
+   * @returns {Array<Conflict>}
    */
   private getConflicts(deletions: Array<string>): Array<Conflict> {
     return this.conflicts.filter(

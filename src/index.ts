@@ -6,6 +6,9 @@ import {
   parseExtendScaffoldName,
   checkConflictBlockCount,
   solveConflicts,
+  parseRepoDescription,
+  parseFilePathname,
+  isPathnameInConfig,
 } from './utils/scaffold';
 import {
   getComposedArrayValue,
@@ -41,7 +44,7 @@ import {
   TRAVERSE_IGNORE_REGEXP,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
-  APP_SCAFFOLD_NAMESPACE,
+  APP_SCAFFOLD_DEFAULT_OWNER,
   APP_COMPOSE_CONFIG_MAP,
 } from './constants';
 
@@ -63,6 +66,9 @@ export {
   checkConflictBlockCount,
   solveConflicts,
   parseDiff,
+  parseRepoDescription,
+  parseFilePathname,
+  isPathnameInConfig,
   // classes
   DollieInteractiveGenerator,
   DollieComposeGenerator,
@@ -91,7 +97,7 @@ export {
   TRAVERSE_IGNORE_REGEXP,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
-  APP_SCAFFOLD_NAMESPACE,
+  APP_SCAFFOLD_DEFAULT_OWNER,
   APP_COMPOSE_CONFIG_MAP,
 };
 
@@ -112,6 +118,9 @@ export default {
   checkConflictBlockCount,
   solveConflicts,
   parseDiff,
+  parseRepoDescription,
+  parseFilePathname,
+  isPathnameInConfig,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
   APP_NAME,
@@ -121,6 +130,6 @@ export default {
   TRAVERSE_IGNORE_REGEXP,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
-  APP_SCAFFOLD_NAMESPACE,
+  APP_SCAFFOLD_DEFAULT_OWNER,
   APP_COMPOSE_CONFIG_MAP,
 };
