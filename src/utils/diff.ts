@@ -179,8 +179,8 @@ const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
 
 /**
  * parse a diff changes into merge blocks
- * @param mergeResult Array<DiffChange>
- * @returns Array<MergeBlock>
+ * @param {Array<DiffChange>} mergeResult
+ * @returns {Array<MergeBlock>}
  */
 const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
   const mergeBlocks: Array<MergeBlock> = [];
