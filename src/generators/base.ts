@@ -32,6 +32,7 @@ import readJson from '../utils/read-json';
 import { HOME_DIR, CACHE_DIR, TEMP_DIR } from '../constants';
 import { CacheTable, DollieScaffold, Conflict, DollieMemoryFileSystem } from '../interfaces';
 import { isPathnameInConfig } from '../utils/scaffold';
+import DollieWebGenerator from './web';
 
 /**
  * @class
@@ -134,7 +135,9 @@ class DollieGeneratorBase extends Generator {
   public deleteCachedFiles(deletions: Array<string>) {
     for (const deletion of deletions) {
       if (typeof deletion === 'string') {
-        this.log.info(`Deleting scaffold item: ${deletion}`);
+        if (!(this instanceof DollieWebGenerator)) {
+          this.log.info(`Deleting scaffold item: ${deletion}`);
+        }
         this.cacheTable[deletion] = null;
       }
     }
