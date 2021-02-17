@@ -29,6 +29,7 @@ const handleError = (error: Error, context: DollieGeneratorBase) => {
 
 class DollieWebGenerator extends DollieComposeGenerator {
   public initializing() {
+    this.cliName = 'Dollie Web';
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
     this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
     this.volume = new Volume();
@@ -36,7 +37,7 @@ class DollieWebGenerator extends DollieComposeGenerator {
     this.volume.mkdirpSync(this.appTempPath);
     const projectName = _.get(this, 'options.projectName') || '';
     if (!projectName) {
-      this.log.error('A value of `string` must be assigned to `name`');
+      handleError(new Error('`projectName` must be specified'), this);
     }
     this.projectName = projectName;
   }

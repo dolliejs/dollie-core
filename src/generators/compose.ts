@@ -30,65 +30,98 @@ class DollieComposeGenerator extends DollieGeneratorBase {
   }
 
   public async default() {
-    super.default.call(this);
-
-    const scaffold
-      = _.get(this.options, APP_COMPOSE_CONFIG_MAP.dollie_scaffold_config) as DollieScaffold;
-    scaffold.scaffoldName
-      = parseRepoDescription(parseScaffoldName(scaffold.scaffoldName)).original;
-    const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
-      const result: DollieScaffold = scaffold;
-      result.uuid = uuid();
-      await parseScaffolds(result, this, null, 'compose');
-      return result;
-    };
-
-    this.scaffold = await createDetailedScaffold(scaffold);
+    try {
+      super.default.call(this);
+      const scaffold
+        = _.get(this.options, APP_COMPOSE_CONFIG_MAP.dollie_scaffold_config) as DollieScaffold;
+      scaffold.scaffoldName
+        = parseRepoDescription(parseScaffoldName(scaffold.scaffoldName)).original;
+      const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
+        const result: DollieScaffold = scaffold;
+        result.uuid = uuid();
+        await parseScaffolds(result, this, null, 'compose');
+        return result;
+      };
+      this.scaffold = await createDetailedScaffold(scaffold);
+    } catch (e) {
+      if (this.cliName !== 'Dollie Compose') {
+        throw e;
+      } else {
+        this.log.error(e.message || e.toString());
+        process.exit(1);
+      }
+    }
   }
 
   public async writing() {
-    await super.writing.call(this);
+    try {
+      await super.writing.call(this);
+      if (this.conflicts.length === 0) { return; }
 
-    if (this.conflicts.length === 0) { return; }
+      /**
+       * get keeps table from user's yaml config and parse it into the format that Dollie can understand
+       */
+      const composedKeepsTable = _.get(this.options, APP_COMPOSE_CONFIG_MAP.conflict_keeps_table) as ComposedConflictKeepsTable || {};
+      const keepsTable = Object
+        .keys(composedKeepsTable)
+        .reduce((result, currentPathname) => {
+          const currentComposedKeepsList = composedKeepsTable[currentPathname];
+          const values = currentComposedKeepsList.map((keep) => {
+            if (typeof keep === 'string') {
+              return keep;
+            }
+            return ['former', 'current'].reduce((keepsResult, currentKey) => {
+              return keepsResult.concat(
+                (keep[currentKey] as Array<string | number> || []).map((value) => `${currentKey}#${value}`),
+              );
+            }, []);
+          });
+          result[currentPathname] = (result[currentPathname] || []).concat(values);
+          return result;
+        }, {} as ConflictSolveTable);
 
-    /**
-     * get keeps table from user's yaml config and parse it into the format that Dollie can understand
-     */
-    const composedKeepsTable = _.get(this.options, APP_COMPOSE_CONFIG_MAP.conflict_keeps_table) as ComposedConflictKeepsTable || {};
-    const keepsTable = Object
-      .keys(composedKeepsTable)
-      .reduce((result, currentPathname) => {
-        const currentComposedKeepsList = composedKeepsTable[currentPathname];
-        const values = currentComposedKeepsList.map((keep) => {
-          if (typeof keep === 'string') {
-            return keep;
-          }
-          return ['former', 'current'].reduce((keepsResult, currentKey) => {
-            return keepsResult.concat(
-              (keep[currentKey] as Array<string | number> || []).map((value) => `${currentKey}#${value}`),
-            );
-          }, []);
-        });
-        result[currentPathname] = (result[currentPathname] || []).concat(values);
-        return result;
-      }, {} as ConflictSolveTable);
+      const solvedConflicts = solveConflicts(this.conflicts, keepsTable);
+      this.conflicts = solvedConflicts.ignored || [];
 
-    const solvedConflicts = solveConflicts(this.conflicts, keepsTable);
-    this.conflicts = solvedConflicts.ignored || [];
-
-    const files = [...solvedConflicts.result, ... solvedConflicts.ignored];
-    for (const file of files) {
-      this.fs.delete(file.pathname);
-      this.fs.write(file.pathname, stringifyBlocks(file.blocks));
+      const files = [...solvedConflicts.result, ... solvedConflicts.ignored];
+      for (const file of files) {
+        this.fs.delete(file.pathname);
+        this.fs.write(file.pathname, stringifyBlocks(file.blocks));
+      }
+    } catch (e) {
+      if (this.cliName !== 'Dollie Compose') {
+        throw e;
+      } else {
+        this.log.error(e.message || e.toString());
+        process.exit(1);
+      }
     }
   }
 
   public install() {
-    super.install.call(this);
+    try {
+      super.install.call(this);
+    } catch (e) {
+      if (this.cliName !== 'Dollie Compose') {
+        throw e;
+      } else {
+        this.log.error(e.message || e.toString());
+        process.exit(1);
+      }
+    }
   }
 
   public end() {
-    super.end.call(this);
+    try {
+      super.end.call(this);
+    } catch (e) {
+      if (this.cliName !== 'Dollie Compose') {
+        throw e;
+      } else {
+        this.log.error(e.message || e.toString());
+        process.exit(1);
+      }
+    }
   }
 }
 
