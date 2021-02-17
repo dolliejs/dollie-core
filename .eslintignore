@@ -3,3 +3,7 @@ node_modules
 lib
 *.json
 scripts
+.umi
+docs
+.idea
+.vscode
