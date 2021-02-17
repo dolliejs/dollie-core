@@ -160,18 +160,20 @@ class DollieGeneratorBase extends Generator {
   }
 
   public default() {
-    const DESTINATION_PATH = path.resolve(process.cwd(), this.projectName);
+    if (!((this as any) instanceof DollieWebGenerator)) {
+      const DESTINATION_PATH = path.resolve(process.cwd(), this.projectName);
 
-    if (fs.existsSync(DESTINATION_PATH)) {
-      this.log.error('Cannot initialize a project into an existed directory');
-      process.exit(1);
+      if (fs.existsSync(DESTINATION_PATH)) {
+        this.log.error('Cannot initialize a project into an existed directory');
+        process.exit(1);
+      }
+
+      /**
+       * set destination pathname with `this.projectName`
+       * it is an alias to `path.resolve(process.cwd(), this.projectName)`
+       */
+      this.destinationRoot(DESTINATION_PATH);
     }
-
-    /**
-     * set destination pathname with `this.projectName`
-     * it is an alias to `path.resolve(process.cwd(), this.projectName)`
-     */
-    this.destinationRoot(DESTINATION_PATH);
   }
 
   public async writing() {
@@ -237,8 +239,8 @@ class DollieGeneratorBase extends Generator {
          * this script as a command
          */
         if (typeof endScript === 'string') {
-            this.log.info(`Executing end script: \`${endScript}\``);
-            this.log(Buffer.from(execSync(endScript)).toString());
+          this.log.info(`Executing end script: \`${endScript}\``);
+          this.log(Buffer.from(execSync(endScript)).toString());
         /**
          * if current end script value is a function, Dollie will considering reading
          * the code from it, and call it with `context`
