@@ -184,7 +184,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
         if (!context.cacheTable[relativePathname]) {
           context.cacheTable[relativePathname] = [];
         }
-        context.cacheTable[relativePathname] = [diff(currentTempFileContent, currentTempFileContent)];
+        context.cacheTable[relativePathname] = [diff(currentTempFileContent)];
         break;
       }
       /**

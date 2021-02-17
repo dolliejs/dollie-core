@@ -10,7 +10,7 @@ import { HOME_DIR, TEMP_DIR, CACHE_DIR } from '../constants';
 import DollieComposeGenerator from './compose';
 import { writeCacheTable, writeTempFiles } from '../utils/generator';
 import { merge, parseDiff, stringifyBlocks } from '../utils/diff';
-import { DollieWebResponseData, FileTable } from '../interfaces';
+import { DollieWebResponseData } from '../interfaces';
 import DollieGeneratorBase from './base';
 
 const handleFinish = (data: DollieWebResponseData, context: DollieGeneratorBase) => {
@@ -28,8 +28,6 @@ const handleError = (error: Error, context: DollieGeneratorBase) => {
 };
 
 class DollieWebGenerator extends DollieComposeGenerator {
-  private fileTable: FileTable = {};
-
   public initializing() {
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
     this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
@@ -86,9 +84,21 @@ class DollieWebGenerator extends DollieComposeGenerator {
       }
 
       this.conflicts = this.getConflicts(deletions);
+    } catch (e) {
+      handleError(e, this);
+    }
+  }
 
+  public end() {
+    try {
+      super.end.call(this);
       handleFinish({
-        files: this.fileTable,
+        files: Object.keys(this.fileTable).reduce((result, currentPathname) => {
+          if (this.fileTable[currentPathname]) {
+            result[currentPathname] = this.fileTable[currentPathname];
+          }
+          return result;
+        }, {}),
         conflicts: this.conflicts,
       }, this);
     } catch (e) {
