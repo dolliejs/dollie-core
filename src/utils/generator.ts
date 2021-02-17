@@ -21,6 +21,7 @@ import {
   DollieScaffoldProps,
   ScaffoldRepoDescription,
 } from '../interfaces';
+import DollieWebGenerator from '../generators/web';
 
 /**
  * get extended props from parent scaffold
@@ -183,7 +184,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
         if (!context.cacheTable[relativePathname]) {
           context.cacheTable[relativePathname] = [];
         }
-        context.cacheTable[relativePathname] = [diff(currentTempFileContent, currentTempFileContent)];
+        context.cacheTable[relativePathname] = [diff(currentTempFileContent)];
         break;
       }
       /**
@@ -265,7 +266,7 @@ export const parseScaffolds = async (
   scaffold: DollieScaffold,
   context: DollieBaseGenerator,
   parentScaffold?: DollieScaffold,
-  isCompose = false,
+  mode: 'interactive' | 'compose' | 'web' = 'interactive',
 ) => {
   if (!scaffold) { return; }
   const { uuid: scaffoldUuid, scaffoldName } = scaffold;
@@ -286,13 +287,18 @@ export const parseScaffolds = async (
     repoDescription = parseExtendScaffoldName(scaffoldName);
   }
 
-  context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription).repo}`);
+  if (!(context instanceof DollieWebGenerator)) {
+    context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription).repo}`);
+  }
   /**
    * download scaffold from GitHub repository and count the duration
    */
   const duration = await download(repoDescription, scaffoldDir, context.volume);
-  context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
-  context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
+  if (!(context instanceof DollieWebGenerator)) {
+    context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
+    context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
+  }
+
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
   const dollieJsConfigPathname = path.resolve(scaffoldDir, '.dollie.js');
   const dollieJsonConfigPathname = path.resolve(scaffoldDir, '.dollie.json');
@@ -379,7 +385,7 @@ export const parseScaffolds = async (
    * prompt question to users, just resolve the dependencies, invoke `parseScaffolds`
    * recursively and return back to the generator directly
    */
-  if (isCompose) {
+  if (mode !== 'interactive') {
     scaffold.props = _.merge(
       projectNameProp,
       getExtendedPropsFromParentScaffold(scaffold),
@@ -394,7 +400,7 @@ export const parseScaffolds = async (
          */
         dependence.scaffoldName
           = parseRepoDescription(parseExtendScaffoldName(dependence.scaffoldName)).original;
-        await parseScaffolds(dependence, context, scaffold, true);
+        await parseScaffolds(dependence, context, scaffold, mode);
       }
     }
     return;

@@ -37,6 +37,12 @@ export interface DollieScaffoldConfiguration {
   files?: DollieScaffoldFileConfiguration;
 }
 
+export interface ComposedDollieScaffold {
+  scaffoldName: string;
+  dependencies?: Array<ComposedDollieScaffold>;
+  props?: DollieScaffoldProps;
+}
+
 export interface DollieScaffold {
   uuid: string;
   scaffoldName: string;
@@ -92,3 +98,21 @@ export interface ScaffoldRepoDescription {
 }
 
 export type DollieMemoryFileSystem = typeof Volume.prototype;
+
+export type FileTable = Record<string, MergeResult>;
+
+export interface DollieWebResponseData {
+  files: FileTable;
+  conflicts?: Array<Conflict>;
+  gitIgnoredFiles?: Array<string>;
+}
+
+export interface DollieAppCallbacks {
+  onFinish?: (data: DollieWebResponseData) => void;
+  onError?: (error: Error) => void;
+}
+
+export interface DollieAppConfig {
+  projectName: string;
+  dollieScaffoldConfig: ComposedDollieScaffold;
+}

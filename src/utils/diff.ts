@@ -22,9 +22,9 @@ import { isPathnameInConfig } from './scaffold';
  */
 const diff = (
   originalContent: string,
-  newContent: string,
+  newContent?: string,
 ): Array<DiffChange> => {
-  const changes = diffLines(originalContent, newContent);
+  const changes = diffLines(originalContent, newContent || originalContent);
   const splitChanges = changes.reduce((result, currentItem) => {
     const lines = (currentItem.value.endsWith('\n')
       ? currentItem.value.slice(0, -1)
@@ -224,6 +224,15 @@ const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
 };
 
 /**
+ * parse a file text content to merge blocks
+ * @param {string} content - file content
+ * @returns {Array<MergeBlock>}
+ */
+const parseFileContent = (content: string): Array<MergeBlock> => {
+  return parseDiff(diff(content));
+};
+
+/**
  * parse scaffold tree, temp files of each scaffold and user's scaffold configuration
  * and return an appropriate file action strategy
  * @param {DollieScaffold} scaffold - scaffold configuration tree
@@ -292,4 +301,11 @@ const checkFileAction = (
   return cacheExistence ? 'DIRECT' : 'NIL';
 };
 
-export { diff, merge, checkFileAction, stringifyBlocks, parseDiff };
+export {
+  diff,
+  merge,
+  checkFileAction,
+  stringifyBlocks,
+  parseDiff,
+  parseFileContent,
+};

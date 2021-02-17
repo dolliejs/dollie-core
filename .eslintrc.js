@@ -13,8 +13,9 @@ module.exports = {
   rules: {
     semi: 'off',
     'comma-dangle': ['error', 'always-multiline'],
-    'switch-colon-spacing': ['error', {'after': true, 'before': false}],
+    'switch-colon-spacing': ['error', { 'after': true, 'before': false }],
     quotes: ['error', 'single'],
+    indent: ['error', 2, { SwitchCase: 1 }],
     'space-infix-ops': 'off',
     'max-nested-callbacks': 'off',
     'max-params': 'off',
