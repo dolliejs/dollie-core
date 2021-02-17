@@ -101,10 +101,17 @@ export type DollieMemoryFileSystem = typeof Volume.prototype;
 
 export type FileTable = Record<string, MergeResult>;
 
-export interface DollieWebResponseData {
-  files: FileTable;
+interface DollieResponseData {
   conflicts?: Array<Conflict>;
   gitIgnoredFiles?: Array<string>;
+}
+
+export interface DollieWebResponseData extends DollieResponseData {
+  files: FileTable;
+}
+
+export interface DollieContainerResponseData extends DollieResponseData {
+  files: Array<string>;
 }
 
 export interface DollieAppCallbacks {

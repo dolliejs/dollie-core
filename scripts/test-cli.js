@@ -6,7 +6,7 @@ const Environment = require('yeoman-environment');
 const InteractiveGenerator = require('../src/generators/interactive').default;
 const ComposeGenerator = require('../src/generators/compose').default;
 const { parseComposeConfig } = require('../src/utils/compose');
-const { run } = require('../src/programmatic/web');
+const { runWeb, runContainer } = require('../src/api');
 
 async function test() {
   const type = process.argv[2];
@@ -39,7 +39,23 @@ async function test() {
           ],
         }
       };
-      const data = await run(config);
+      const data = await runWeb(config);
+      console.log(data);
+      break;
+    }
+    case 'container': {
+      const config = {
+        projectName: 'project',
+        dollieScaffoldConfig: {
+          scaffoldName: 'react',
+          dependencies: [
+            { scaffoldName: 'react-ts' },
+            { scaffoldName: 'react-less' },
+            { scaffoldName: 'react-dva' },
+          ],
+        }
+      };
+      const data = await runContainer(config);
       console.log(data);
       break;
     }

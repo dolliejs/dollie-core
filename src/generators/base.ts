@@ -191,23 +191,18 @@ class DollieGeneratorBase extends Generator {
   }
 
   public async writing() {
-    try {
-      this.log.info('Writing main scaffold...');
-      /**
-       * invoke `recursiveWrite` function to deal with scaffolds and write
-       * scaffold contents into the destination directory
-       */
-      await writeTempFiles(this.scaffold, this);
-      await writeCacheTable(this.scaffold, this);
-      const deletions = this.getDeletions();
-      this.conflicts = this.getConflicts(deletions);
-      this.deleteCachedFiles(deletions);
-      writeToDestinationPath(this);
-      this.fs.delete(path.resolve(this.appTempPath));
-    } catch (e) {
-      this.log.error(e.message || e.toString());
-      process.exit(1);
-    }
+    this.log.info('Writing main scaffold...');
+    /**
+     * invoke `recursiveWrite` function to deal with scaffolds and write
+     * scaffold contents into the destination directory
+     */
+    await writeTempFiles(this.scaffold, this);
+    await writeCacheTable(this.scaffold, this);
+    const deletions = this.getDeletions();
+    this.conflicts = this.getConflicts(deletions);
+    this.deleteCachedFiles(deletions);
+    writeToDestinationPath(this);
+    this.fs.delete(path.resolve(this.appTempPath));
   }
 
   public install() {
