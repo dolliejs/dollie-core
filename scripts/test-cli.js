@@ -37,7 +37,7 @@ async function test() {
             { scaffoldName: 'react-less' },
             { scaffoldName: 'react-dva' },
           ],
-        }
+        },
       };
       const data = await runWeb(config);
       console.log(data);
@@ -53,7 +53,7 @@ async function test() {
             { scaffoldName: 'react-less' },
             { scaffoldName: 'react-dva' },
           ],
-        }
+        },
       };
       const data = await runContainer(config);
       console.log(data);

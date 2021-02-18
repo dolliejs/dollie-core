@@ -112,6 +112,7 @@ export interface DollieWebResponseData extends DollieResponseData {
 
 export interface DollieContainerResponseData extends DollieResponseData {
   files: Array<string>;
+  basePath: string;
 }
 
 export interface DollieAppCallbacks {
@@ -122,4 +123,5 @@ export interface DollieAppCallbacks {
 export interface DollieAppConfig {
   projectName: string;
   dollieScaffoldConfig: ComposedDollieScaffold;
+  outputPath?: string;
 }
