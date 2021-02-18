@@ -68,8 +68,11 @@ class DollieContainerGenerator extends DollieComposeGenerator {
     try {
       super.end.call(this);
       handleFinish({
-        files: Object.keys(this.cacheTable).filter((pathname) => Boolean(this.cacheTable[pathname])),
+        files: Object.keys(this.cacheTable)
+          .filter((pathname) => Boolean(this.cacheTable[pathname]))
+          .map((pathname) => this.destinationPath(pathname)),
         conflicts: this.conflicts,
+        basePath: this.destinationPath(),
       }, this);
     } catch (e) {
       handleError(e, this);

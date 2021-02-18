@@ -175,7 +175,16 @@ class DollieGeneratorBase extends Generator {
 
   public default() {
     if (!((this as Generator) instanceof DollieWebGenerator)) {
-      const DESTINATION_PATH = path.resolve(process.cwd(), this.projectName);
+      let DESTINATION_PATH;
+
+      if (this.cliName === 'Dollie Container') {
+        const outputPath = _.get(this, 'options.outputPath') ||
+          path.resolve(this.appTempPath);
+        this.destinationRoot(path.resolve(outputPath, uuidv4()));
+        return;
+      }
+
+      DESTINATION_PATH = path.resolve(this.projectName);
 
       if (fs.existsSync(DESTINATION_PATH)) {
         this.log.error('Cannot initialize a project into an existed directory');
