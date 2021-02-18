@@ -9,16 +9,16 @@ import { Volume } from 'memfs';
 import { HOME_DIR, TEMP_DIR, CACHE_DIR } from '../constants';
 import DollieComposeGenerator from './compose';
 import { DollieContainerResponseData } from '../interfaces';
-import DollieGeneratorBase from './base';
+import DollieBaseGenerator from '../base';
 
-const handleFinish = (data: DollieContainerResponseData, context: DollieGeneratorBase) => {
+const handleFinish = (data: DollieContainerResponseData, context: DollieBaseGenerator) => {
   const onFinishFunc = _.get(context, 'options.callbacks.onFinish');
   if (onFinishFunc && typeof onFinishFunc === 'function') {
     onFinishFunc(data);
   }
 };
 
-const handleError = (error: Error, context: DollieGeneratorBase) => {
+const handleError = (error: Error, context: DollieBaseGenerator) => {
   const onErrorFunc = _.get(context, 'options.callbacks.onError');
   if (onErrorFunc && typeof onErrorFunc === 'function') {
     onErrorFunc(error);
@@ -50,7 +50,7 @@ class DollieContainerGenerator extends DollieComposeGenerator {
 
   public async writing() {
     try {
-      await DollieGeneratorBase.prototype.writing.call(this);
+      await DollieBaseGenerator.prototype.writing.call(this);
     } catch (e) {
       handleError(e, this);
     }

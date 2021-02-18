@@ -2,7 +2,7 @@ import path from 'path';
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
 import requireFromString from 'require-from-string';
-import DollieBaseGenerator from '../generators/base';
+import DollieBaseGenerator from '../base';
 import traverse from './traverse';
 import download from './download';
 import { diff, checkFileAction, parseDiff, stringifyBlocks, merge } from './diff';
@@ -16,12 +16,13 @@ import {
 import readJson from './read-json';
 import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY, TEMPLATE_FILE_PREFIX } from '../constants';
 import {
+  DollieAppMode,
   DollieScaffold,
   DollieScaffoldConfiguration,
   DollieScaffoldProps,
   ScaffoldRepoDescription,
 } from '../interfaces';
-import DollieWebGenerator from '../generators/web';
+import DollieMemoryGenerator from '../generators/memory';
 
 /**
  * get extended props from parent scaffold
@@ -266,7 +267,7 @@ export const parseScaffolds = async (
   scaffold: DollieScaffold,
   context: DollieBaseGenerator,
   parentScaffold?: DollieScaffold,
-  mode: 'interactive' | 'compose' | 'web' = 'interactive',
+  mode: DollieAppMode = 'interactive',
 ) => {
   if (!scaffold) { return; }
   const { uuid: scaffoldUuid, scaffoldName } = scaffold;
@@ -287,14 +288,14 @@ export const parseScaffolds = async (
     repoDescription = parseExtendScaffoldName(scaffoldName);
   }
 
-  if (!(context instanceof DollieWebGenerator)) {
+  if (!(context instanceof DollieMemoryGenerator)) {
     context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription).repo}`);
   }
   /**
    * download scaffold from GitHub repository and count the duration
    */
   const duration = await download(repoDescription, scaffoldDir, context.volume);
-  if (!(context instanceof DollieWebGenerator)) {
+  if (!(context instanceof DollieMemoryGenerator)) {
     context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
     context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
   }

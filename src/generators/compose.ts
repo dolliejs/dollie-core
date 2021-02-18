@@ -5,14 +5,14 @@
 
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
-import DollieGeneratorBase from './base';
+import DollieBaseGenerator from '../base';
 import { DollieScaffold, ComposedConflictKeepsTable, ConflictSolveTable } from '../interfaces';
 import { parseScaffolds } from '../utils/generator';
 import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
 import { APP_COMPOSE_CONFIG_MAP } from '../constants';
 import { stringifyBlocks } from '../utils/diff';
 
-class DollieComposeGenerator extends DollieGeneratorBase {
+class DollieComposeGenerator extends DollieBaseGenerator {
   public initializing() {
     this.cliName = 'Dollie Compose';
     super.initializing.call(this);

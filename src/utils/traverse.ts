@@ -1,5 +1,5 @@
 import path from 'path';
-import DollieGeneratorBase from '../generators/base';
+import DollieBaseGenerator from '../base';
 import { TraverseResultItem } from '../interfaces';
 
 /**
@@ -16,7 +16,7 @@ const traverse = async (
   startPath: string,
   // a RegExp param, passed to match a file to invoke callback
   callbackReg: RegExp,
-  context: DollieGeneratorBase,
+  context: DollieBaseGenerator,
   lastResult?: Array<TraverseResultItem>,
 ): Promise<Array<TraverseResultItem>> => {
   let result = lastResult || [];

@@ -6,7 +6,7 @@ const Environment = require('yeoman-environment');
 const InteractiveGenerator = require('../src/generators/interactive').default;
 const ComposeGenerator = require('../src/generators/compose').default;
 const { parseComposeConfig } = require('../src/utils/compose');
-const { runWeb, runContainer } = require('../src/api');
+const { runMemory, runContainer } = require('../src/api');
 
 async function test() {
   const type = process.argv[2];
@@ -17,7 +17,12 @@ async function test() {
 
   switch (type) {
     case 'interactive':
-      env.run('dollie:interactive', null);
+      try {
+        await env.run('dollie:interactive', null);
+      } catch (e) {
+        console.log(e.toString());
+        process.exit(1);
+      }
       break;
     case 'compose': {
       const content = fs.readFileSync(path.resolve(__dirname, './test.yml'), {
@@ -27,7 +32,7 @@ async function test() {
       env.run('dollie:compose', config, null);
       break;
     }
-    case 'web': {
+    case 'memory': {
       const config = {
         projectName: 'project',
         dollieScaffoldConfig: {
@@ -39,7 +44,7 @@ async function test() {
           ],
         },
       };
-      const data = await runWeb(config);
+      const data = await runMemory(config);
       console.log(data);
       break;
     }

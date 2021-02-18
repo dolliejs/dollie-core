@@ -1,3 +1,5 @@
+import { DollieAppMode } from './interfaces';
+
 export class DollieError extends Error {
   public code: string;
 
@@ -19,5 +21,21 @@ export class ScaffoldTimeoutError extends DollieError {
 
   public constructor(timeout: number) {
     super(`Download scaffold timed out in ${timeout}ms`);
+  }
+}
+
+export class ModeInvalidError extends DollieError {
+  public code = 'E_MODE_INVALID';
+
+  public constructor(mode: DollieAppMode) {
+    super(`Mode \`${mode}\` is invalid`);
+  }
+}
+
+export class DestinationExistsError extends DollieError {
+  public code = 'E_DESTINATION_EXISTS';
+
+  public constructor(pathname: string) {
+    super(`Destination ${pathname} exists, cannot write files into it`);
   }
 }

@@ -1,5 +1,5 @@
 import Environment from 'yeoman-environment';
-import DollieWebGenerator from './generators/web';
+import DollieMemoryGenerator from './generators/memory';
 import DollieContainerGenerator from './generators/container';
 import {
   DollieAppConfig,
@@ -7,11 +7,11 @@ import {
   DollieContainerResponseData,
 } from './interfaces';
 
-const runWeb = async (config: DollieAppConfig): Promise<DollieWebResponseData> => {
+const runMemory = async (config: DollieAppConfig): Promise<DollieWebResponseData> => {
   return new Promise((resolve, reject) => {
     const env = Environment.createEnv();
-    env.registerStub(DollieWebGenerator, 'dollie:web');
-    env.run('dollie:web', {
+    env.registerStub(DollieMemoryGenerator, 'dollie:memory');
+    env.run('dollie:memory', {
       ...config,
       callbacks: {
         onFinish: (data) => resolve(data),
@@ -35,5 +35,5 @@ const runContainer = async (config: DollieAppConfig): Promise<DollieContainerRes
   });
 };
 
-export default { runWeb, runContainer };
-export { runWeb, runContainer };
+export default { runMemory, runContainer };
+export { runMemory, runContainer };

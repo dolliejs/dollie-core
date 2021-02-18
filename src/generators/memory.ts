@@ -1,5 +1,5 @@
 /**
- * @file src/generators/web.ts
+ * @file src/generators/memory.ts
  * @author lenconda <i@lenconda.top>
  */
 
@@ -11,23 +11,23 @@ import DollieComposeGenerator from './compose';
 import { writeCacheTable, writeTempFiles } from '../utils/generator';
 import { merge, parseDiff, stringifyBlocks } from '../utils/diff';
 import { DollieWebResponseData } from '../interfaces';
-import DollieGeneratorBase from './base';
+import DollieBaseGenerator from '../base';
 
-const handleFinish = (data: DollieWebResponseData, context: DollieGeneratorBase) => {
+const handleFinish = (data: DollieWebResponseData, context: DollieBaseGenerator) => {
   const onFinishFunc = _.get(context, 'options.callbacks.onFinish');
   if (onFinishFunc && typeof onFinishFunc === 'function') {
     onFinishFunc(data);
   }
 };
 
-const handleError = (error: Error, context: DollieGeneratorBase) => {
+const handleError = (error: Error, context: DollieBaseGenerator) => {
   const onErrorFunc = _.get(context, 'options.callbacks.onError');
   if (onErrorFunc && typeof onErrorFunc === 'function') {
     onErrorFunc(error);
   }
 };
 
-class DollieWebGenerator extends DollieComposeGenerator {
+class DollieMemoryGenerator extends DollieComposeGenerator {
   public initializing() {
     this.cliName = 'Dollie Web';
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
@@ -108,4 +108,4 @@ class DollieWebGenerator extends DollieComposeGenerator {
   }
 }
 
-export default DollieWebGenerator;
+export default DollieMemoryGenerator;

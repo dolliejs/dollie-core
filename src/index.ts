@@ -18,7 +18,7 @@ import { parseComposeConfig, stringifyComposeConfig } from './utils/compose';
 import { diff, merge, checkFileAction, stringifyBlocks, parseDiff, parseFileContent } from './utils/diff';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
-import dollie, { runContainer, runWeb } from './api';
+import dollie, { runContainer, runMemory } from './api';
 import {
   DiffChange,
   PatchTableItem,
@@ -72,7 +72,7 @@ export {
   isPathnameInConfig,
   parseFileContent,
   runContainer,
-  runWeb,
+  runMemory,
   // objects
   dollie,
   // classes
@@ -129,7 +129,7 @@ export default {
   isPathnameInConfig,
   parseFileContent,
   runContainer,
-  runWeb,
+  runMemory,
   dollie,
   DollieInteractiveGenerator,
   DollieComposeGenerator,

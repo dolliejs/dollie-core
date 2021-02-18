@@ -125,3 +125,5 @@ export interface DollieAppConfig {
   dollieScaffoldConfig: ComposedDollieScaffold;
   outputPath?: string;
 }
+
+export type DollieAppMode = 'interactive' | 'compose' | 'container' | 'memory';

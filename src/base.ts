@@ -27,9 +27,9 @@ import {
   getComposedArrayValue,
   writeCacheTable,
   writeToDestinationPath,
-} from '../utils/generator';
-import readJson from '../utils/read-json';
-import { HOME_DIR, CACHE_DIR, TEMP_DIR } from '../constants';
+} from './utils/generator';
+import readJson from './utils/read-json';
+import { HOME_DIR, CACHE_DIR, TEMP_DIR } from './constants';
 import {
   CacheTable,
   DollieScaffold,
@@ -37,16 +37,17 @@ import {
   DollieMemoryFileSystem,
   FileTable,
   MergeResult,
-} from '../interfaces';
-import { isPathnameInConfig } from '../utils/scaffold';
-import DollieWebGenerator from './web';
-import { parseFileContent } from '../utils/diff';
+  DollieAppMode,
+} from './interfaces';
+import { isPathnameInConfig } from './utils/scaffold';
+import DollieMemoryGenerator from './generators/memory';
+import { parseFileContent } from './utils/diff';
+import { ModeInvalidError } from './errors';
 
 /**
  * @class
- * @name DollieGeneratorBase
  */
-class DollieGeneratorBase extends Generator {
+class DollieBaseGenerator extends Generator {
   /**
    * the name of the project, decides write scaffold contents into which directory
    * @type {string}
@@ -101,8 +102,9 @@ class DollieGeneratorBase extends Generator {
    * @protected
    */
   protected cliName: string;
+  protected mode: DollieAppMode;
   /**
-   * file table for web mode
+   * file table for memory mode
    * @type {FileTable}
    * @protected
    */
@@ -113,6 +115,10 @@ class DollieGeneratorBase extends Generator {
    * @private
    */
   private dependencyKeys: Array<string> = [];
+
+  public constructor(args: string | string[], options: Generator.GeneratorOptions) {
+    super(args, options);
+  }
 
   /**
    * create a unique dependency key and push to `this.dependencyKeys`
@@ -140,63 +146,40 @@ class DollieGeneratorBase extends Generator {
     return this.dependencyKeys.indexOf(key) !== -1;
   }
 
-  /**
-   * delete files from destination dir in mem-fs before committing
-   * @param {Array<string>} deletions - the pathname for files to be deleted
-   * @returns {void}
-   * @public
-   */
-  public deleteCachedFiles(deletions: Array<string>) {
-    for (const deletion of deletions) {
-      if (typeof deletion === 'string') {
-        if (!(this instanceof DollieWebGenerator)) {
-          this.log.info(`Deleting scaffold item: ${deletion}`);
-        }
-        this.cacheTable[deletion] = null;
-      }
-    }
-  }
-
   public initializing() {
-    this.log(figlet.textSync('DOLLIE'));
-    const packageJson =
-    readJson(path.resolve(__dirname, '../../package.json')) || {};
-    if (packageJson.version && packageJson.name) {
-      this.log(
-        `${this.cliName} CLI with ${packageJson.name}@${packageJson.version}`,
-      );
-    }
+    this.initLog();
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
     this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
     this.volume = new Volume();
     this.volume.mkdirpSync(this.appBasePath);
     this.volume.mkdirpSync(this.appTempPath);
+    if (!this.mode) {
+      throw new ModeInvalidError(this.mode);
+    }
   }
 
   public default() {
-    if (!((this as Generator) instanceof DollieWebGenerator)) {
-      let DESTINATION_PATH;
+    let DESTINATION_PATH;
 
-      if (this.cliName === 'Dollie Container') {
-        const outputPath = _.get(this, 'options.outputPath') ||
-          path.resolve(this.appTempPath);
-        this.destinationRoot(path.resolve(outputPath, uuidv4()));
-        return;
-      }
-
-      DESTINATION_PATH = path.resolve(this.projectName);
-
-      if (fs.existsSync(DESTINATION_PATH)) {
-        this.log.error('Cannot initialize a project into an existed directory');
-        process.exit(1);
-      }
-
-      /**
-       * set destination pathname with `this.projectName`
-       * it is an alias to `path.resolve(process.cwd(), this.projectName)`
-       */
-      this.destinationRoot(DESTINATION_PATH);
+    if (this.cliName === 'Dollie Container') {
+      const outputPath = _.get(this, 'options.outputPath') ||
+        path.resolve(this.appTempPath);
+      this.destinationRoot(path.resolve(outputPath, uuidv4()));
+      return;
     }
+
+    DESTINATION_PATH = path.resolve(this.projectName);
+
+    if (fs.existsSync(DESTINATION_PATH)) {
+      this.log.error('Cannot initialize a project into an existed directory');
+      process.exit(1);
+    }
+
+    /**
+     * set destination pathname with `this.projectName`
+     * it is an alias to `path.resolve(process.cwd(), this.projectName)`
+     */
+    this.destinationRoot(DESTINATION_PATH);
   }
 
   public async writing() {
@@ -257,7 +240,7 @@ class DollieGeneratorBase extends Generator {
          * this script as a command
          */
         if (typeof endScript === 'string') {
-          if (!((this as Generator) instanceof DollieWebGenerator)) {
+          if (!((this as Generator) instanceof DollieMemoryGenerator)) {
             this.log.info(`Executing end script: \`${endScript}\``);
             this.log(Buffer.from(execSync(endScript)).toString());
           }
@@ -269,7 +252,7 @@ class DollieGeneratorBase extends Generator {
         } else if (typeof endScript === 'function') {
           const endScriptSource = Function.prototype.toString.call(endScript);
           const endScriptFunc = new Function(`return ${endScriptSource}`).call(null);
-          if (!((this as Generator) instanceof DollieWebGenerator)) {
+          if (!((this as Generator) instanceof DollieMemoryGenerator)) {
             endScriptFunc({
               fs: {
                 read: (pathname: string): string => {
@@ -342,7 +325,7 @@ class DollieGeneratorBase extends Generator {
           }
         }
       } catch (e) {
-        if (!((this as Generator) instanceof DollieWebGenerator)) {
+        if (!((this as Generator) instanceof DollieMemoryGenerator)) {
           this.log.error(e.message || e.toString());
         } else { throw e; }
       }
@@ -374,6 +357,25 @@ class DollieGeneratorBase extends Generator {
       (conflict) => deletions.indexOf(conflict.pathname) === -1,
     );
   }
+
+  /**
+   * delete files from destination dir in mem-fs before committing
+   * @param {Array<string>} deletions - the pathname for files to be deleted
+   * @returns {void}
+   * @public
+   */
+  protected deleteCachedFiles(deletions: Array<string>) {
+    for (const deletion of deletions) {
+      if (typeof deletion === 'string') {
+        if (!(this instanceof DollieMemoryGenerator)) {
+          this.log.info(`Deleting scaffold item: ${deletion}`);
+        }
+        this.cacheTable[deletion] = null;
+      }
+    }
+  }
+
+  protected initLog(name?: string) {}
 }
 
-export default DollieGeneratorBase;
+export default DollieBaseGenerator;
