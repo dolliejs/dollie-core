@@ -6,15 +6,29 @@ import {
   parseExtendScaffoldName,
   checkConflictBlockCount,
   solveConflicts,
+  parseRepoDescription,
+  parseFilePathname,
+  isPathnameInConfig,
 } from './utils/scaffold';
 import {
   getComposedArrayValue,
   getExtendedPropsFromParentScaffold,
 } from './utils/generator';
 import { parseComposeConfig, stringifyComposeConfig } from './utils/compose';
-import { diff, merge, checkFileAction, stringifyBlocks, parseDiff } from './utils/diff';
+import { diff, merge, checkFileAction, parseMergeBlocksToText, parseDiffToMergeBlocks, parseFileTextToMergeBlocks } from './utils/diff';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
+import { memory, container } from './dollie';
+import log from './utils/log';
+import {
+  DollieError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
+  ModeInvalidError,
+  DestinationExistsError,
+  ArgInvalidError,
+  ComposeScaffoldConfigInvalidError,
+} from './errors';
 import {
   DiffChange,
   PatchTableItem,
@@ -41,7 +55,7 @@ import {
   TRAVERSE_IGNORE_REGEXP,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
-  APP_SCAFFOLD_NAMESPACE,
+  APP_SCAFFOLD_DEFAULT_OWNER,
   APP_COMPOSE_CONFIG_MAP,
 } from './constants';
 
@@ -59,10 +73,26 @@ export {
   diff,
   merge,
   checkFileAction,
-  stringifyBlocks,
   checkConflictBlockCount,
   solveConflicts,
-  parseDiff,
+  parseRepoDescription,
+  parseFilePathname,
+  isPathnameInConfig,
+  parseFileTextToMergeBlocks,
+  parseDiffToMergeBlocks,
+  parseMergeBlocksToText,
+  container,
+  memory,
+  // objects
+  log,
+  // errors
+  DollieError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
+  ModeInvalidError,
+  DestinationExistsError,
+  ArgInvalidError,
+  ComposeScaffoldConfigInvalidError,
   // classes
   DollieInteractiveGenerator,
   DollieComposeGenerator,
@@ -91,7 +121,7 @@ export {
   TRAVERSE_IGNORE_REGEXP,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
-  APP_SCAFFOLD_NAMESPACE,
+  APP_SCAFFOLD_DEFAULT_OWNER,
   APP_COMPOSE_CONFIG_MAP,
 };
 
@@ -108,10 +138,24 @@ export default {
   diff,
   merge,
   checkFileAction,
-  stringifyBlocks,
+  parseMergeBlocksToText,
   checkConflictBlockCount,
   solveConflicts,
-  parseDiff,
+  parseDiffToMergeBlocks,
+  parseRepoDescription,
+  parseFilePathname,
+  isPathnameInConfig,
+  parseFileTextToMergeBlocks,
+  container,
+  memory,
+  log,
+  DollieError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
+  ModeInvalidError,
+  DestinationExistsError,
+  ArgInvalidError,
+  ComposeScaffoldConfigInvalidError,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
   APP_NAME,
@@ -121,6 +165,6 @@ export default {
   TRAVERSE_IGNORE_REGEXP,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
-  APP_SCAFFOLD_NAMESPACE,
+  APP_SCAFFOLD_DEFAULT_OWNER,
   APP_COMPOSE_CONFIG_MAP,
 };

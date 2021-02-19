@@ -13,13 +13,15 @@ module.exports = {
   rules: {
     semi: 'off',
     'comma-dangle': ['error', 'always-multiline'],
-    'switch-colon-spacing': ['error', {'after': true, 'before': false}],
+    'switch-colon-spacing': ['error', { 'after': true, 'before': false }],
     quotes: ['error', 'single'],
+    indent: ['error', 2, { SwitchCase: 1 }],
     'space-infix-ops': 'off',
     'max-nested-callbacks': 'off',
     'max-params': 'off',
     'prefer-regex-literals': 'off',
     'no-useless-call': 'off',
+    'complexity': 'off',
     'no-new-func': 'off',
     'comma-spacing': ['error', { 'before': false, 'after': true }],
     'key-spacing': [2, { 'beforeColon': false, 'afterColon': true, 'mode': 'strict' }],
@@ -34,6 +36,7 @@ module.exports = {
     '@typescript-eslint/no-var-requires': 'off',
     '@typescript-eslint/consistent-type-assertions': 'off',
     '@typescript-eslint/no-require-imports': 'off',
+    '@typescript-eslint/no-parameter-properties': 'off',
     '@typescript-eslint/type-annotation-spacing': [
       'error',
       {

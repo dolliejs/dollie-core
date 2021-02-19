@@ -2,29 +2,44 @@
 
 const fs = require('fs');
 const path = require('path');
-const Environment = require('yeoman-environment');
-const InteractiveGenerator = require('../src/generators/interactive').default;
-const ComposeGenerator = require('../src/generators/compose').default;
 const { parseComposeConfig } = require('../src/utils/compose');
+const { run } = require('../src/dollie');
+const log = require('../src/utils/log').default;
 
-const type = process.argv[2];
-const env = Environment.createEnv();
+async function test() {
+  const type = process.argv[2];
+  let config = {};
 
-env.registerStub(InteractiveGenerator, 'dollie:interactive');
-env.registerStub(ComposeGenerator, 'dollie:compose');
-
-switch (type) {
-  case 'interactive':
-    env.run('dollie:interactive', null);
-    break;
-  case 'compose':
+  if (type === 'compose') {
     const content = fs.readFileSync(path.resolve(__dirname, './test.yml'), {
       encoding: 'utf-8',
     });
-    const config = parseComposeConfig(content);
-    console.log(config);
-    // env.run('dollie:compose', config, null);
-    break;
-  default:
-    break;
+    config = parseComposeConfig(content);
+  }
+
+  if (type === 'memory' || type === 'container') {
+    config = {
+      projectName: 'project',
+      dollieScaffoldConfig: {
+        scaffoldName: 'react',
+        dependencies: [
+          { scaffoldName: 'react-ts' },
+          { scaffoldName: 'react-less' },
+          { scaffoldName: 'react-dva' },
+        ],
+      },
+    };
+  }
+
+  try {
+    const manifest = await run(type, config);
+    if (manifest) {
+      console.log(manifest);
+    }
+  } catch (e) {
+    log.error(e.toString());
+    process.exit(1);
+  }
 }
+
+test();

@@ -1,62 +1,72 @@
 /**
- * @file src/generators/yeoman.ts
+ * @file src/generators/interactive.ts
  * @author lenconda <i@lenconda.top>
  */
 
 import { Questions } from 'yeoman-generator';
 import { v4 as uuid } from 'uuid';
-import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
+import figlet from 'figlet';
+import path from 'path';
+import fs from 'fs';
+import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
 import { parseScaffolds } from '../utils/generator';
-import DollieGeneratorBase from './base';
-import { ConflictSolveItem, ConflictSolveTable, DollieBasicProps, DollieScaffold, MergeBlock } from '../interfaces';
-import { stringifyBlocks } from '../utils/diff';
+import DollieBaseGenerator from '../base';
+import {
+  ConflictSolveItem,
+  ConflictSolveTable,
+  DollieBasicProps,
+  DollieScaffold,
+  MergeBlock,
+} from '../interfaces';
+import { parseMergeBlocksToText } from '../utils/diff';
+import readJson from '../utils/read-json';
+import { ArgInvalidError, DestinationExistsError } from '../errors';
 
-class DollieInteractiveGenerator extends DollieGeneratorBase {
+class DollieInteractiveGenerator extends DollieBaseGenerator {
   public initializing() {
-    this.cliName = 'Dollie';
+    this.mode = 'interactive';
     super.initializing.call(this);
   }
 
   public async prompting() {
-    try {
-      // default and essential questions
-      // it is hard-coded in the generator, DO NOT MODIFY IT
-      const defaultQuestions: Questions = [
-        {
-          type: 'input',
-          name: 'name',
-          message: 'Enter the project name',
-          default: 'project',
-        },
-        {
-          type: 'input',
-          name: 'scaffold',
-          message:
-            'Enter the scaffold id',
-          default: 'react',
-        },
-      ];
+    // default and essential questions
+    // it is hard-coded in the generator, DO NOT MODIFY IT
+    const defaultQuestions: Questions = [
+      {
+        type: 'input',
+        name: 'name',
+        message: 'Enter the project name',
+        default: 'project',
+      },
+      {
+        type: 'input',
+        name: 'scaffold',
+        message:
+          'Enter the scaffold id',
+        default: 'react',
+      },
+    ];
 
-      // get props from user's input
-      const props = await this.prompt(defaultQuestions) as DollieBasicProps;
+    // get props from user's input
+    const props = await this.prompt(defaultQuestions) as DollieBasicProps;
 
-      if (!props.name || !props.scaffold) {
-        this.log.error('There are essential params lost');
-      }
-
-      this.projectName = props.name;
-
-      const scaffold: DollieScaffold = {
-        uuid: uuid(),
-        scaffoldName: parseScaffoldName(props.scaffold),
-        dependencies: [],
-      };
-      await parseScaffolds(scaffold, this);
-      this.scaffold = scaffold;
-    } catch (e) {
-      this.log.error(e.message || e.toString());
-      process.exit(1);
+    if (!props.name || !props.scaffold) {
+      throw new ArgInvalidError(['name', 'scaffold'].filter((arg) => !props[arg]));
     }
+
+    this.projectName = props.name;
+
+    if (fs.existsSync(this.getDestinationRoot())) {
+      throw new DestinationExistsError(this.getDestinationRoot());
+    }
+
+    const scaffold: DollieScaffold = {
+      uuid: uuid(),
+      scaffoldName: parseRepoDescription(parseScaffoldName(props.scaffold)).original,
+      dependencies: [],
+    };
+    await parseScaffolds(scaffold, this, null, this.mode);
+    this.scaffold = scaffold;
   }
 
   public default() {
@@ -65,9 +75,7 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
 
   public async writing() {
     await super.writing.call(this);
-
     if (this.conflicts.length === 0) { return; }
-
     const keepsTable: ConflictSolveTable = {};
 
     for (const conflict of this.conflicts) {
@@ -234,7 +242,7 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
         }, []);
         this.log(
           `Solving conflicts in ${conflict.pathname} (${index + 1}/${conflictBlocks.length}):\n` +
-          `${lineChoices.map((choice) => choice.name).join('\n')}`,
+        `${lineChoices.map((choice) => choice.name).join('\n')}`,
         );
         const keeps = await askForKeeps(block, lineChoices);
         keepsTable[conflict.pathname].push(keeps);
@@ -247,7 +255,7 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
     const files = [...solvedConflicts.result, ... solvedConflicts.ignored];
     for (const file of files) {
       this.fs.delete(file.pathname);
-      this.fs.write(file.pathname, stringifyBlocks(file.blocks));
+      this.fs.write(file.pathname, parseMergeBlocksToText(file.blocks));
     }
   }
 
@@ -257,6 +265,10 @@ class DollieInteractiveGenerator extends DollieGeneratorBase {
 
   public end() {
     super.end.call(this);
+  }
+
+  protected getDestinationRoot() {
+    return path.resolve(this.projectName);
   }
 }
 

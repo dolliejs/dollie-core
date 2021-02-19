@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/member-ordering */
 /**
  * @file src/generators/compose.ts
  * @author lenconda <i@lenconda.top>
@@ -5,48 +6,50 @@
 
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
-import DollieGeneratorBase from './base';
+import DollieBaseGenerator from '../base';
 import { DollieScaffold, ComposedConflictKeepsTable, ConflictSolveTable } from '../interfaces';
 import { parseScaffolds } from '../utils/generator';
-import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
+import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
 import { APP_COMPOSE_CONFIG_MAP } from '../constants';
-import { stringifyBlocks } from '../utils/diff';
+import { parseMergeBlocksToText } from '../utils/diff';
+import { ArgInvalidError, ComposeScaffoldConfigInvalidError } from '../errors';
 
-class DollieComposeGenerator extends DollieGeneratorBase {
+class DollieComposeGenerator extends DollieBaseGenerator {
   public initializing() {
-    this.cliName = 'Dollie Compose';
+    this.mode = 'compose';
     super.initializing.call(this);
     const scaffold = _.get(this, 'options.dollieScaffoldConfig') as DollieScaffold;
     if (!scaffold) {
-      this.log.error('Cannot read configuration for Dollie Compose');
-      process.exit(1);
+      throw new ComposeScaffoldConfigInvalidError();
     }
     const projectName = _.get(this, 'options.projectName') || '';
-    if (!projectName) {
-      this.log.error('A value of `string` must be assigned to `name`');
-      process.exit(1);
-    }
     this.projectName = projectName;
+    if (!projectName) {
+      throw new ArgInvalidError(['project_name']);
+    }
   }
 
+  // eslint-disable-next-line @typescript-eslint/member-ordering
   public async default() {
     super.default.call(this);
-
-    const scaffold = _.get(this.options, APP_COMPOSE_CONFIG_MAP.dollie_scaffold_config) as DollieScaffold;
-    scaffold.scaffoldName = parseScaffoldName(scaffold.scaffoldName);
+    const scaffold
+      = _.get(this.options, APP_COMPOSE_CONFIG_MAP.dollie_scaffold_config) as DollieScaffold;
+    if (!scaffold.scaffoldName) {
+      throw new ArgInvalidError(['scaffold_name']);
+    }
+    scaffold.scaffoldName
+      = parseRepoDescription(parseScaffoldName(scaffold.scaffoldName)).original;
     const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
       const result: DollieScaffold = scaffold;
       result.uuid = uuid();
-      await parseScaffolds(result, this, null, true);
+      await parseScaffolds(result, this, null, this.mode);
       return result;
     };
-
     this.scaffold = await createDetailedScaffold(scaffold);
   }
 
   public async writing() {
     await super.writing.call(this);
-
     if (this.conflicts.length === 0) { return; }
 
     /**
@@ -77,7 +80,7 @@ class DollieComposeGenerator extends DollieGeneratorBase {
     const files = [...solvedConflicts.result, ... solvedConflicts.ignored];
     for (const file of files) {
       this.fs.delete(file.pathname);
-      this.fs.write(file.pathname, stringifyBlocks(file.blocks));
+      this.fs.write(file.pathname, parseMergeBlocksToText(file.blocks));
     }
   }
 

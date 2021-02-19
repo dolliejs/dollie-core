@@ -1,20 +1,34 @@
 import path from 'path';
-import fs from 'fs-extra';
 import { v4 as uuid } from 'uuid';
 import _ from 'lodash';
-import DollieBaseGenerator from '../generators/base';
+import requireFromString from 'require-from-string';
+import DollieBaseGenerator from '../base';
 import traverse from './traverse';
 import download from './download';
-import { diff, checkFileAction, parseDiff, stringifyBlocks, merge } from './diff';
-import { parseExtendScaffoldName, parseFilePathname } from './scaffold';
+import { diff, checkFileAction, parseDiffToMergeBlocks, parseMergeBlocksToText, merge } from './diff';
+import {
+  parseExtendScaffoldName,
+  parseFilePathname,
+  renderTemplate,
+  parseRepoDescription,
+  parseScaffoldName,
+} from './scaffold';
 import readJson from './read-json';
-import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY } from '../constants';
-import { DollieScaffold, DollieScaffoldConfiguration, DollieScaffoldProps } from '../interfaces';
+import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY, TEMPLATE_FILE_PREFIX } from '../constants';
+import {
+  DollieAppMode,
+  DollieScaffold,
+  DollieScaffoldConfiguration,
+  DollieScaffoldProps,
+  ScaffoldRepoDescription,
+} from '../interfaces';
+import DollieMemoryGenerator from '../generators/memory';
+import { ArgInvalidError } from '../errors';
 
 /**
  * get extended props from parent scaffold
- * @param scaffold DollieScaffold
- * @returns object
+ * @param {DollieScaffold} scaffold
+ * @returns {object}
  */
 export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Record<string, any> => {
   if (!scaffold.parent) {
@@ -36,8 +50,8 @@ export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Re
 
 /**
  * write file to destination recursively
- * @param scaffold DollieScaffold
- * @param context DollieBaseGenerator
+ * @param {DollieScaffold} scaffold
+ * @param {DollieBaseGenerator} context
  *
  * gives a scaffold configuration with tree data structure
  * and traverse all of the nodes in this tree recursively and process them
@@ -60,7 +74,7 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
    * invoke `traverse` function in `src/utils/traverse.ts`, set the ignore pattern
    * to avoid copying `.dollie.js` to temporary dir
    */
-  const files = await traverse(path.resolve(scaffoldSourceDir), TRAVERSE_IGNORE_REGEXP);
+  const files = await traverse(path.resolve(scaffoldSourceDir), TRAVERSE_IGNORE_REGEXP, context);
 
   for (const file of files) {
     const { pathname, entity } = file;
@@ -76,15 +90,23 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
     const relativePathname = path.relative(scaffoldSourceDir, absolutePathname);
     const destinationPathname = path.resolve(destinationDir, relativePathname);
 
-    if (entity.startsWith('__template.')) {
-      context.fs.copyTpl(
-        pathname,
-        destinationPathname,
-        scaffold.props || {},
-      );
+    const fileDir = destinationPathname.split(path.sep).slice(0, -1).join(path.sep);
+
+    if (!context.volume.existsSync(fileDir)) {
+      context.volume.mkdirpSync(fileDir);
+    }
+
+    if (entity.startsWith(TEMPLATE_FILE_PREFIX)) {
+      const templateFileContent = context.volume.readFileSync(pathname, { encoding: 'utf8' });
+      const fileContent = renderTemplate(templateFileContent, scaffold.props || {});
+      context.volume.writeFileSync(destinationPathname, fileContent, { encoding: 'utf8' });
     } else {
       // otherwise, we should also copy the file, but just simple this.fs.copy
-      context.fs.copy(pathname, destinationPathname);
+      context.volume.writeFileSync(
+        destinationPathname,
+        context.volume.readFileSync(pathname, 'utf8'),
+        { encoding: 'utf8' },
+      );
     }
   }
 
@@ -128,7 +150,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
    * get the folder structure from each nested scaffold
    */
 
-  const files = await traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP);
+  const files = await traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP, context);
   for (const file of files) {
     const { pathname } = file;
     /**
@@ -148,9 +170,11 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
     /**
      * read current file from temporary dir on mem-fs
      */
-    const currentTempFileContent = context.fs.read(
+    const currentTempFileBuffer = context.volume.readFileSync(
       path.resolve(scaffoldTempDir, relativePathname),
     );
+    const currentTempFileContent = currentTempFileBuffer.toString();
+
     switch (action) {
       /**
        * if action for current file is `DIRECT`, which means we can directly write
@@ -162,7 +186,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
         if (!context.cacheTable[relativePathname]) {
           context.cacheTable[relativePathname] = [];
         }
-        context.cacheTable[relativePathname] = [diff(currentTempFileContent, currentTempFileContent)];
+        context.cacheTable[relativePathname] = [diff(currentTempFileContent)];
         break;
       }
       /**
@@ -179,7 +203,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
         }
 
         const originalDiff = cacheTableItem[0];
-        const originalFileContent = stringifyBlocks(parseDiff(originalDiff));
+        const originalFileContent = parseMergeBlocksToText(parseDiffToMergeBlocks(originalDiff));
         cacheTableItem.push(diff(originalFileContent, currentTempFileContent));
 
         break;
@@ -206,7 +230,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
 
 /**
  * write all the files from cache table to physical dir
- * @param context DollieBaseGenerator
+ * @param {DollieBaseGenerator} context
  */
 export const writeToDestinationPath = (context: DollieBaseGenerator) => {
   for (const pathname of Object.keys(context.cacheTable)) {
@@ -215,15 +239,15 @@ export const writeToDestinationPath = (context: DollieBaseGenerator) => {
     const destinationFilePathname = context.destinationPath(pathname);
     let content = '';
     if (currentCachedFile.length === 1) {
-      content = stringifyBlocks(parseDiff(currentCachedFile[0]));
+      content = parseMergeBlocksToText(parseDiffToMergeBlocks(currentCachedFile[0]));
     } else {
       const originalDiff = currentCachedFile[0];
       const diffs = currentCachedFile.slice(1);
-      const currentMergeBlocks = parseDiff(merge(originalDiff, diffs));
+      const currentMergeBlocks = parseDiffToMergeBlocks(merge(originalDiff, diffs));
       if (currentMergeBlocks.filter((block) => block.status === 'CONFLICT').length !== 0) {
         context.conflicts.push({ pathname, blocks: currentMergeBlocks });
       }
-      content = stringifyBlocks(currentMergeBlocks);
+      content = parseMergeBlocksToText(currentMergeBlocks);
     }
     context.fs.delete(destinationFilePathname);
     context.fs.write(destinationFilePathname, content);
@@ -231,45 +255,11 @@ export const writeToDestinationPath = (context: DollieBaseGenerator) => {
 };
 
 /**
- * remove file from destination recursively
- * @param scaffold DollieScaffold
- * @param context DollieBaseGenerator
- *
- * gives a scaffold configuration with tree data structure
- * and traverse all of the nodes on it and remove the cache paths
- * of them from file system
- */
-export const removeTempFiles = (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
-  /**
-   * remove current scaffold node's cache path
-   * `context.appBasePath` and `scaffold.uuid` is mentioned above
-   * use `path#resolve` combined with them would become the cache pathname for
-   * current scaffold.
-   */
-  fs.removeSync(path.resolve(context.appBasePath, scaffold.uuid));
-  fs.removeSync(path.resolve(context.appTempPath, scaffold.uuid));
-  /**
-   * if there are dependencies depended by current scaffold, we should traverse
-   * and invoke `removeTempFiles` recursively to deal with them
-   */
-  if (
-    scaffold.dependencies &&
-    Array.isArray(scaffold.dependencies) &&
-    scaffold.dependencies.length > 0
-  ) {
-    for (const dependence of scaffold.dependencies) {
-      // invoke `removeTempFiles` to deal with each dependence
-      removeTempFiles(dependence, context);
-    }
-  }
-};
-
-/**
  * parse scaffold tree structure as a program-readable structure
- * @param scaffold DollieScaffold
- * @param context DollieBaseGenerator
- * @param parentScaffold DollieScaffold
- * @param isCompose boolean
+ * @param {DollieScaffold} scaffold
+ * @param {DollieBaseGenerator} context
+ * @param {DollieScaffold} parentScaffold
+ * @param {boolean} isCompose
  *
  * this function will download the scaffold with scaffold id from github.com
  * and prompt out the questions in each scaffold
@@ -278,10 +268,11 @@ export const parseScaffolds = async (
   scaffold: DollieScaffold,
   context: DollieBaseGenerator,
   parentScaffold?: DollieScaffold,
-  isCompose = false,
+  mode: DollieAppMode = 'interactive',
 ) => {
   if (!scaffold) { return; }
   const { uuid: scaffoldUuid, scaffoldName } = scaffold;
+
   if (!scaffold.dependencies) {
     scaffold.dependencies = [];
   }
@@ -292,15 +283,25 @@ export const parseScaffolds = async (
    * Dollie's scaffold, e.g. `test` will become `dolliejs/scaffold-test` while
    * in depended scaffolds, it will become as `dolliejs/extend-scaffold-test`
    */
-  const githubRepositoryId = `github:${scaffoldName}`;
+  let repoDescription: ScaffoldRepoDescription;
+  if (!parentScaffold) {
+    repoDescription = parseScaffoldName(scaffoldName);
+  } else {
+    repoDescription = parseExtendScaffoldName(scaffoldName);
+  }
 
-  context.log.info(`Downloading scaffold: https://github.com/${scaffoldName}.git`);
+  if (mode !== 'memory') {
+    context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription).repo}`);
+  }
   /**
    * download scaffold from GitHub repository and count the duration
    */
-  const duration = await download(githubRepositoryId, scaffoldDir);
-  context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
-  context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
+  const duration = await download(repoDescription, scaffoldDir, context.volume);
+  if (mode !== 'memory') {
+    context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
+    context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
+  }
+
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
   const dollieJsConfigPathname = path.resolve(scaffoldDir, '.dollie.js');
   const dollieJsonConfigPathname = path.resolve(scaffoldDir, '.dollie.json');
@@ -308,11 +309,14 @@ export const parseScaffolds = async (
    * after downloading scaffold, then we should read `.dollie.js` from its
    * local template directory if it exist
    */
-  if (fs.existsSync(dollieJsConfigPathname)) {
-    customScaffoldConfiguration = require(dollieJsConfigPathname) || {} as DollieScaffoldConfiguration;
+  if (context.volume.existsSync(dollieJsConfigPathname)) {
+    customScaffoldConfiguration = requireFromString(
+      context.volume.readFileSync(dollieJsConfigPathname).toString(),
+    ) || {};
   } else {
-    if (fs.existsSync(dollieJsonConfigPathname)) {
-      customScaffoldConfiguration = (readJson(dollieJsonConfigPathname) || {}) as DollieScaffoldConfiguration;
+    if (context.volume.existsSync(dollieJsonConfigPathname)) {
+      customScaffoldConfiguration =
+        (readJson(dollieJsonConfigPathname, context.volume) || {}) as DollieScaffoldConfiguration;
     } else {
       customScaffoldConfiguration = { questions: [] };
     }
@@ -384,7 +388,7 @@ export const parseScaffolds = async (
    * prompt question to users, just resolve the dependencies, invoke `parseScaffolds`
    * recursively and return back to the generator directly
    */
-  if (isCompose) {
+  if (mode !== 'interactive') {
     scaffold.props = _.merge(
       projectNameProp,
       getExtendedPropsFromParentScaffold(scaffold),
@@ -392,13 +396,18 @@ export const parseScaffolds = async (
     );
     if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
       for (const dependence of scaffold.dependencies) {
+        if (!dependence.scaffoldName) {
+          throw new ArgInvalidError([mode !== 'compose' ? 'scaffoldName' : 'scaffold_name']);
+        }
+
         dependence.uuid = uuid();
         /**
          * cause current scaffold is a dependency, so we should invoke `parseExtendScaffoldName`
          * to parse the scaffold's name
          */
-        dependence.scaffoldName = parseExtendScaffoldName(dependence.scaffoldName);
-        await parseScaffolds(dependence, context, scaffold, true);
+        dependence.scaffoldName
+          = parseRepoDescription(parseExtendScaffoldName(dependence.scaffoldName)).original;
+        await parseScaffolds(dependence, context, scaffold, mode);
       }
     }
     return;
@@ -442,20 +451,20 @@ export const parseScaffolds = async (
     const dependenceUuid = uuid();
     const currentDependence: DollieScaffold = {
       uuid: dependenceUuid,
-      scaffoldName: parseExtendScaffoldName(dependencies[dependenceKey]),
+      scaffoldName: parseRepoDescription(parseExtendScaffoldName(dependencies[dependenceKey])).original,
       dependencies: [],
     };
     scaffold.dependencies.push(currentDependence);
-    await parseScaffolds(currentDependence, context, scaffold);
+    await parseScaffolds(currentDependence, context, scaffold, mode);
   }
 };
 
 /**
  * get configuration values from scaffold tree structure, compose recursively as
  * an array and returns it
- * @param scaffold DollieScaffold
- * @param key string
- * @returns Array
+ * @param {DollieScaffold} scaffold
+ * @param {string} key
+ * @returns {Array<any>}
  *
  * since the `scaffold` is a nested structure, and every node could have its own configuration
  * value, but we supposed to get all of the values and make a aggregation (something just like

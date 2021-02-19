@@ -1,5 +1,6 @@
 import { Change } from 'diff';
 import { Question } from 'yeoman-generator';
+import { Volume } from 'memfs';
 
 export interface DiffChange extends Change {
   conflicted?: boolean;
@@ -36,6 +37,12 @@ export interface DollieScaffoldConfiguration {
   files?: DollieScaffoldFileConfiguration;
 }
 
+export interface ComposedDollieScaffold {
+  scaffoldName: string;
+  dependencies?: Array<ComposedDollieScaffold>;
+  props?: DollieScaffoldProps;
+}
+
 export interface DollieScaffold {
   uuid: string;
   scaffoldName: string;
@@ -45,7 +52,7 @@ export interface DollieScaffold {
   parent?: DollieScaffold;
 }
 
-export type DollieScaffoldNameParser = (name: string) => string;
+export type DollieScaffoldNameParser = (name: string) => ScaffoldRepoDescription;
 
 export type FileAction = 'DIRECT' | 'MERGE' | 'NIL';
 
@@ -80,3 +87,42 @@ export interface TraverseResultItem {
   pathname: string;
   entity: string;
 }
+
+export type RepoOrigin = 'github' | 'gitlab' | 'bitbucket';
+
+export interface ScaffoldRepoDescription {
+  origin?: RepoOrigin;
+  name: string;
+  checkout: string;
+  owner: string;
+}
+
+export type DollieMemoryFileSystem = typeof Volume.prototype;
+
+export type FileTable = Record<string, MergeResult>;
+
+interface DollieResponseData {
+  conflicts?: Array<Conflict>;
+  gitIgnoredFiles?: Array<string>;
+}
+
+export interface DollieWebResponseData extends DollieResponseData {
+  files: FileTable;
+}
+
+export interface DollieContainerResponseData extends DollieResponseData {
+  files: Array<string>;
+  basePath: string;
+}
+
+export interface DollieAppCallbacks {
+  onFinish?: (data: DollieWebResponseData) => void;
+}
+
+export interface DollieAppConfig {
+  projectName: string;
+  dollieScaffoldConfig: ComposedDollieScaffold;
+  outputPath?: string;
+}
+
+export type DollieAppMode = 'interactive' | 'compose' | 'container' | 'memory';
