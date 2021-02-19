@@ -1,14 +1,17 @@
-import Environment from 'yeoman-environment';
+import Environment, { Callback } from 'yeoman-environment';
 import DollieMemoryGenerator from './generators/memory';
 import DollieContainerGenerator from './generators/container';
+import DollieInteractiveGenerator from './generators/interactive';
 import {
   DollieAppConfig,
   DollieWebResponseData,
   DollieContainerResponseData,
+  DollieAppMode,
 } from './interfaces';
 import { DollieError } from './errors';
+import DollieComposeGenerator from './generators/compose';
 
-const memory = async (config: DollieAppConfig): Promise<DollieWebResponseData> => {
+const memory = async (config: DollieAppConfig, cb?: Callback): Promise<DollieWebResponseData> => {
   return new Promise((resolve, reject) => {
     const env = Environment.createEnv();
     env.registerStub(DollieMemoryGenerator, 'dollie:memory');
@@ -18,6 +21,9 @@ const memory = async (config: DollieAppConfig): Promise<DollieWebResponseData> =
         onFinish: (data) => resolve(data),
       },
     }, (error) => {
+      if (cb && typeof cb === 'function') {
+        cb(error);
+      }
       if (error) {
         if (!(error instanceof DollieError)) {
           reject(new DollieError(error.message || 'Unknown error'));
@@ -29,7 +35,7 @@ const memory = async (config: DollieAppConfig): Promise<DollieWebResponseData> =
   });
 };
 
-const container = async (config: DollieAppConfig): Promise<DollieContainerResponseData> => {
+const container = async (config: DollieAppConfig, cb?: Callback): Promise<DollieContainerResponseData> => {
   return new Promise((resolve, reject) => {
     const env = Environment.createEnv();
     env.registerStub(DollieContainerGenerator, 'dollie:container');
@@ -37,14 +43,45 @@ const container = async (config: DollieAppConfig): Promise<DollieContainerRespon
       ...config,
       callbacks: {
         onFinish: (data) => resolve(data),
-        onError: (error) => reject(error),
       },
-    }, null);
+    }, (error) => {
+      if (cb && typeof cb === 'function') {
+        cb(error);
+      }
+      if (error) {
+        if (!(error instanceof DollieError)) {
+          reject(new DollieError(error.message || 'Unknown error'));
+        } else {
+          reject(error);
+        }
+      }
+    });
   });
 };
 
-export default {
-  memory,
-  container,
+const run = async (mode: DollieAppMode, config: Record<string, any>, cb?: Callback) => {
+  switch (mode) {
+    case 'interactive': {
+      const env = Environment.createEnv();
+      env.registerStub(DollieInteractiveGenerator, 'dollie:interactive');
+      await env.run('dollie:interactive', cb);
+      break;
+    }
+    case 'compose': {
+      const env = Environment.createEnv();
+      env.registerStub(DollieComposeGenerator, 'dollie:compose');
+      await env.run('dollie:compose', config, cb);
+      break;
+    }
+    case 'container': {
+      return await container(config as DollieAppConfig, cb);
+    }
+    case 'memory': {
+      return await memory(config as DollieAppConfig, cb);
+    }
+    default: break;
+  }
 };
-export { memory, container };
+
+export default { memory, container, run };
+export { memory, container, run };

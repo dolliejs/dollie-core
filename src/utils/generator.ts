@@ -5,7 +5,7 @@ import requireFromString from 'require-from-string';
 import DollieBaseGenerator from '../base';
 import traverse from './traverse';
 import download from './download';
-import { diff, checkFileAction, parseDiff, stringifyBlocks, merge } from './diff';
+import { diff, checkFileAction, parseDiffToMergeBlocks, parseMergeBlocksToText, merge } from './diff';
 import {
   parseExtendScaffoldName,
   parseFilePathname,
@@ -203,7 +203,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
         }
 
         const originalDiff = cacheTableItem[0];
-        const originalFileContent = stringifyBlocks(parseDiff(originalDiff));
+        const originalFileContent = parseMergeBlocksToText(parseDiffToMergeBlocks(originalDiff));
         cacheTableItem.push(diff(originalFileContent, currentTempFileContent));
 
         break;
@@ -239,15 +239,15 @@ export const writeToDestinationPath = (context: DollieBaseGenerator) => {
     const destinationFilePathname = context.destinationPath(pathname);
     let content = '';
     if (currentCachedFile.length === 1) {
-      content = stringifyBlocks(parseDiff(currentCachedFile[0]));
+      content = parseMergeBlocksToText(parseDiffToMergeBlocks(currentCachedFile[0]));
     } else {
       const originalDiff = currentCachedFile[0];
       const diffs = currentCachedFile.slice(1);
-      const currentMergeBlocks = parseDiff(merge(originalDiff, diffs));
+      const currentMergeBlocks = parseDiffToMergeBlocks(merge(originalDiff, diffs));
       if (currentMergeBlocks.filter((block) => block.status === 'CONFLICT').length !== 0) {
         context.conflicts.push({ pathname, blocks: currentMergeBlocks });
       }
-      content = stringifyBlocks(currentMergeBlocks);
+      content = parseMergeBlocksToText(currentMergeBlocks);
     }
     context.fs.delete(destinationFilePathname);
     context.fs.write(destinationFilePathname, content);
@@ -290,14 +290,14 @@ export const parseScaffolds = async (
     repoDescription = parseExtendScaffoldName(scaffoldName);
   }
 
-  if (!(context instanceof DollieMemoryGenerator)) {
+  if (mode !== 'memory') {
     context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription).repo}`);
   }
   /**
    * download scaffold from GitHub repository and count the duration
    */
   const duration = await download(repoDescription, scaffoldDir, context.volume);
-  if (!(context instanceof DollieMemoryGenerator)) {
+  if (mode !== 'memory') {
     context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
     context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
   }
@@ -455,7 +455,7 @@ export const parseScaffolds = async (
       dependencies: [],
     };
     scaffold.dependencies.push(currentDependence);
-    await parseScaffolds(currentDependence, context, scaffold);
+    await parseScaffolds(currentDependence, context, scaffold, mode);
   }
 };
 

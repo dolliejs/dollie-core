@@ -18,7 +18,7 @@ import {
   DollieScaffold,
   MergeBlock,
 } from '../interfaces';
-import { stringifyBlocks } from '../utils/diff';
+import { parseMergeBlocksToText } from '../utils/diff';
 import readJson from '../utils/read-json';
 import { ArgInvalidError, DestinationExistsError } from '../errors';
 
@@ -65,7 +65,7 @@ class DollieInteractiveGenerator extends DollieBaseGenerator {
       scaffoldName: parseRepoDescription(parseScaffoldName(props.scaffold)).original,
       dependencies: [],
     };
-    await parseScaffolds(scaffold, this);
+    await parseScaffolds(scaffold, this, null, this.mode);
     this.scaffold = scaffold;
   }
 
@@ -255,7 +255,7 @@ class DollieInteractiveGenerator extends DollieBaseGenerator {
     const files = [...solvedConflicts.result, ... solvedConflicts.ignored];
     for (const file of files) {
       this.fs.delete(file.pathname);
-      this.fs.write(file.pathname, stringifyBlocks(file.blocks));
+      this.fs.write(file.pathname, parseMergeBlocksToText(file.blocks));
     }
   }
 

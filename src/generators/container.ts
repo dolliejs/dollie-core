@@ -5,11 +5,12 @@
 
 import _ from 'lodash';
 import path from 'path';
-import { Volume } from 'memfs';
-import { HOME_DIR, TEMP_DIR, CACHE_DIR } from '../constants';
+import fs from 'fs-extra';
+import { v4 as uuidv4 } from 'uuid';
 import DollieComposeGenerator from './compose';
 import { DollieContainerResponseData } from '../interfaces';
 import DollieBaseGenerator from '../base';
+import { ArgInvalidError } from '../errors';
 
 const handleFinish = (data: DollieContainerResponseData, context: DollieBaseGenerator) => {
   const onFinishFunc = _.get(context, 'options.callbacks.onFinish');
@@ -18,65 +19,46 @@ const handleFinish = (data: DollieContainerResponseData, context: DollieBaseGene
   }
 };
 
-const handleError = (error: Error, context: DollieBaseGenerator) => {
-  const onErrorFunc = _.get(context, 'options.callbacks.onError');
-  if (onErrorFunc && typeof onErrorFunc === 'function') {
-    onErrorFunc(error);
-  }
-};
-
 class DollieContainerGenerator extends DollieComposeGenerator {
   public initializing() {
-    this.cliName = 'Dollie Container';
-    this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
-    this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
-    this.volume = new Volume();
-    this.volume.mkdirpSync(this.appBasePath);
-    this.volume.mkdirpSync(this.appTempPath);
-    const projectName = _.get(this, 'options.projectName') || '';
-    if (!projectName) {
-      handleError(new Error('`projectName` must be specified'), this);
+    super.initializing.call(this);
+    this.mode = 'container';
+    if (!this.projectName) {
+      throw new ArgInvalidError(['projectName']);
     }
-    this.projectName = projectName;
   }
 
   public async default() {
-    try {
-      await super.default.call(this);
-    } catch (e) {
-      handleError(e, this);
-    }
+    await super.default.call(this);
   }
 
   public async writing() {
-    try {
-      await DollieBaseGenerator.prototype.writing.call(this);
-    } catch (e) {
-      handleError(e, this);
-    }
+    await DollieBaseGenerator.prototype.writing.call(this);
   }
 
   public install() {
-    try {
-      super.install.call(this);
-    } catch (e) {
-      handleError(e, this);
-    }
+    super.install.call(this);
   }
 
   public end() {
-    try {
-      super.end.call(this);
-      handleFinish({
-        files: Object.keys(this.cacheTable)
-          .filter((pathname) => Boolean(this.cacheTable[pathname]))
-          .map((pathname) => this.destinationPath(pathname)),
-        conflicts: this.conflicts,
-        basePath: this.destinationPath(),
-      }, this);
-    } catch (e) {
-      handleError(e, this);
+    super.end.call(this);
+    handleFinish({
+      files: Object.keys(this.cacheTable)
+        .filter((pathname) => Boolean(this.cacheTable[pathname]))
+        .map((pathname) => this.destinationPath(pathname)),
+      conflicts: this.conflicts,
+      basePath: this.destinationPath(),
+    }, this);
+  }
+
+  protected getDestinationRoot() {
+    const outputPath =
+      _.get(this, 'options.outputPath') || path.resolve(this.appTempPath);
+    const destinationRoot = path.resolve(outputPath, uuidv4());
+    if (fs.existsSync(destinationRoot)) {
+      return this.getDestinationRoot();
     }
+    return destinationRoot;
   }
 }
 

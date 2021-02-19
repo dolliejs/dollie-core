@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/member-ordering */
 /**
  * @file src/generators/compose.ts
  * @author lenconda <i@lenconda.top>
@@ -10,7 +11,7 @@ import { DollieScaffold, ComposedConflictKeepsTable, ConflictSolveTable } from '
 import { parseScaffolds } from '../utils/generator';
 import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
 import { APP_COMPOSE_CONFIG_MAP } from '../constants';
-import { stringifyBlocks } from '../utils/diff';
+import { parseMergeBlocksToText } from '../utils/diff';
 import { ArgInvalidError, ComposeScaffoldConfigInvalidError } from '../errors';
 
 class DollieComposeGenerator extends DollieBaseGenerator {
@@ -22,12 +23,13 @@ class DollieComposeGenerator extends DollieBaseGenerator {
       throw new ComposeScaffoldConfigInvalidError();
     }
     const projectName = _.get(this, 'options.projectName') || '';
+    this.projectName = projectName;
     if (!projectName) {
       throw new ArgInvalidError(['project_name']);
     }
-    this.projectName = projectName;
   }
 
+  // eslint-disable-next-line @typescript-eslint/member-ordering
   public async default() {
     super.default.call(this);
     const scaffold
@@ -40,7 +42,7 @@ class DollieComposeGenerator extends DollieBaseGenerator {
     const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
       const result: DollieScaffold = scaffold;
       result.uuid = uuid();
-      await parseScaffolds(result, this, null, 'compose');
+      await parseScaffolds(result, this, null, this.mode);
       return result;
     };
     this.scaffold = await createDetailedScaffold(scaffold);
@@ -78,7 +80,7 @@ class DollieComposeGenerator extends DollieBaseGenerator {
     const files = [...solvedConflicts.result, ... solvedConflicts.ignored];
     for (const file of files) {
       this.fs.delete(file.pathname);
-      this.fs.write(file.pathname, stringifyBlocks(file.blocks));
+      this.fs.write(file.pathname, parseMergeBlocksToText(file.blocks));
     }
   }
 

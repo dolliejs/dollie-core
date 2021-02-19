@@ -41,7 +41,7 @@ import {
 } from './interfaces';
 import { isPathnameInConfig } from './utils/scaffold';
 import DollieMemoryGenerator from './generators/memory';
-import { parseFileContent } from './utils/diff';
+import { parseFileTextToMergeBlocks } from './utils/diff';
 import { DestinationExistsError, ModeInvalidError } from './errors';
 
 /**
@@ -159,17 +159,6 @@ class DollieBaseGenerator extends Generator {
   }
 
   public default() {
-    // let DESTINATION_PATH;
-
-    // if (this.cliName === 'Dollie Container') {
-    //   const outputPath = _.get(this, 'options.outputPath') ||
-    //     path.resolve(this.appTempPath);
-    //   this.destinationRoot(path.resolve(outputPath, uuidv4()));
-    //   return;
-    // }
-
-    // DESTINATION_PATH = path.resolve(this.projectName);
-
     const destinationPath = this.getDestinationRoot();
 
     if (destinationPath) {
@@ -193,7 +182,6 @@ class DollieBaseGenerator extends Generator {
     this.conflicts = this.getConflicts(deletions);
     this.deleteCachedFiles(deletions);
     writeToDestinationPath(this);
-    this.fs.delete(path.resolve(this.appTempPath));
   }
 
   public install() {
@@ -238,7 +226,7 @@ class DollieBaseGenerator extends Generator {
        * this script as a command
        */
       if (typeof endScript === 'string') {
-        if (!((this as Generator) instanceof DollieMemoryGenerator)) {
+        if (this.mode !== 'memory') {
           this.log.info(`Executing end script: \`${endScript}\``);
           this.log(Buffer.from(execSync(endScript)).toString());
         }
@@ -250,7 +238,7 @@ class DollieBaseGenerator extends Generator {
       } else if (typeof endScript === 'function') {
         const endScriptSource = Function.prototype.toString.call(endScript);
         const endScriptFunc = new Function(`return ${endScriptSource}`).call(null);
-        if (!((this as Generator) instanceof DollieMemoryGenerator)) {
+        if (this.mode !== 'memory') {
           endScriptFunc({
             fs: {
               read: (pathname: string): string => {
@@ -311,7 +299,7 @@ class DollieBaseGenerator extends Generator {
               write: (pathname: string, content: string) => {
                 const fileTableItem: MergeResult = {
                   conflicts: false,
-                  blocks: parseFileContent(content),
+                  blocks: parseFileTextToMergeBlocks(content),
                   text: content,
                 };
                 this.fileTable[pathname] = fileTableItem;
@@ -360,7 +348,7 @@ class DollieBaseGenerator extends Generator {
   protected deleteCachedFiles(deletions: Array<string>) {
     for (const deletion of deletions) {
       if (typeof deletion === 'string') {
-        if (!(this instanceof DollieMemoryGenerator)) {
+        if (this.mode !== 'memory') {
           this.log.info(`Deleting scaffold item: ${deletion}`);
         }
         this.cacheTable[deletion] = null;

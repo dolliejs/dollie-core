@@ -15,10 +15,19 @@ import {
   getExtendedPropsFromParentScaffold,
 } from './utils/generator';
 import { parseComposeConfig, stringifyComposeConfig } from './utils/compose';
-import { diff, merge, checkFileAction, stringifyBlocks, parseDiff, parseFileContent } from './utils/diff';
+import { diff, merge, checkFileAction, parseMergeBlocksToText, parseDiffToMergeBlocks, parseFileTextToMergeBlocks } from './utils/diff';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
 import { memory, container } from './dollie';
+import {
+  DollieError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
+  ModeInvalidError,
+  DestinationExistsError,
+  ArgInvalidError,
+  ComposeScaffoldConfigInvalidError,
+} from './errors';
 import {
   DiffChange,
   PatchTableItem,
@@ -63,16 +72,24 @@ export {
   diff,
   merge,
   checkFileAction,
-  stringifyBlocks,
   checkConflictBlockCount,
   solveConflicts,
-  parseDiff,
   parseRepoDescription,
   parseFilePathname,
   isPathnameInConfig,
-  parseFileContent,
+  parseFileTextToMergeBlocks,
+  parseDiffToMergeBlocks,
+  parseMergeBlocksToText,
   container,
   memory,
+  // errors
+  DollieError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
+  ModeInvalidError,
+  DestinationExistsError,
+  ArgInvalidError,
+  ComposeScaffoldConfigInvalidError,
   // classes
   DollieInteractiveGenerator,
   DollieComposeGenerator,
@@ -118,16 +135,23 @@ export default {
   diff,
   merge,
   checkFileAction,
-  stringifyBlocks,
+  parseMergeBlocksToText,
   checkConflictBlockCount,
   solveConflicts,
-  parseDiff,
+  parseDiffToMergeBlocks,
   parseRepoDescription,
   parseFilePathname,
   isPathnameInConfig,
-  parseFileContent,
+  parseFileTextToMergeBlocks,
   container,
   memory,
+  DollieError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
+  ModeInvalidError,
+  DestinationExistsError,
+  ArgInvalidError,
+  ComposeScaffoldConfigInvalidError,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
   APP_NAME,

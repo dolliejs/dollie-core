@@ -4,12 +4,9 @@
  */
 
 import _ from 'lodash';
-import path from 'path';
-import { Volume } from 'memfs';
-import { HOME_DIR, TEMP_DIR, CACHE_DIR } from '../constants';
 import DollieComposeGenerator from './compose';
 import { writeCacheTable, writeTempFiles } from '../utils/generator';
-import { merge, parseDiff, stringifyBlocks } from '../utils/diff';
+import { merge, parseDiffToMergeBlocks, parseMergeBlocksToText } from '../utils/diff';
 import { DollieWebResponseData } from '../interfaces';
 import DollieBaseGenerator from '../base';
 import { ArgInvalidError } from '../errors';
@@ -23,17 +20,11 @@ const handleFinish = (data: DollieWebResponseData, context: DollieBaseGenerator)
 
 class DollieMemoryGenerator extends DollieComposeGenerator {
   public initializing() {
+    super.initializing.call(this);
     this.mode = 'memory';
-    this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
-    this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
-    this.volume = new Volume();
-    this.volume.mkdirpSync(this.appBasePath);
-    this.volume.mkdirpSync(this.appTempPath);
-    const projectName = _.get(this, 'options.projectName') || '';
-    if (!projectName) {
-      throw new ArgInvalidError(['project_name']);
+    if (!this.projectName) {
+      throw new ArgInvalidError(['projectName']);
     }
-    this.projectName = projectName;
   }
 
   public async default() {
@@ -50,17 +41,17 @@ class DollieMemoryGenerator extends DollieComposeGenerator {
       if (!this.cacheTable[pathname]) { continue; }
       const currentCachedFile = this.cacheTable[pathname];
       if (currentCachedFile.length === 1) {
-        const mergeBlocks = parseDiff(currentCachedFile[0]);
+        const mergeBlocks = parseDiffToMergeBlocks(currentCachedFile[0]);
         this.fileTable[pathname] = {
           conflicts: false,
           blocks: mergeBlocks,
-          text: stringifyBlocks(mergeBlocks),
+          text: parseMergeBlocksToText(mergeBlocks),
         };
       } else {
         let conflicts = false;
         const originalDiff = currentCachedFile[0];
         const diffs = currentCachedFile.slice(1);
-        const mergeBlocks = parseDiff(merge(originalDiff, diffs));
+        const mergeBlocks = parseDiffToMergeBlocks(merge(originalDiff, diffs));
         if (mergeBlocks.filter((block) => block.status === 'CONFLICT').length !== 0) {
           conflicts = true;
           this.conflicts.push({ pathname, blocks: mergeBlocks });
@@ -68,7 +59,7 @@ class DollieMemoryGenerator extends DollieComposeGenerator {
         this.fileTable[pathname] = {
           conflicts,
           blocks: mergeBlocks,
-          text: stringifyBlocks(mergeBlocks),
+          text: parseMergeBlocksToText(mergeBlocks),
         };
       }
     }
