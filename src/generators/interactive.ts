@@ -4,10 +4,10 @@
  */
 
 import { Questions } from 'yeoman-generator';
-import Adapter from 'yeoman-environment/lib/adapter';
 import { v4 as uuid } from 'uuid';
 import figlet from 'figlet';
 import path from 'path';
+import fs from 'fs';
 import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
 import { parseScaffolds } from '../utils/generator';
 import DollieBaseGenerator from '../base';
@@ -20,7 +20,7 @@ import {
 } from '../interfaces';
 import { stringifyBlocks } from '../utils/diff';
 import readJson from '../utils/read-json';
-import { DollieError } from '../errors';
+import { ArgInvalidError, DestinationExistsError } from '../errors';
 
 class DollieInteractiveGenerator extends DollieBaseGenerator {
   public initializing() {
@@ -51,10 +51,14 @@ class DollieInteractiveGenerator extends DollieBaseGenerator {
     const props = await this.prompt(defaultQuestions) as DollieBasicProps;
 
     if (!props.name || !props.scaffold) {
-      throw new DollieError('There are essential params lost');
+      throw new ArgInvalidError(['name', 'scaffold'].filter((arg) => !props[arg]));
     }
 
     this.projectName = props.name;
+
+    if (fs.existsSync(this.getDestinationRoot())) {
+      throw new DestinationExistsError(this.getDestinationRoot());
+    }
 
     const scaffold: DollieScaffold = {
       uuid: uuid(),
@@ -263,14 +267,8 @@ class DollieInteractiveGenerator extends DollieBaseGenerator {
     super.end.call(this);
   }
 
-  protected initLog() {
-    this.log(figlet.textSync('DOLLIE'));
-    const packageJson = readJson(path.resolve(__dirname, '../../package.json')) || {};
-    if (packageJson.version && packageJson.name) {
-      this.log(
-        `Dollie Interactive with ${packageJson.name}@${packageJson.version}`,
-      );
-    }
+  protected getDestinationRoot() {
+    return path.resolve(this.projectName);
   }
 }
 

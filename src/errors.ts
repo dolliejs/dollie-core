@@ -39,3 +39,24 @@ export class DestinationExistsError extends DollieError {
     super(`Destination ${pathname} exists, cannot write files into it`);
   }
 }
+
+export class ArgInvalidError extends DollieError {
+  public code = 'E_ARG_INVALID';
+
+  public constructor(argNames: Array<string>) {
+    super(
+      argNames.length > 0
+        ? 'Missing required argument(s): ' +
+          `${argNames.map((name) => `\`${name}\``).join(', ')}`
+        : 'Some required args lost',
+    );
+  }
+}
+
+export class ComposeScaffoldConfigInvalidError extends DollieError {
+  public code = 'E_COMPOSE_SCAFFOLD_CONFIG_INVALID';
+
+  public constructor() {
+    super('Cannot read scaffold configuration under `compose` mode');
+  }
+}

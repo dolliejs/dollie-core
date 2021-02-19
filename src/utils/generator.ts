@@ -23,6 +23,7 @@ import {
   ScaffoldRepoDescription,
 } from '../interfaces';
 import DollieMemoryGenerator from '../generators/memory';
+import { ArgInvalidError } from '../errors';
 
 /**
  * get extended props from parent scaffold
@@ -271,6 +272,7 @@ export const parseScaffolds = async (
 ) => {
   if (!scaffold) { return; }
   const { uuid: scaffoldUuid, scaffoldName } = scaffold;
+
   if (!scaffold.dependencies) {
     scaffold.dependencies = [];
   }
@@ -394,6 +396,10 @@ export const parseScaffolds = async (
     );
     if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
       for (const dependence of scaffold.dependencies) {
+        if (!dependence.scaffoldName) {
+          throw new ArgInvalidError([mode !== 'compose' ? 'scaffoldName' : 'scaffold_name']);
+        }
+
         dependence.uuid = uuid();
         /**
          * cause current scaffold is a dependency, so we should invoke `parseExtendScaffoldName`

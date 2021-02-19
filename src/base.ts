@@ -42,7 +42,7 @@ import {
 import { isPathnameInConfig } from './utils/scaffold';
 import DollieMemoryGenerator from './generators/memory';
 import { parseFileContent } from './utils/diff';
-import { ModeInvalidError } from './errors';
+import { DestinationExistsError, ModeInvalidError } from './errors';
 
 /**
  * @class
@@ -159,27 +159,26 @@ class DollieBaseGenerator extends Generator {
   }
 
   public default() {
-    let DESTINATION_PATH;
+    // let DESTINATION_PATH;
 
-    if (this.cliName === 'Dollie Container') {
-      const outputPath = _.get(this, 'options.outputPath') ||
-        path.resolve(this.appTempPath);
-      this.destinationRoot(path.resolve(outputPath, uuidv4()));
-      return;
+    // if (this.cliName === 'Dollie Container') {
+    //   const outputPath = _.get(this, 'options.outputPath') ||
+    //     path.resolve(this.appTempPath);
+    //   this.destinationRoot(path.resolve(outputPath, uuidv4()));
+    //   return;
+    // }
+
+    // DESTINATION_PATH = path.resolve(this.projectName);
+
+    const destinationPath = this.getDestinationRoot();
+
+    if (destinationPath) {
+      /**
+       * set destination pathname with `this.projectName`
+       * it is an alias to `path.resolve(process.cwd(), this.projectName)`
+       */
+      this.destinationRoot(destinationPath);
     }
-
-    DESTINATION_PATH = path.resolve(this.projectName);
-
-    if (fs.existsSync(DESTINATION_PATH)) {
-      this.log.error('Cannot initialize a project into an existed directory');
-      process.exit(1);
-    }
-
-    /**
-     * set destination pathname with `this.projectName`
-     * it is an alias to `path.resolve(process.cwd(), this.projectName)`
-     */
-    this.destinationRoot(DESTINATION_PATH);
   }
 
   public async writing() {
@@ -233,101 +232,95 @@ class DollieBaseGenerator extends Generator {
      */
     const endScripts = getComposedArrayValue<Function | string>(this.scaffold, 'endScripts');
     for (const endScript of endScripts) {
-      try {
-        /**
-         * if current end script value is a string, Dollie will recognize it as a
-         * normal shell command, and will invoke `child_process.execSync` to execute
-         * this script as a command
-         */
-        if (typeof endScript === 'string') {
-          if (!((this as Generator) instanceof DollieMemoryGenerator)) {
-            this.log.info(`Executing end script: \`${endScript}\``);
-            this.log(Buffer.from(execSync(endScript)).toString());
-          }
-        /**
-         * if current end script value is a function, Dollie will considering reading
-         * the code from it, and call it with `context`
-         * `context` contains some file system utilities provided by Dollie
-         */
-        } else if (typeof endScript === 'function') {
-          const endScriptSource = Function.prototype.toString.call(endScript);
-          const endScriptFunc = new Function(`return ${endScriptSource}`).call(null);
-          if (!((this as Generator) instanceof DollieMemoryGenerator)) {
-            endScriptFunc({
-              fs: {
-                read: (pathname: string): string => {
-                  return fs.readFileSync(this.destinationPath(pathname), { encoding: 'utf-8' });
-                },
-                exists: (pathname: string): boolean => {
-                  return fs.existsSync(this.destinationPath(pathname));
-                },
-                readJson: (pathname: string): object => {
-                  return readJson(this.destinationPath(pathname));
-                },
-                remove: (pathname: string) => {
-                  this.conflicts = this.conflicts.filter((conflict) => conflict.pathname !== pathname);
-                  return fs.removeSync(pathname);
-                },
-                write: (pathname: string, content: string) => {
-                  return fs.writeFileSync(pathname, content, { encoding: 'utf-8' });
-                },
-              },
-              scaffold: this.scaffold,
-            });
-
-            if (this.conflicts.length > 0) {
-              this.log(
-                'There ' +
-                (this.conflicts.length === 1 ? 'is' : 'are') +
-                ' still ' + this.conflicts.length +
-                ' file' + (this.conflicts.length === 1 ? ' ' : 's ') +
-                'contains several conflicts:',
-              );
-              this.conflicts.forEach((conflict) => {
-                if (fs.existsSync(this.destinationPath(conflict.pathname))) {
-                  this.log(chalk.yellow(`\t- ${conflict.pathname}`));
-                }
-              });
-            }
-          } else {
-            endScriptFunc({
-              fs: {
-                read: (pathname: string): string => {
-                  return this.fileTable[pathname].text;
-                },
-                exists: (pathname: string): boolean => {
-                  return Boolean(this.fileTable[pathname]);
-                },
-                readJson: (pathname: string): object => {
-                  try {
-                    return JSON.parse(this.fileTable[pathname].text || null);
-                  } catch {
-                    return null;
-                  }
-                },
-                remove: (pathname: string) => {
-                  this.conflicts = this.conflicts.filter((conflict) => conflict.pathname !== pathname);
-                  this.fileTable[pathname] = null;
-                  return;
-                },
-                write: (pathname: string, content: string) => {
-                  const fileTableItem: MergeResult = {
-                    conflicts: false,
-                    blocks: parseFileContent(content),
-                    text: content,
-                  };
-                  this.fileTable[pathname] = fileTableItem;
-                  return;
-                },
-              },
-              scaffold: this.scaffold,
-            });
-          }
-        }
-      } catch (e) {
+      /**
+       * if current end script value is a string, Dollie will recognize it as a
+       * normal shell command, and will invoke `child_process.execSync` to execute
+       * this script as a command
+       */
+      if (typeof endScript === 'string') {
         if (!((this as Generator) instanceof DollieMemoryGenerator)) {
-          this.log.error(e.message || e.toString());
-        } else { throw e; }
+          this.log.info(`Executing end script: \`${endScript}\``);
+          this.log(Buffer.from(execSync(endScript)).toString());
+        }
+      /**
+       * if current end script value is a function, Dollie will considering reading
+       * the code from it, and call it with `context`
+       * `context` contains some file system utilities provided by Dollie
+       */
+      } else if (typeof endScript === 'function') {
+        const endScriptSource = Function.prototype.toString.call(endScript);
+        const endScriptFunc = new Function(`return ${endScriptSource}`).call(null);
+        if (!((this as Generator) instanceof DollieMemoryGenerator)) {
+          endScriptFunc({
+            fs: {
+              read: (pathname: string): string => {
+                return fs.readFileSync(this.destinationPath(pathname), { encoding: 'utf-8' });
+              },
+              exists: (pathname: string): boolean => {
+                return fs.existsSync(this.destinationPath(pathname));
+              },
+              readJson: (pathname: string): object => {
+                return readJson(this.destinationPath(pathname));
+              },
+              remove: (pathname: string) => {
+                this.conflicts = this.conflicts.filter((conflict) => conflict.pathname !== pathname);
+                return fs.removeSync(pathname);
+              },
+              write: (pathname: string, content: string) => {
+                return fs.writeFileSync(pathname, content, { encoding: 'utf-8' });
+              },
+            },
+            scaffold: this.scaffold,
+          });
+
+          if (this.conflicts.length > 0) {
+            this.log(
+              'There ' +
+              (this.conflicts.length === 1 ? 'is' : 'are') +
+              ' still ' + this.conflicts.length +
+              ' file' + (this.conflicts.length === 1 ? ' ' : 's ') +
+              'contains several conflicts:',
+            );
+            this.conflicts.forEach((conflict) => {
+              if (fs.existsSync(this.destinationPath(conflict.pathname))) {
+                this.log(chalk.yellow(`\t- ${conflict.pathname}`));
+              }
+            });
+          }
+        } else {
+          endScriptFunc({
+            fs: {
+              read: (pathname: string): string => {
+                return this.fileTable[pathname].text;
+              },
+              exists: (pathname: string): boolean => {
+                return Boolean(this.fileTable[pathname]);
+              },
+              readJson: (pathname: string): object => {
+                try {
+                  return JSON.parse(this.fileTable[pathname].text || null);
+                } catch {
+                  return null;
+                }
+              },
+              remove: (pathname: string) => {
+                this.conflicts = this.conflicts.filter((conflict) => conflict.pathname !== pathname);
+                this.fileTable[pathname] = null;
+                return;
+              },
+              write: (pathname: string, content: string) => {
+                const fileTableItem: MergeResult = {
+                  conflicts: false,
+                  blocks: parseFileContent(content),
+                  text: content,
+                };
+                this.fileTable[pathname] = fileTableItem;
+                return;
+              },
+            },
+            scaffold: this.scaffold,
+          });
+        }
       }
     }
   }
@@ -375,7 +368,21 @@ class DollieBaseGenerator extends Generator {
     }
   }
 
-  protected initLog(name?: string) {}
+  protected initLog(name?: string) {
+    this.log(figlet.textSync('DOLLIE'));
+    const packageJson = readJson(path.resolve(__dirname, '../package.json')) || {};
+    if (packageJson.version && packageJson.name) {
+      this.log(`with ${packageJson.name}@${packageJson.version}\n`);
+    }
+  }
+
+  protected getDestinationRoot() {
+    const destinationRoot = path.resolve(this.projectName);
+    if (fs.existsSync(destinationRoot)) {
+      throw new DestinationExistsError(destinationRoot);
+    }
+    return destinationRoot;
+  }
 }
 
 export default DollieBaseGenerator;

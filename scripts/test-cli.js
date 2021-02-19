@@ -6,7 +6,7 @@ const Environment = require('yeoman-environment');
 const InteractiveGenerator = require('../src/generators/interactive').default;
 const ComposeGenerator = require('../src/generators/compose').default;
 const { parseComposeConfig } = require('../src/utils/compose');
-const { runMemory, runContainer } = require('../src/api');
+const { memory, container } = require('../src/dollie');
 
 async function test() {
   const type = process.argv[2];
@@ -25,27 +25,36 @@ async function test() {
       }
       break;
     case 'compose': {
-      const content = fs.readFileSync(path.resolve(__dirname, './test.yml'), {
-        encoding: 'utf-8',
-      });
-      const config = parseComposeConfig(content);
-      env.run('dollie:compose', config, null);
+      try {
+        const content = fs.readFileSync(path.resolve(__dirname, './test.yml'), {
+          encoding: 'utf-8',
+        });
+        const config = parseComposeConfig(content);
+        await env.run('dollie:compose', config, null);
+      } catch (e) {
+        console.log(e.toString());
+        process.exit(1);
+      }
       break;
     }
     case 'memory': {
-      const config = {
-        projectName: 'project',
-        dollieScaffoldConfig: {
-          scaffoldName: 'react',
-          dependencies: [
-            { scaffoldName: 'react-ts' },
-            { scaffoldName: 'react-less' },
-            { scaffoldName: 'react-dva' },
-          ],
-        },
-      };
-      const data = await runMemory(config);
-      console.log(data);
+      try {
+        const config = {
+          projectName: 'project',
+          dollieScaffoldConfig: {
+            scaffoldName: 'react',
+            dependencies: [
+              { scaffoldName: 'react-ts' },
+              { scaffoldName: 'react-less' },
+              { scaffoldName: 'react-dva' },
+            ],
+          },
+        };
+        const data = await memory(config);
+        console.log(data);
+      } catch (e) {
+        console.log(e.toString());
+      }
       break;
     }
     case 'container': {
@@ -60,7 +69,7 @@ async function test() {
           ],
         },
       };
-      const data = await runContainer(config);
+      const data = await container(config);
       console.log(data);
       break;
     }

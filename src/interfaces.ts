@@ -117,7 +117,6 @@ export interface DollieContainerResponseData extends DollieResponseData {
 
 export interface DollieAppCallbacks {
   onFinish?: (data: DollieWebResponseData) => void;
-  onError?: (error: Error) => void;
 }
 
 export interface DollieAppConfig {

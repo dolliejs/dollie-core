@@ -6,8 +6,9 @@ import {
   DollieWebResponseData,
   DollieContainerResponseData,
 } from './interfaces';
+import { DollieError } from './errors';
 
-const runMemory = async (config: DollieAppConfig): Promise<DollieWebResponseData> => {
+const memory = async (config: DollieAppConfig): Promise<DollieWebResponseData> => {
   return new Promise((resolve, reject) => {
     const env = Environment.createEnv();
     env.registerStub(DollieMemoryGenerator, 'dollie:memory');
@@ -15,13 +16,20 @@ const runMemory = async (config: DollieAppConfig): Promise<DollieWebResponseData
       ...config,
       callbacks: {
         onFinish: (data) => resolve(data),
-        onError: (error) => reject(error),
       },
-    }, null);
+    }, (error) => {
+      if (error) {
+        if (!(error instanceof DollieError)) {
+          reject(new DollieError(error.message || 'Unknown error'));
+        } else {
+          reject(error);
+        }
+      }
+    });
   });
 };
 
-const runContainer = async (config: DollieAppConfig): Promise<DollieContainerResponseData> => {
+const container = async (config: DollieAppConfig): Promise<DollieContainerResponseData> => {
   return new Promise((resolve, reject) => {
     const env = Environment.createEnv();
     env.registerStub(DollieContainerGenerator, 'dollie:container');
@@ -35,5 +43,8 @@ const runContainer = async (config: DollieAppConfig): Promise<DollieContainerRes
   });
 };
 
-export default { runMemory, runContainer };
-export { runMemory, runContainer };
+export default {
+  memory,
+  container,
+};
+export { memory, container };
