@@ -16,6 +16,7 @@ module.exports = {
     'switch-colon-spacing': ['error', { 'after': true, 'before': false }],
     quotes: ['error', 'single'],
     indent: ['error', 2, { SwitchCase: 1 }],
+    'eol-last': ['error', 'always'],
     'space-infix-ops': 'off',
     'max-nested-callbacks': 'off',
     'max-params': 'off',
