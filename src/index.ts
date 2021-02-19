@@ -19,6 +19,7 @@ import { diff, merge, checkFileAction, parseMergeBlocksToText, parseDiffToMergeB
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
 import { memory, container } from './dollie';
+import log from './utils/log';
 import {
   DollieError,
   ScaffoldNotFoundError,
@@ -82,6 +83,8 @@ export {
   parseMergeBlocksToText,
   container,
   memory,
+  // objects
+  log,
   // errors
   DollieError,
   ScaffoldNotFoundError,
@@ -145,6 +148,7 @@ export default {
   parseFileTextToMergeBlocks,
   container,
   memory,
+  log,
   DollieError,
   ScaffoldNotFoundError,
   ScaffoldTimeoutError,

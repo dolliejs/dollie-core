@@ -40,7 +40,6 @@ import {
   DollieAppMode,
 } from './interfaces';
 import { isPathnameInConfig } from './utils/scaffold';
-import DollieMemoryGenerator from './generators/memory';
 import { parseFileTextToMergeBlocks } from './utils/diff';
 import { DestinationExistsError, ModeInvalidError } from './errors';
 

@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { parseComposeConfig } = require('../src/utils/compose');
 const { run } = require('../src/dollie');
+const log = require('../src/utils/log').default;
 
 async function test() {
   const type = process.argv[2];
@@ -36,7 +37,7 @@ async function test() {
       console.log(manifest);
     }
   } catch (e) {
-    console.log(e.toString());
+    log.error(e.toString());
     process.exit(1);
   }
 }
