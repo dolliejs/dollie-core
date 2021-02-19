@@ -15,10 +15,20 @@ import {
   getExtendedPropsFromParentScaffold,
 } from './utils/generator';
 import { parseComposeConfig, stringifyComposeConfig } from './utils/compose';
-import { diff, merge, checkFileAction, stringifyBlocks, parseDiff, parseFileContent } from './utils/diff';
+import { diff, merge, checkFileAction, parseMergeBlocksToText, parseDiffToMergeBlocks, parseFileTextToMergeBlocks } from './utils/diff';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
-import dollie, { runContainer, runWeb } from './api';
+import { memory, container } from './dollie';
+import log from './utils/log';
+import {
+  DollieError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
+  ModeInvalidError,
+  DestinationExistsError,
+  ArgInvalidError,
+  ComposeScaffoldConfigInvalidError,
+} from './errors';
 import {
   DiffChange,
   PatchTableItem,
@@ -63,18 +73,26 @@ export {
   diff,
   merge,
   checkFileAction,
-  stringifyBlocks,
   checkConflictBlockCount,
   solveConflicts,
-  parseDiff,
   parseRepoDescription,
   parseFilePathname,
   isPathnameInConfig,
-  parseFileContent,
-  runContainer,
-  runWeb,
+  parseFileTextToMergeBlocks,
+  parseDiffToMergeBlocks,
+  parseMergeBlocksToText,
+  container,
+  memory,
   // objects
-  dollie,
+  log,
+  // errors
+  DollieError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
+  ModeInvalidError,
+  DestinationExistsError,
+  ArgInvalidError,
+  ComposeScaffoldConfigInvalidError,
   // classes
   DollieInteractiveGenerator,
   DollieComposeGenerator,
@@ -120,17 +138,24 @@ export default {
   diff,
   merge,
   checkFileAction,
-  stringifyBlocks,
+  parseMergeBlocksToText,
   checkConflictBlockCount,
   solveConflicts,
-  parseDiff,
+  parseDiffToMergeBlocks,
   parseRepoDescription,
   parseFilePathname,
   isPathnameInConfig,
-  parseFileContent,
-  runContainer,
-  runWeb,
-  dollie,
+  parseFileTextToMergeBlocks,
+  container,
+  memory,
+  log,
+  DollieError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
+  ModeInvalidError,
+  DestinationExistsError,
+  ArgInvalidError,
+  ComposeScaffoldConfigInvalidError,
   DollieInteractiveGenerator,
   DollieComposeGenerator,
   APP_NAME,

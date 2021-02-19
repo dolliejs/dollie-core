@@ -160,7 +160,7 @@ const merge = (
  * @param {Array<MergeBlock>} blocks
  * @returns {string}
  */
-const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
+const parseMergeBlocksToText = (blocks: Array<MergeBlock>): string => {
   return blocks.reduce((result, currentBlock) => {
     if (currentBlock.status === 'OK') {
       return `${result}${currentBlock.values.current.join('')}`;
@@ -179,12 +179,12 @@ const stringifyBlocks = (blocks: Array<MergeBlock>): string => {
 
 /**
  * parse a diff changes into merge blocks
- * @param {Array<DiffChange>} mergeResult
+ * @param {Array<DiffChange>} changes
  * @returns {Array<MergeBlock>}
  */
-const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
+const parseDiffToMergeBlocks = (changes: Array<DiffChange>): Array<MergeBlock> => {
   const mergeBlocks: Array<MergeBlock> = [];
-  for (const line of mergeResult) {
+  for (const line of changes) {
     if (line.removed) {
       continue;
     }
@@ -228,8 +228,8 @@ const parseDiff = (mergeResult: Array<DiffChange>): Array<MergeBlock> => {
  * @param {string} content - file content
  * @returns {Array<MergeBlock>}
  */
-const parseFileContent = (content: string): Array<MergeBlock> => {
-  return parseDiff(diff(content));
+const parseFileTextToMergeBlocks = (content: string): Array<MergeBlock> => {
+  return parseDiffToMergeBlocks(diff(content));
 };
 
 /**
@@ -305,7 +305,7 @@ export {
   diff,
   merge,
   checkFileAction,
-  stringifyBlocks,
-  parseDiff,
-  parseFileContent,
+  parseMergeBlocksToText,
+  parseDiffToMergeBlocks,
+  parseFileTextToMergeBlocks,
 };
