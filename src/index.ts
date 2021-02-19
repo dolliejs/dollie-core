@@ -14,11 +14,21 @@ import {
   getComposedArrayValue,
   getExtendedPropsFromParentScaffold,
 } from './utils/generator';
-import { parseComposeConfig, stringifyComposeConfig } from './utils/compose';
-import { diff, merge, checkFileAction, parseMergeBlocksToText, parseDiffToMergeBlocks, parseFileTextToMergeBlocks } from './utils/diff';
+import {
+  parseComposeConfig,
+  stringifyComposeConfig,
+} from './utils/compose';
+import {
+  diff,
+  merge,
+  checkFileAction,
+  parseMergeBlocksToText,
+  parseDiffToMergeBlocks,
+  parseFileTextToMergeBlocks,
+} from './utils/diff';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
-import { memory, container } from './dollie';
+import { memory, container, run } from './dollie';
 import log from './utils/log';
 import {
   DollieError,
@@ -83,6 +93,7 @@ export {
   parseMergeBlocksToText,
   container,
   memory,
+  run,
   // objects
   log,
   // errors
@@ -148,6 +159,7 @@ export default {
   parseFileTextToMergeBlocks,
   container,
   memory,
+  run,
   log,
   DollieError,
   ScaffoldNotFoundError,

@@ -16,16 +16,16 @@ npm install -g @dollie/core
 ## Usage
 
 ```javascript
-const dollie = require('@dollie/core');
+// by CommonJS
+const dollie = require('@dollie/core').default;
+// by ES6
+import dollie from '@dollie/core';
 ```
 
-### Dollie Generator
+### By Using Yeoman Generator
 
 `@dollie/core` exposes generator configuration for Yeoman, you can install `yeoman-environment` and run this generator:
 
-```bash
-npm i yeoman-environment -S
-```
 
 ```javascript
 const { DollieInteractiveGenerator } = require('@dollie/core');
@@ -37,6 +37,21 @@ env.run('dollie:interactive', () => console.log('dollie generator started'));
 ```
 
 see <https://github.com/dolliejs/dollie-cli#readme> for details.
+
+### By API functions
+
+```js
+const { run, log } = require('@dollie/core');
+
+const app = async () => {
+  try {
+    await run('interactive');
+  } catch (e) {
+    log.error(e.toString());
+    process.exit(1);
+  }
+};
+```
 
 ## License
 
