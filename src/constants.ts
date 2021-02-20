@@ -26,7 +26,7 @@ export const TEMP_DIR = `.${APP_NAME}/temp`;
  * the ignore pattern when traversing files to copy, used by:
  * - `src/utils/generators`
  */
-export const TRAVERSE_IGNORE_REGEXP = new RegExp('^.dollie.(js|json)$');
+export const TRAVERSE_IGNORE_REGEXP = new RegExp('.dollie.(js|json)$');
 /**
  * a config name if current name is related to another scaffold
  *

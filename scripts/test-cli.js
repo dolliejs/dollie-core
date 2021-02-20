@@ -17,7 +17,7 @@ async function test() {
     config = parseComposeConfig(content);
   }
 
-  if (type === 'memory' || type === 'container') {
+  if (type === 'container') {
     config = {
       projectName: 'project',
       dollieScaffoldConfig: {

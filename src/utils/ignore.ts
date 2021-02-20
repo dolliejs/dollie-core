@@ -16,16 +16,22 @@ const chunk = <T>(items: Array<T>): Array<Array<T>> => {
   return items.map((item) => [item]).concat(result);
 };
 
-class GitIgnoreMatcher {
+abstract class IgnoreMatcher {
+  public matchers: Array<RegExp>;
+  public abstract shouldIgnore(filename: string): boolean;
+}
+
+class GitIgnoreMatcher extends IgnoreMatcher {
   public delimiter = path.sep;
+  public matchers: Array<RegExp>;
   private negated: Array<boolean>;
   private rooted: Array<boolean>;
-  private matchers: Array<RegExp>;
 
   public constructor(content: string) {
+    super();
     this.negated = [];
     this.rooted = [];
-    this.matchers = (content.split(/\r?\n|\r/)).map((line, index) => {
+    this.matchers = (('.git\n' + content).split(/\r?\n|\r/)).map((line, index) => {
       const negatedLine = line[0] === '!';
       const rootedLine = line[0] === '/';
       let currentLine = line;
@@ -58,7 +64,6 @@ class GitIgnoreMatcher {
           matchResult.push(!this.negated[index]);
         }
       } else {
-        console.log(filename, matcher);
         const pathChunks = chunk<string>(filename.split(path.sep));
         const matchedPathChunks = pathChunks.filter((chunk) => matcher.test(chunk.join(path.sep)));
         if (matchedPathChunks.length > 0) {
@@ -90,5 +95,7 @@ const getGitIgnoredFiles = (content: string, filePaths: Array<string>): Array<st
 };
 
 export {
+  IgnoreMatcher,
+  GitIgnoreMatcher,
   getGitIgnoredFiles,
 };

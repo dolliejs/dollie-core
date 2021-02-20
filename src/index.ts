@@ -28,7 +28,7 @@ import {
 } from './utils/diff';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
-import { memory, container, run } from './dollie';
+import { container, run } from './dollie';
 import log from './utils/log';
 import { getGitIgnoredFiles } from './utils/ignore';
 import {
@@ -93,7 +93,6 @@ export {
   parseDiffToMergeBlocks,
   parseMergeBlocksToText,
   container,
-  memory,
   run,
   getGitIgnoredFiles,
   // objects
@@ -160,7 +159,6 @@ export default {
   isPathnameInConfig,
   parseFileTextToMergeBlocks,
   container,
-  memory,
   run,
   getGitIgnoredFiles,
   log,

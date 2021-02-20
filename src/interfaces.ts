@@ -86,6 +86,7 @@ export type ComposedConflictKeepsTable = Record<
 export interface TraverseResultItem {
   pathname: string;
   entity: string;
+  stat: 'file' | 'directory';
 }
 
 export type RepoOrigin = 'github' | 'gitlab' | 'bitbucket';
@@ -99,24 +100,18 @@ export interface ScaffoldRepoDescription {
 
 export type DollieMemoryFileSystem = typeof Volume.prototype;
 
-export type FileTable = Record<string, MergeResult>;
-
 interface DollieResponseData {
   conflicts?: Array<Conflict>;
-  gitIgnoredFiles?: Array<string>;
+  ignoredFiles?: Array<string>;
 }
 
-export interface DollieWebResponseData extends DollieResponseData {
-  files: FileTable;
-}
-
-export interface DollieContainerResponseData extends DollieResponseData {
+export interface DollieContainerManifest extends DollieResponseData {
   files: Array<string>;
   basePath: string;
 }
 
-export interface DollieAppCallbacks {
-  onFinish?: (data: DollieWebResponseData) => void;
+export interface DollieContainerFinishCallback {
+  onFinish?: (data: DollieContainerManifest) => void;
 }
 
 export interface DollieAppConfig {
@@ -125,4 +120,4 @@ export interface DollieAppConfig {
   outputPath?: string;
 }
 
-export type DollieAppMode = 'interactive' | 'compose' | 'container' | 'memory';
+export type DollieAppMode = 'interactive' | 'compose' | 'container';
