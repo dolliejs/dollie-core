@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseComposeConfig } = require('../src/utils/compose');
-const { run } = require('../src/dollie');
+const dollie = require('../src/dollie');
 const log = require('../src/utils/log').default;
 
 async function test() {
@@ -32,9 +32,21 @@ async function test() {
   }
 
   try {
-    const manifest = await run(type, config);
-    if (manifest) {
-      console.log(manifest);
+    switch (type) {
+      case 'interactive': {
+        await dollie.interactive('interactive');
+        break;
+      }
+      case 'compose': {
+        await dollie.compose(config);
+        break;
+      }
+      case 'container': {
+        const manifest = await dollie.container(config);
+        console.log(manifest);
+        break;
+      }
+      default: break;
     }
   } catch (e) {
     log.error(e.toString());

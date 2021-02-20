@@ -8,7 +8,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 import DollieComposeGenerator from './compose';
-import { DollieContainerManifest } from '../interfaces';
+import { DollieContainerManifest, TraverseResultItem } from '../interfaces';
 import DollieBaseGenerator from '../base';
 import { ArgInvalidError } from '../errors';
 import traverse from '../utils/traverse';
@@ -48,9 +48,15 @@ class DollieContainerGenerator extends DollieComposeGenerator {
     const matcher = new GitIgnoreMatcher(gitIgnoreFileContent.toString());
     const acceptedFiles = await traverse(this.destinationPath(), matcher);
     const ignoredFiles = await traverse(this.destinationPath(), matcher, fs, false);
+    const relative = (item: TraverseResultItem): TraverseResultItem => {
+      return {
+        ...item,
+        pathname: path.relative(this.destinationPath(), item.pathname),
+      };
+    };
     handleFinish({
-      files: acceptedFiles,
-      ignoredFiles,
+      files: acceptedFiles.map(relative),
+      ignoredFiles: ignoredFiles.map(relative),
       conflicts: this.conflicts,
       basePath: this.destinationPath(),
     }, this);

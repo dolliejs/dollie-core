@@ -34,7 +34,11 @@ const container = async (config: DollieAppConfig, cb?: Callback): Promise<Dollie
   });
 };
 
-const run = async (mode: DollieAppMode, config: Record<string, any>, cb?: Callback) => {
+const run = async (
+  mode: DollieAppMode,
+  config: Record<string, any>,
+  cb?: Callback,
+): Promise<null | DollieContainerManifest> => {
   switch (mode) {
     case 'interactive': {
       const env = Environment.createEnv();
@@ -53,7 +57,21 @@ const run = async (mode: DollieAppMode, config: Record<string, any>, cb?: Callba
     }
     default: break;
   }
+  return;
 };
 
-export default { container, run };
-export { container, run };
+const interactive = async (
+  config: Record<string, any> = {},
+  cb?: Callback,
+) => await run('interactive', config, cb);
+
+const compose = async (
+  config: Record<string, any>,
+  cb?: Callback,
+) => await run('compose', config, cb);
+
+export {
+  container,
+  interactive,
+  compose,
+};
