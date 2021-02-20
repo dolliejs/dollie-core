@@ -1,7 +1,7 @@
 {
   "name": "@dollie/core",
   "version": "1.5.1",
-  "description": "Core utilities for Dollie.js",
+  "description": "Core engine for Dollie.js",
   "homepage": "https://github.com/dolliejs/dollie-core#readme",
   "author": {
     "name": "lenconda",
