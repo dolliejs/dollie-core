@@ -35,12 +35,9 @@ import {
   DollieScaffold,
   Conflict,
   DollieMemoryFileSystem,
-  FileTable,
-  MergeResult,
   DollieAppMode,
 } from './interfaces';
 import { isPathnameInConfig } from './utils/scaffold';
-import { parseFileTextToMergeBlocks } from './utils/diff';
 import { DestinationExistsError, ModeInvalidError } from './errors';
 
 /**
@@ -101,23 +98,19 @@ class DollieBaseGenerator extends Generator {
    * @protected
    */
   protected cliName: string;
-  protected mode: DollieAppMode;
   /**
-   * file table for memory mode
-   * @type {FileTable}
+   * mode for dollie app
+   * `interactive | compose | container`
+   * @type {DollieAppMode}
    * @protected
    */
-  protected fileTable: FileTable = {};
+  protected mode: DollieAppMode;
   /**
    * keys of dependencies
    * @type {Array<string>}
    * @private
    */
   private dependencyKeys: Array<string> = [];
-
-  public constructor(args: string | string[], options: Generator.GeneratorOptions) {
-    super(args, options);
-  }
 
   /**
    * create a unique dependency key and push to `this.dependencyKeys`
@@ -225,10 +218,8 @@ class DollieBaseGenerator extends Generator {
        * this script as a command
        */
       if (typeof endScript === 'string') {
-        if (this.mode !== 'memory') {
-          this.log.info(`Executing end script: \`${endScript}\``);
-          this.log(Buffer.from(execSync(endScript)).toString());
-        }
+        this.log.info(`Executing end script: \`${endScript}\``);
+        this.log(Buffer.from(execSync(endScript)).toString());
       /**
        * if current end script value is a function, Dollie will considering reading
        * the code from it, and call it with `context`
@@ -237,75 +228,40 @@ class DollieBaseGenerator extends Generator {
       } else if (typeof endScript === 'function') {
         const endScriptSource = Function.prototype.toString.call(endScript);
         const endScriptFunc = new Function(`return ${endScriptSource}`).call(null);
-        if (this.mode !== 'memory') {
-          endScriptFunc({
-            fs: {
-              read: (pathname: string): string => {
-                return fs.readFileSync(this.destinationPath(pathname), { encoding: 'utf-8' });
-              },
-              exists: (pathname: string): boolean => {
-                return fs.existsSync(this.destinationPath(pathname));
-              },
-              readJson: (pathname: string): object => {
-                return readJson(this.destinationPath(pathname));
-              },
-              remove: (pathname: string) => {
-                this.conflicts = this.conflicts.filter((conflict) => conflict.pathname !== pathname);
-                return fs.removeSync(pathname);
-              },
-              write: (pathname: string, content: string) => {
-                return fs.writeFileSync(pathname, content, { encoding: 'utf-8' });
-              },
+        endScriptFunc({
+          fs: {
+            read: (pathname: string): string => {
+              return fs.readFileSync(this.destinationPath(pathname), { encoding: 'utf-8' });
             },
-            scaffold: this.scaffold,
-          });
+            exists: (pathname: string): boolean => {
+              return fs.existsSync(this.destinationPath(pathname));
+            },
+            readJson: (pathname: string): object => {
+              return readJson(this.destinationPath(pathname));
+            },
+            remove: (pathname: string) => {
+              this.conflicts = this.conflicts.filter((conflict) => conflict.pathname !== pathname);
+              return fs.removeSync(pathname);
+            },
+            write: (pathname: string, content: string) => {
+              return fs.writeFileSync(pathname, content, { encoding: 'utf-8' });
+            },
+          },
+          scaffold: this.scaffold,
+        });
 
-          if (this.conflicts.length > 0) {
-            this.log(
-              'There ' +
-              (this.conflicts.length === 1 ? 'is' : 'are') +
-              ' still ' + this.conflicts.length +
-              ' file' + (this.conflicts.length === 1 ? ' ' : 's ') +
-              'contains several conflicts:',
-            );
-            this.conflicts.forEach((conflict) => {
-              if (fs.existsSync(this.destinationPath(conflict.pathname))) {
-                this.log(chalk.yellow(`\t- ${conflict.pathname}`));
-              }
-            });
-          }
-        } else {
-          endScriptFunc({
-            fs: {
-              read: (pathname: string): string => {
-                return this.fileTable[pathname].text;
-              },
-              exists: (pathname: string): boolean => {
-                return Boolean(this.fileTable[pathname]);
-              },
-              readJson: (pathname: string): object => {
-                try {
-                  return JSON.parse(this.fileTable[pathname].text || null);
-                } catch {
-                  return null;
-                }
-              },
-              remove: (pathname: string) => {
-                this.conflicts = this.conflicts.filter((conflict) => conflict.pathname !== pathname);
-                this.fileTable[pathname] = null;
-                return;
-              },
-              write: (pathname: string, content: string) => {
-                const fileTableItem: MergeResult = {
-                  conflicts: false,
-                  blocks: parseFileTextToMergeBlocks(content),
-                  text: content,
-                };
-                this.fileTable[pathname] = fileTableItem;
-                return;
-              },
-            },
-            scaffold: this.scaffold,
+        if (this.conflicts.length > 0) {
+          this.log(
+            'There ' +
+            (this.conflicts.length === 1 ? 'is' : 'are') +
+            ' still ' + this.conflicts.length +
+            ' file' + (this.conflicts.length === 1 ? ' ' : 's ') +
+            'contains several conflicts:',
+          );
+          this.conflicts.forEach((conflict) => {
+            if (fs.existsSync(this.destinationPath(conflict.pathname))) {
+              this.log(chalk.yellow(`\t- ${conflict.pathname}`));
+            }
           });
         }
       }
@@ -347,9 +303,7 @@ class DollieBaseGenerator extends Generator {
   protected deleteCachedFiles(deletions: Array<string>) {
     for (const deletion of deletions) {
       if (typeof deletion === 'string') {
-        if (this.mode !== 'memory') {
-          this.log.info(`Deleting scaffold item: ${deletion}`);
-        }
+        this.log.info(`Deleting scaffold item: ${deletion}`);
         this.cacheTable[deletion] = null;
       }
     }

@@ -1,11 +1,14 @@
 import path from 'path';
-import DollieBaseGenerator from '../base';
+import * as fs from 'fs-extra';
 import { TraverseResultItem } from '../interfaces';
+import { IgnoreMatcher } from './ignore';
+import { Volume } from 'memfs/lib/volume';
 
 /**
  * @param {string} startPath
- * @param {RegExp} callbackReg
- * @param {Array<TraverseResultItem} lastResult
+ * @param {RegExp | IgnoreMatcher} matcher
+ * @param {typeof fs | Volume} fileSystem
+ * @param {boolean} ignoreMode
  * @returns {Promise<Array<TraverseResultItem>>}
  *
  * traverse a specified directory, and invoke callback when
@@ -14,38 +17,47 @@ import { TraverseResultItem } from '../interfaces';
 const traverse = async (
   // start path, an absolute path is recommended
   startPath: string,
-  // a RegExp param, passed to match a file to invoke callback
-  callbackReg: RegExp,
-  context: DollieBaseGenerator,
-  lastResult?: Array<TraverseResultItem>,
+  // passed to match a file to invoke callback
+  matcher: RegExp | IgnoreMatcher,
+  fileSystem: typeof fs | Volume = fs,
+  ignoreMode = true,
 ): Promise<Array<TraverseResultItem>> => {
-  let result = lastResult || [];
+  if (!matcher) { return []; }
+  let result: Array<TraverseResultItem> = [];
+  const absoluteStartPath = startPath || path.resolve();
   // all the entities for current path, including directories and files
-  const currentEntities = context.volume.readdirSync(startPath, { encoding: 'utf8' });
+  const currentEntities = fileSystem.readdirSync(absoluteStartPath, { encoding: 'utf8' });
 
   // traverse current-level entities, and do something
   for (const entity of currentEntities) {
-    const currentEntityPath = path.resolve(startPath, entity.toString());
-    const stat = context.volume.statSync(currentEntityPath);
+    const currentEntityPath = path.resolve(absoluteStartPath, entity.toString());
+    const stat = fileSystem.statSync(currentEntityPath);
+    const matched = (
+      (matcher instanceof RegExp && matcher.test(currentEntityPath)) ||
+      (matcher instanceof IgnoreMatcher && matcher.shouldIgnore(currentEntityPath))
+    );
+
+    if ((matched && ignoreMode) || (!matched && !ignoreMode)) { continue; }
 
     if (stat.isFile()) {
-      // if current entity is a file and matches regexp, then invoke the callback
-      if (
-        callbackReg &&
-        callbackReg instanceof RegExp &&
-        !callbackReg.test(entity.toString())
-      ) {
-        result.push({
-          pathname: currentEntityPath,
-          entity: entity.toString(),
-        });
-      }
+      result.push({
+        pathname: currentEntityPath,
+        entity: entity.toString(),
+        stat: 'file',
+      });
     } else if (stat.isDirectory()) {
       /**
        * if it is a directory, then traverse its contained entities, its pathname
        * will be passed as startPath
        */
-      result = result.concat(await traverse(currentEntityPath, callbackReg, context));
+      result.push({
+        pathname: currentEntityPath,
+        entity: entity.toString(),
+        stat: 'directory',
+      });
+      if (ignoreMode) {
+        result = result.concat(await traverse(currentEntityPath, matcher, fileSystem));
+      }
     }
   }
 

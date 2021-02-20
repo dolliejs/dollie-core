@@ -22,7 +22,6 @@ import {
   DollieScaffoldProps,
   ScaffoldRepoDescription,
 } from '../interfaces';
-import DollieMemoryGenerator from '../generators/memory';
 import { ArgInvalidError } from '../errors';
 
 /**
@@ -74,10 +73,11 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
    * invoke `traverse` function in `src/utils/traverse.ts`, set the ignore pattern
    * to avoid copying `.dollie.js` to temporary dir
    */
-  const files = await traverse(path.resolve(scaffoldSourceDir), TRAVERSE_IGNORE_REGEXP, context);
+  const items = await traverse(path.resolve(scaffoldSourceDir), TRAVERSE_IGNORE_REGEXP, context.volume);
 
-  for (const file of files) {
-    const { pathname, entity } = file;
+  for (const item of items) {
+    const { pathname, entity, stat } = item;
+    if (stat !== 'file') { continue; }
     /**
      * `pathname` is an absolute pathname of file against `scaffoldSourceDir` as above
      * we should get the relate pathname to concat with destination pathname
@@ -150,9 +150,10 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
    * get the folder structure from each nested scaffold
    */
 
-  const files = await traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP, context);
-  for (const file of files) {
-    const { pathname } = file;
+  const items = await traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP, context.volume);
+  for (const item of items) {
+    const { pathname, stat } = item;
+    if (stat !== 'file') { continue; }
     /**
      * get the relative path with the start dir of current scaffold's temporary dir
      * still need get rid of `__template.` at the beginning of each file's filename
@@ -290,17 +291,13 @@ export const parseScaffolds = async (
     repoDescription = parseExtendScaffoldName(scaffoldName);
   }
 
-  if (mode !== 'memory') {
-    context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription).repo}`);
-  }
+  context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription).repo}`);
   /**
    * download scaffold from GitHub repository and count the duration
    */
   const duration = await download(repoDescription, scaffoldDir, context.volume);
-  if (mode !== 'memory') {
-    context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
-    context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
-  }
+  context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
+  context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
 
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
   const dollieJsConfigPathname = path.resolve(scaffoldDir, '.dollie.js');

@@ -28,8 +28,9 @@ import {
 } from './utils/diff';
 import DollieInteractiveGenerator from './generators/interactive';
 import DollieComposeGenerator from './generators/compose';
-import { memory, container, run } from './dollie';
+import { container, interactive, compose } from './dollie';
 import log from './utils/log';
+import { getGitIgnoredFiles } from './utils/ignore';
 import {
   DollieError,
   ScaffoldNotFoundError,
@@ -92,8 +93,9 @@ export {
   parseDiffToMergeBlocks,
   parseMergeBlocksToText,
   container,
-  memory,
-  run,
+  interactive,
+  compose,
+  getGitIgnoredFiles,
   // objects
   log,
   // errors
@@ -158,8 +160,9 @@ export default {
   isPathnameInConfig,
   parseFileTextToMergeBlocks,
   container,
-  memory,
-  run,
+  interactive,
+  compose,
+  getGitIgnoredFiles,
   log,
   DollieError,
   ScaffoldNotFoundError,
