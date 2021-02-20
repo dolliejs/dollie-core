@@ -12,6 +12,7 @@ import { DollieContainerManifest } from '../interfaces';
 import DollieBaseGenerator from '../base';
 import { ArgInvalidError } from '../errors';
 import traverse from '../utils/traverse';
+import { GitIgnoreMatcher } from '../utils/ignore';
 
 const handleFinish = (data: DollieContainerManifest, context: DollieBaseGenerator) => {
   const onFinishFunc = _.get(context, 'options.callbacks.onFinish');
@@ -43,10 +44,13 @@ class DollieContainerGenerator extends DollieComposeGenerator {
 
   public async end() {
     super.end.call(this);
+    const gitIgnoreFileContent = fs.readFileSync(this.destinationPath('.gitignore')) || '';
+    const matcher = new GitIgnoreMatcher(gitIgnoreFileContent.toString());
+    const acceptedFiles = await traverse(this.destinationPath(), matcher);
+    const ignoredFiles = await traverse(this.destinationPath(), matcher, fs, false);
     handleFinish({
-      files: Object
-        .keys(this.cacheTable)
-        .filter((pathname) => Boolean(this.cacheTable[pathname])),
+      files: acceptedFiles,
+      ignoredFiles,
       conflicts: this.conflicts,
       basePath: this.destinationPath(),
     }, this);

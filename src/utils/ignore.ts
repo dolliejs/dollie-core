@@ -40,6 +40,10 @@ class GitIgnoreMatcher extends IgnoreMatcher {
         currentLine = line.substring(1);
       }
 
+      if (line[line.length - 1] === '/') {
+        currentLine = line.slice(0, -1);
+      }
+
       const emptyLine = currentLine === '';
 
       if (emptyLine) {
@@ -49,7 +53,7 @@ class GitIgnoreMatcher extends IgnoreMatcher {
       this.negated[index] = negatedLine;
       this.rooted[index] = rootedLine;
 
-      return minimatch.makeRe(line);
+      return minimatch.makeRe(currentLine);
     });
     this.shouldIgnore = this.shouldIgnore.bind(this);
   }

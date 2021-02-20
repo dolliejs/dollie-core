@@ -102,11 +102,11 @@ export type DollieMemoryFileSystem = typeof Volume.prototype;
 
 interface DollieResponseData {
   conflicts?: Array<Conflict>;
-  ignoredFiles?: Array<string>;
+  ignoredFiles?: Array<TraverseResultItem>;
 }
 
 export interface DollieContainerManifest extends DollieResponseData {
-  files: Array<string>;
+  files: Array<TraverseResultItem>;
   basePath: string;
 }
 
