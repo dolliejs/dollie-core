@@ -50,13 +50,12 @@ const traverse = async (
        * if it is a directory, then traverse its contained entities, its pathname
        * will be passed as startPath
        */
-      if (!ignoreMode) {
-        result.push({
-          pathname: currentEntityPath,
-          entity: entity.toString(),
-          stat: 'directory',
-        });
-      } else {
+      result.push({
+        pathname: currentEntityPath,
+        entity: entity.toString(),
+        stat: 'directory',
+      });
+      if (ignoreMode) {
         result = result.concat(await traverse(currentEntityPath, matcher, fileSystem));
       }
     }
