@@ -1,6 +1,7 @@
 import { Change } from 'diff';
 import { Question } from 'yeoman-generator';
 import { Volume } from 'memfs';
+import * as constants from './constants';
 
 export interface DiffChange extends Change {
   conflicted?: boolean;
@@ -114,10 +115,19 @@ export interface DollieContainerFinishCallback {
   onFinish?: (data: DollieContainerManifest) => void;
 }
 
-export interface DollieAppConfig {
+export type Constants = typeof constants;
+
+export interface DollieBaseAppConfig {
+  constants?: Constants;
+}
+
+export interface DollieContainerAppConfig extends DollieBaseAppConfig {
   projectName: string;
   dollieScaffoldConfig: ComposedDollieScaffold;
   outputPath?: string;
 }
+
+export type DollieInteractiveAppConfig = DollieBaseAppConfig;
+export type DollieComposeAppConfig = DollieBaseAppConfig;
 
 export type DollieAppMode = 'interactive' | 'compose' | 'container';
