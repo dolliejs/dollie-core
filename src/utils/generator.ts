@@ -461,36 +461,43 @@ export const parseScaffolds = async (
  * an array and returns it
  * @param {DollieScaffold} scaffold
  * @param {string} key
+ * @param {boolean} lazyMode
  * @returns {Array<any>}
  *
  * since the `scaffold` is a nested structure, and every node could have its own configuration
  * value, but we supposed to get all of the values and make a aggregation (something just like
  * a flatten), for example: `installers`, `files.delete`, `endScripts` and so on
- *
- * @example
- * image there is a `scaffold` like:
- * ```
- * {
- *   ...,
- *   "installers": ["npm"],
- *   ...,
- *   "dependencies": [
- *     {
- *       "installers": ["yarn"]
- *     }
- *   ]
- * }
- * ```
- * then invoke `getComposedArrayValue<string>(scaffold, 'installers')`,
- * it will return `["npm", "yarn"]`
  */
-export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string): Array<T> => {
-  let result = scaffold.configuration &&
-    Array.isArray(_.get(scaffold.configuration, key)) &&
-    Array.from(_.get(scaffold.configuration, key)) || [];
-  scaffold.dependencies && Array.isArray(scaffold.dependencies) &&
-    scaffold.dependencies.forEach((dependence) => {
-      result = result.concat(getComposedArrayValue(dependence, key));
-    });
-  return result as Array<T>;
+export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string, lazyMode = false): Array<T> => {
+  const recursion = (scaffold: DollieScaffold, key: string, lazyMode: boolean): Array<Array<T>> => {
+    let results = [_.get(scaffold.configuration, key)];
+    const dependencies = _.get(scaffold, 'dependencies') || [];
+    for (const dependence of dependencies) {
+      const dependenceResult = recursion(dependence, key, lazyMode);
+      results = results.concat(dependenceResult);
+    }
+    return results;
+  };
+
+  const resultItems = recursion(scaffold, key, lazyMode);
+
+  if (
+    lazyMode &&
+    resultItems.filter(
+      (result) => Array.isArray(result) && result.length === 0,
+    ).length > 0
+  ) {
+    return [];
+  }
+
+  if (resultItems.filter((item) => item === undefined).length === resultItems.length) {
+    return undefined;
+  }
+
+  return resultItems.reduce((result: Array<T>, currentResult) => {
+    if (Array.isArray(currentResult)) {
+      return result.concat(currentResult);
+    }
+    return result;
+  }, [] as Array<T>);
 };

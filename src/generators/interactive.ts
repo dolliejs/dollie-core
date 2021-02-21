@@ -5,7 +5,6 @@
 
 import { Questions } from 'yeoman-generator';
 import { v4 as uuid } from 'uuid';
-import figlet from 'figlet';
 import path from 'path';
 import fs from 'fs';
 import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
@@ -19,7 +18,6 @@ import {
   MergeBlock,
 } from '../interfaces';
 import { parseMergeBlocksToText } from '../utils/diff';
-import readJson from '../utils/read-json';
 import { ArgInvalidError, DestinationExistsError } from '../errors';
 
 class DollieInteractiveGenerator extends DollieBaseGenerator {

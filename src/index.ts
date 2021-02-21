@@ -1,6 +1,3 @@
-import downloadGitRepo from './utils/download';
-import readJson from './utils/read-json';
-import traverse from './utils/traverse';
 import {
   parseScaffoldName,
   parseExtendScaffoldName,
@@ -21,13 +18,10 @@ import {
 import {
   diff,
   merge,
-  checkFileAction,
   parseMergeBlocksToText,
   parseDiffToMergeBlocks,
   parseFileTextToMergeBlocks,
 } from './utils/diff';
-import DollieInteractiveGenerator from './generators/interactive';
-import DollieComposeGenerator from './generators/compose';
 import { container, interactive, compose } from './dollie';
 import log from './utils/log';
 import { getGitIgnoredFiles } from './utils/ignore';
@@ -59,7 +53,6 @@ import {
   ComposedConflictKeepsTable,
 } from './interfaces';
 import {
-  APP_NAME,
   HOME_DIR,
   CACHE_DIR,
   TEMP_DIR,
@@ -67,37 +60,36 @@ import {
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   APP_SCAFFOLD_DEFAULT_OWNER,
-  APP_COMPOSE_CONFIG_MAP,
 } from './constants';
 
 export {
-  // functions
-  downloadGitRepo,
-  readJson,
-  traverse,
-  parseScaffoldName,
-  parseExtendScaffoldName,
-  getComposedArrayValue,
-  getExtendedPropsFromParentScaffold,
-  parseComposeConfig,
-  stringifyComposeConfig,
-  diff,
-  merge,
-  checkFileAction,
-  checkConflictBlockCount,
-  solveConflicts,
-  parseRepoDescription,
-  parseFilePathname,
-  isPathnameInConfig,
-  parseFileTextToMergeBlocks,
-  parseDiffToMergeBlocks,
-  parseMergeBlocksToText,
+  // runner functions
+  compose,
   container,
   interactive,
-  compose,
+
+  // functions
+  checkConflictBlockCount,
+  diff,
+  getComposedArrayValue,
+  getExtendedPropsFromParentScaffold,
   getGitIgnoredFiles,
+  isPathnameInConfig,
+  merge,
+  parseComposeConfig,
+  parseDiffToMergeBlocks,
+  parseFilePathname,
+  parseFileTextToMergeBlocks,
+  parseMergeBlocksToText,
+  parseRepoDescription,
+  parseScaffoldName,
+  parseExtendScaffoldName,
+  solveConflicts,
+  stringifyComposeConfig,
+
   // objects
   log,
+
   // errors
   DollieError,
   ScaffoldNotFoundError,
@@ -106,9 +98,7 @@ export {
   DestinationExistsError,
   ArgInvalidError,
   ComposeScaffoldConfigInvalidError,
-  // classes
-  DollieInteractiveGenerator,
-  DollieComposeGenerator,
+
   // interfaces and types
   DiffChange,
   PatchTableItem,
@@ -126,8 +116,8 @@ export {
   Conflict,
   ComposedConflictKeepsTable,
   FileAction,
+
   // constants
-  APP_NAME,
   HOME_DIR,
   CACHE_DIR,
   TEMP_DIR,
@@ -135,35 +125,37 @@ export {
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   APP_SCAFFOLD_DEFAULT_OWNER,
-  APP_COMPOSE_CONFIG_MAP,
 };
 
 export default {
-  downloadGitRepo,
-  readJson,
-  traverse,
-  parseScaffoldName,
-  parseExtendScaffoldName,
-  getComposedArrayValue,
-  getExtendedPropsFromParentScaffold,
-  parseComposeConfig,
-  stringifyComposeConfig,
-  diff,
-  merge,
-  checkFileAction,
-  parseMergeBlocksToText,
-  checkConflictBlockCount,
-  solveConflicts,
-  parseDiffToMergeBlocks,
-  parseRepoDescription,
-  parseFilePathname,
-  isPathnameInConfig,
-  parseFileTextToMergeBlocks,
+  // runner functions
+  compose,
   container,
   interactive,
-  compose,
+
+  // functions
+  checkConflictBlockCount,
+  diff,
+  getComposedArrayValue,
+  getExtendedPropsFromParentScaffold,
   getGitIgnoredFiles,
+  isPathnameInConfig,
+  merge,
+  parseComposeConfig,
+  parseDiffToMergeBlocks,
+  parseFilePathname,
+  parseFileTextToMergeBlocks,
+  parseMergeBlocksToText,
+  parseRepoDescription,
+  parseScaffoldName,
+  parseExtendScaffoldName,
+  solveConflicts,
+  stringifyComposeConfig,
+
+  // objects
   log,
+
+  // errors
   DollieError,
   ScaffoldNotFoundError,
   ScaffoldTimeoutError,
@@ -171,9 +163,8 @@ export default {
   DestinationExistsError,
   ArgInvalidError,
   ComposeScaffoldConfigInvalidError,
-  DollieInteractiveGenerator,
-  DollieComposeGenerator,
-  APP_NAME,
+
+  // constants
   HOME_DIR,
   CACHE_DIR,
   TEMP_DIR,
@@ -181,5 +172,4 @@ export default {
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   APP_SCAFFOLD_DEFAULT_OWNER,
-  APP_COMPOSE_CONFIG_MAP,
 };

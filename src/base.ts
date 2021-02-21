@@ -195,7 +195,7 @@ class DollieBaseGenerator extends Generator {
      * get the installer from installerMap
      * when the installer is available, then invoke it
      */
-    const installers = _.uniq(getComposedArrayValue<string>(this.scaffold, 'installers'));
+    const installers = _.uniq(_.get(this.scaffold, 'configuration.installers') || []) as Array<string>;
     for (const installerName of installers) {
       const currentInstaller = installerMap[installerName.toLocaleLowerCase()];
       if (currentInstaller && typeof currentInstaller === 'function') {
@@ -210,7 +210,7 @@ class DollieBaseGenerator extends Generator {
      * if there are items in `config.endScripts` options, then we should traverse
      * there are two types for `config.endScripts` option: `string` and `Function`
      */
-    const endScripts = getComposedArrayValue<Function | string>(this.scaffold, 'endScripts');
+    const endScripts = getComposedArrayValue<Function | string>(this.scaffold, 'endScripts') || [];
     for (const endScript of endScripts) {
       /**
        * if current end script value is a string, Dollie will recognize it as a
@@ -277,7 +277,7 @@ class DollieBaseGenerator extends Generator {
      * if there are items in `config.files.delete` options, then we should traverse
      * it and remove the items
      */
-    const deletionRegExps = getComposedArrayValue<string>(this.scaffold, 'files.delete');
+    const deletionRegExps = getComposedArrayValue<string>(this.scaffold, 'files.delete') || [];
     return Object.keys(this.cacheTable).filter((pathname) => {
       return (isPathnameInConfig(pathname, deletionRegExps));
     });

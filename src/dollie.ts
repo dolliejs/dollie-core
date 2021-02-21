@@ -2,15 +2,17 @@ import Environment, { Callback } from 'yeoman-environment';
 import DollieContainerGenerator from './generators/container';
 import DollieInteractiveGenerator from './generators/interactive';
 import {
-  DollieAppConfig,
+  DollieContainerAppConfig,
   DollieContainerManifest,
   DollieAppMode,
   DollieContainerFinishCallback,
+  DollieInteractiveAppConfig,
+  DollieComposeAppConfig,
 } from './interfaces';
 import { DollieError } from './errors';
 import DollieComposeGenerator from './generators/compose';
 
-const container = async (config: DollieAppConfig, cb?: Callback): Promise<DollieContainerManifest> => {
+const container = async (config: DollieContainerAppConfig, cb?: Callback): Promise<DollieContainerManifest> => {
   return new Promise((resolve, reject) => {
     const env = Environment.createEnv();
     env.registerStub(DollieContainerGenerator, 'dollie:container');
@@ -52,21 +54,18 @@ const run = async (
       await env.run('dollie:compose', config, cb);
       break;
     }
-    case 'container': {
-      return await container(config as DollieAppConfig, cb);
-    }
     default: break;
   }
   return;
 };
 
 const interactive = async (
-  config: Record<string, any> = {},
+  config: DollieInteractiveAppConfig = {},
   cb?: Callback,
 ) => await run('interactive', config, cb);
 
 const compose = async (
-  config: Record<string, any>,
+  config: DollieComposeAppConfig = {},
   cb?: Callback,
 ) => await run('compose', config, cb);
 
