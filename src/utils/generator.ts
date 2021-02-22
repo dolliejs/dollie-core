@@ -13,7 +13,7 @@ import {
   parseRepoDescription,
   parseScaffoldName,
 } from './scaffold';
-import readJson from './read-json';
+import { readJson } from './files';
 import {
   DollieAppMode,
   DollieScaffold,

@@ -28,7 +28,7 @@ import {
   writeCacheTable,
   writeToDestinationPath,
 } from './utils/generator';
-import readJson from './utils/read-json';
+import { readJson } from './utils/files';
 import * as constants from './constants';
 import {
   CacheTable,
