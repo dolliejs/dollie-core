@@ -14,7 +14,7 @@
  */
 
 import path from 'path';
-import Generator from 'yeoman-generator';
+import Generator, { GeneratorOptions } from 'yeoman-generator';
 import figlet from 'figlet';
 import fs from 'fs-extra';
 import _ from 'lodash';
@@ -29,13 +29,15 @@ import {
   writeToDestinationPath,
 } from './utils/generator';
 import readJson from './utils/read-json';
-import { HOME_DIR, CACHE_DIR, TEMP_DIR } from './constants';
+import * as constants from './constants';
 import {
   CacheTable,
   DollieScaffold,
   Conflict,
   DollieMemoryFileSystem,
   DollieAppMode,
+  Constants,
+  ExportedConstants,
 } from './interfaces';
 import { isPathnameInConfig } from './utils/scaffold';
 import { DestinationExistsError, ModeInvalidError } from './errors';
@@ -75,6 +77,7 @@ class DollieBaseGenerator extends Generator {
    * @type {DollieMemoryFileSystem}
    * @public
    */
+  public constants: Constants = _.omit(constants, ['default']);
   public volume: DollieMemoryFileSystem;
   /**
    * saves all the conflicts in this array.
@@ -112,6 +115,13 @@ class DollieBaseGenerator extends Generator {
    */
   private dependencyKeys: Array<string> = [];
 
+  public constructor(args: string | string[], options: GeneratorOptions) {
+    super(args, options);
+    const customConstantKeys = Object.keys(constants.default) as Array<keyof ExportedConstants>;
+    const customConstants = _.pick((_.get(this, 'options.constants') || {}) as ExportedConstants, customConstantKeys);
+    this.constants = _.merge(this.constants, customConstants);
+  }
+
   /**
    * create a unique dependency key and push to `this.dependencyKeys`
    * @returns {string}
@@ -140,6 +150,7 @@ class DollieBaseGenerator extends Generator {
 
   public initializing() {
     this.initLog();
+    const { HOME_DIR, CACHE_DIR, TEMP_DIR } = this.constants;
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
     this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
     this.volume = new Volume();

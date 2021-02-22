@@ -34,7 +34,7 @@ async function test() {
   try {
     switch (type) {
       case 'interactive': {
-        await dollie.interactive('interactive');
+        await dollie.interactive();
         break;
       }
       case 'compose': {

@@ -112,13 +112,13 @@ const parseRepoDescription = (
  * parse template file pathname and return pathname without `__template.`
  * @param {string} pathname
  */
-const parseFilePathname = (pathname: string): string => {
+const parseFilePathname = (pathname: string, templateFilePrefix = TEMPLATE_FILE_PREFIX): string => {
   if (!pathname || pathname === '') {
     return '';
   }
   const pathnameGroup = pathname.split(path.sep);
   const filename = pathnameGroup.pop();
-  if (filename.startsWith(TEMPLATE_FILE_PREFIX)) {
+  if (filename.startsWith(templateFilePrefix)) {
     pathnameGroup.push(filename.slice(11));
   } else {
     pathnameGroup.push(filename);

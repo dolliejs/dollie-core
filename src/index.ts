@@ -52,15 +52,16 @@ import {
   Conflict,
   ComposedConflictKeepsTable,
 } from './interfaces';
-import {
+import constants from './constants';
+
+const {
   HOME_DIR,
   CACHE_DIR,
   TEMP_DIR,
   TRAVERSE_IGNORE_REGEXP,
-  APP_SCAFFOLD_PREFIX,
-  APP_EXTEND_SCAFFOLD_PREFIX,
-  APP_SCAFFOLD_DEFAULT_OWNER,
-} from './constants';
+  DEPENDS_ON_KEY,
+  TEMPLATE_FILE_PREFIX,
+} = constants;
 
 export {
   // runner functions
@@ -91,40 +92,39 @@ export {
   log,
 
   // errors
-  DollieError,
-  ScaffoldNotFoundError,
-  ScaffoldTimeoutError,
-  ModeInvalidError,
-  DestinationExistsError,
   ArgInvalidError,
   ComposeScaffoldConfigInvalidError,
+  DestinationExistsError,
+  DollieError,
+  ModeInvalidError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
 
   // interfaces and types
-  DiffChange,
-  PatchTableItem,
-  PatchTable,
   CacheTable,
+  ComposedConflictKeepsTable,
+  Conflict,
   ConflictSolveItem,
   ConflictSolveTable,
-  TraverseResultItem,
-  DollieScaffoldConfiguration,
-  DollieScaffoldProps,
+  DiffChange,
   DollieScaffold,
+  DollieScaffoldConfiguration,
   DollieScaffoldNameParser,
-  MergeResult,
-  MergeBlock,
-  Conflict,
-  ComposedConflictKeepsTable,
+  DollieScaffoldProps,
   FileAction,
+  MergeBlock,
+  MergeResult,
+  PatchTableItem,
+  PatchTable,
+  TraverseResultItem,
 
   // constants
-  HOME_DIR,
   CACHE_DIR,
+  DEPENDS_ON_KEY,
+  HOME_DIR,
   TEMP_DIR,
+  TEMPLATE_FILE_PREFIX,
   TRAVERSE_IGNORE_REGEXP,
-  APP_SCAFFOLD_PREFIX,
-  APP_EXTEND_SCAFFOLD_PREFIX,
-  APP_SCAFFOLD_DEFAULT_OWNER,
 };
 
 export default {
@@ -156,20 +156,19 @@ export default {
   log,
 
   // errors
-  DollieError,
-  ScaffoldNotFoundError,
-  ScaffoldTimeoutError,
-  ModeInvalidError,
-  DestinationExistsError,
   ArgInvalidError,
   ComposeScaffoldConfigInvalidError,
+  DestinationExistsError,
+  DollieError,
+  ModeInvalidError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
 
   // constants
-  HOME_DIR,
   CACHE_DIR,
+  DEPENDS_ON_KEY,
+  HOME_DIR,
   TEMP_DIR,
+  TEMPLATE_FILE_PREFIX,
   TRAVERSE_IGNORE_REGEXP,
-  APP_SCAFFOLD_PREFIX,
-  APP_EXTEND_SCAFFOLD_PREFIX,
-  APP_SCAFFOLD_DEFAULT_OWNER,
 };
