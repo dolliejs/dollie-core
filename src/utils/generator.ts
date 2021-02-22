@@ -293,7 +293,7 @@ export const parseScaffolds = async (
     repoDescription = parseExtendScaffoldName(scaffoldName);
   }
 
-  context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription).repo}`);
+  context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription, context.constants).repo}`);
   /**
    * download scaffold from GitHub repository and count the duration
    */

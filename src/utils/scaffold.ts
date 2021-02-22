@@ -1,5 +1,6 @@
 import path from 'path';
 import ejs from 'ejs';
+import _ from 'lodash';
 import { isBinaryFileSync } from 'isbinaryfile';
 import {
   DollieScaffoldNameParser,
@@ -9,13 +10,15 @@ import {
   ScaffoldRepoDescription,
   RepoOrigin,
   ScaffoldRepoUrls,
+  Constants,
 } from '../interfaces';
-import {
+import * as appConstants from '../constants';
+const {
   APP_SCAFFOLD_DEFAULT_OWNER,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   TEMPLATE_FILE_PREFIX,
-} from '../constants';
+} = appConstants;
 
 const parseStringWithSlot = (input: string): Array<{ type: 'text' | 'slot', value: string }> => {
   if (typeof input !== 'string') { return; }
@@ -62,6 +65,21 @@ const parseStringWithSlot = (input: string): Array<{ type: 'text' | 'slot', valu
   }
 
   return result;
+};
+
+const parseUrl = <T extends object>(url: string, props: T) => {
+  if (!url || typeof url !== 'string') { return ''; }
+  return parseStringWithSlot(url).map((item) => {
+    if (item.type === 'text') {
+      return item.value;
+    } else {
+      const currentValue = _.get(props, item.value);
+      if (typeof currentValue !== 'string') {
+        return '';
+      }
+      return currentValue;
+    }
+  }).join('');
 };
 
 /**
@@ -120,40 +138,20 @@ const parseExtendScaffoldName = createScaffoldNameParser(APP_EXTEND_SCAFFOLD_PRE
 /**
  * parse scaffold repository description to strings
  * @param {ScaffoldRepoDescription} description
+ * @param {Constants} constants
  * @returns {object}
  */
 const parseRepoDescription = (
   description: ScaffoldRepoDescription,
+  constants: Constants = _.omit(appConstants, ['default']),
 ): ScaffoldRepoUrls => {
   const { owner, name, origin, checkout } = description;
-  const urlMap = {
-    github: () => {
-      return {
-        zip: `https://github.com/${owner}/${name}/archive/${checkout}.zip`,
-        repo: `https://github.com/${owner}/${name}/tree/${checkout}`,
-      };
-    },
-    gitlab: () => {
-      return {
-        zip: `https://gitlab.com/${owner}/${name}/repository/archive.zip?ref=${checkout}`,
-        repo: `https://gitlab.com/${owner}/${name}/-/tree/${checkout}`,
-      };
-    },
-    bitbucket: () => {
-      return {
-        zip: `https://bitbucket.org/${owner}/${name}/get/${checkout}.zip`,
-        repo: `https://bitbucket.org/${owner}/${name}/src/${checkout}`,
-      };
-    },
+
+  return {
+    zip: parseUrl<ScaffoldRepoDescription>(constants[`${origin.toUpperCase()}_URL`], description),
+    repo: parseUrl<ScaffoldRepoDescription>(constants[`${origin.toUpperCase()}_REPO_URL`], description),
+    original: `${owner}/${name}#${checkout}@${origin}`,
   };
-  if (!urlMap[origin]) {
-    return {
-      zip: '',
-      original: '',
-      repo: '',
-    };
-  }
-  return { ...urlMap[origin](), original: `${owner}/${name}#${checkout}@${origin}` };
 };
 
 /**
