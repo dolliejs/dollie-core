@@ -69,9 +69,20 @@ export const TEMPLATE_FILE_PREFIX = '__template.';
  */
 export const TRAVERSE_IGNORE_REGEXP = new RegExp('.dollie.(js|json)$');
 
+export const GITHUB_URL = 'https://github.com/{{owner}}/{{name}}/archive/{{checkout}}.zip';
+export const GITLAB_URL = 'https://gitlab.com/{{owner}}/{{name}}/repository/archive.zip?ref={{checkout}}';
+export const BITBUCKET_URL = 'https://bitbucket.org/{{owner}}/{{name}}/get/{{checkout}}.zip';
+
+export const GITHUB_REPO_URL = 'https://github.com/{{owner}}/{{name}}/tree/{{checkout}}';
+export const GITLAB_REPO_URL = 'https://gitlab.com/{{owner}}/{{name}}/-/tree/{{checkout}}';
+export const BITBUCKET_REPO_URL = 'https://bitbucket.org/{{owner}}/{{name}}/src/{{checkout}}';
+
 export default {
+  BITBUCKET_URL,
   CACHE_DIR,
   DEPENDS_ON_KEY,
+  GITHUB_URL,
+  GITLAB_URL,
   HOME_DIR,
   TEMP_DIR,
   TEMPLATE_FILE_PREFIX,

@@ -26,31 +26,33 @@ import { container, interactive, compose } from './dollie';
 import log from './utils/log';
 import { getGitIgnoredFiles } from './utils/ignore';
 import {
-  DollieError,
-  ScaffoldNotFoundError,
-  ScaffoldTimeoutError,
-  ModeInvalidError,
-  DestinationExistsError,
   ArgInvalidError,
   ComposeScaffoldConfigInvalidError,
+  DestinationExistsError,
+  DollieError,
+  ModeInvalidError,
+  ScaffoldNotFoundError,
+  ScaffoldTimeoutError,
 } from './errors';
 import {
-  DiffChange,
-  PatchTableItem,
-  PatchTable,
   CacheTable,
+  ComposedConflictKeepsTable,
+  Conflict,
   ConflictSolveItem,
   ConflictSolveTable,
-  TraverseResultItem,
+  DiffChange,
   DollieScaffold,
-  DollieScaffoldProps,
   DollieScaffoldConfiguration,
   DollieScaffoldNameParser,
+  DollieScaffoldProps,
   FileAction,
-  MergeResult,
   MergeBlock,
-  Conflict,
-  ComposedConflictKeepsTable,
+  MergeResult,
+  PatchTableItem,
+  PatchTable,
+  ScaffoldRepoDescription,
+  ScaffoldRepoUrls,
+  TraverseResultItem,
 } from './interfaces';
 import constants from './constants';
 
@@ -116,6 +118,8 @@ export {
   MergeResult,
   PatchTableItem,
   PatchTable,
+  ScaffoldRepoDescription,
+  ScaffoldRepoUrls,
   TraverseResultItem,
 
   // constants

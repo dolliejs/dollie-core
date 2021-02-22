@@ -8,6 +8,7 @@ import {
   ConflictSolveTable,
   ScaffoldRepoDescription,
   RepoOrigin,
+  ScaffoldRepoUrls,
 } from '../interfaces';
 import {
   APP_SCAFFOLD_DEFAULT_OWNER,
@@ -15,6 +16,53 @@ import {
   APP_EXTEND_SCAFFOLD_PREFIX,
   TEMPLATE_FILE_PREFIX,
 } from '../constants';
+
+const parseStringWithSlot = (input: string): Array<{ type: 'text' | 'slot', value: string }> => {
+  if (typeof input !== 'string') { return; }
+
+  const findMatches = (regex, currentStr, matches = []) => {
+    const res = regex.exec(currentStr);
+    res && matches.push(res) && findMatches(regex, currentStr, matches);
+    return matches;
+  };
+
+  const matches = findMatches(/{{.+?}}/g, input);
+  let currentString = input;
+  let cursor = 0;
+  const result = [];
+
+  for (const match of matches) {
+    const currentText = currentString.slice(0, match.index - cursor);
+    const currentSlot = match[0].slice(2, -2);
+
+    if (currentText.length > 0) {
+      result.push({
+        value: currentText,
+        type: 'text',
+      });
+    }
+
+    if (currentSlot.length > 0) {
+      result.push({
+        value: currentSlot,
+        type: 'slot',
+      });
+    }
+
+    const cutLength = currentText.length + currentSlot.length + 4;
+    currentString = currentString.slice(cutLength);
+    cursor += cutLength;
+  }
+
+  if (currentString.length > 0) {
+    result.push({
+      value: currentString,
+      type: 'text',
+    });
+  }
+
+  return result;
+};
 
 /**
  * parse scaffold name and return a function as parser, which can return a string that
@@ -76,7 +124,7 @@ const parseExtendScaffoldName = createScaffoldNameParser(APP_EXTEND_SCAFFOLD_PRE
  */
 const parseRepoDescription = (
   description: ScaffoldRepoDescription,
-): { repo: string, zip: string, original: string } => {
+): ScaffoldRepoUrls => {
   const { owner, name, origin, checkout } = description;
   const urlMap = {
     github: () => {
