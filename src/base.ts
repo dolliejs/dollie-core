@@ -38,6 +38,7 @@ import {
   DollieAppMode,
   Constants,
   ExportedConstants,
+  BinaryTable,
 } from './interfaces';
 import { isPathnameInConfig } from './utils/scaffold';
 import { DestinationExistsError, ModeInvalidError } from './errors';
@@ -73,11 +74,22 @@ class DollieBaseGenerator extends Generator {
    */
   public cacheTable: CacheTable = {};
   /**
+   * table for storing binary files
+   * @type {BinaryTable}
+   * @public
+   */
+  public binaryTable: BinaryTable = {};
+  /**
+   * constants for runtime
+   * @type {Constants}
+   * @public
+   */
+  public constants: Constants = _.omit(constants, ['default']);
+  /**
    * store temp files into `memfs`
    * @type {DollieMemoryFileSystem}
    * @public
    */
-  public constants: Constants = _.omit(constants, ['default']);
   public volume: DollieMemoryFileSystem;
   /**
    * saves all the conflicts in this array.
@@ -217,6 +229,14 @@ class DollieBaseGenerator extends Generator {
   }
 
   public end() {
+    for (const binaryFileRelativePath of Object.keys(this.binaryTable)) {
+      const binaryFileAbsolutePath = this.binaryTable[binaryFileRelativePath];
+      if (binaryFileAbsolutePath) {
+        this.volume
+          .createReadStream(binaryFileAbsolutePath)
+          .pipe(fs.createWriteStream(this.destinationPath(binaryFileRelativePath)));
+      }
+    }
     /**
      * if there are items in `config.endScripts` options, then we should traverse
      * there are two types for `config.endScripts` option: `string` and `Function`

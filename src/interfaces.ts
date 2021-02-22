@@ -18,6 +18,7 @@ export interface PatchTableItem {
 
 export type PatchTable = Record<string, PatchTableItem>;
 export type CacheTable = Record<string, Array<Array<DiffChange>>>;
+export type BinaryTable = Record<string, string>;
 
 export interface DollieBasicProps {
   name: string;

@@ -1,4 +1,4 @@
-import { Change, diffLines } from 'diff';
+import { diffLines } from 'diff';
 import _ from 'lodash';
 import {
   DollieScaffold,
