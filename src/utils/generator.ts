@@ -13,8 +13,7 @@ import {
   parseRepoDescription,
   parseScaffoldName,
 } from './scaffold';
-import readJson from './read-json';
-import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY, TEMPLATE_FILE_PREFIX } from '../constants';
+import { readJson } from './files';
 import {
   DollieAppMode,
   DollieScaffold,
@@ -59,6 +58,7 @@ export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Re
  * which contain `__template.` as their filename at the beginning
  */
 export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+  const { TRAVERSE_IGNORE_REGEXP, TEMPLATE_FILE_PREFIX } = context.constants;
   /**
    * `context.appBasePath` usually is $HOME/.dollie/cache
    * `scaffold.uuid` is the UUID for current scaffold, e.g. 3f74b271-04ac-4e7b-a5c1-b24894c529d2
@@ -86,7 +86,7 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
      * if a `pathname` equals to `/home/lenconda/.dollie/cache/3f74b271-04ac-4e7b-a5c1-b24894c529d2/src/index.js`
      * the `relativePath` would become as `src/index.js`
      */
-    const absolutePathname = parseFilePathname(pathname);
+    const absolutePathname = parseFilePathname(pathname, TEMPLATE_FILE_PREFIX);
     const relativePathname = path.relative(scaffoldSourceDir, absolutePathname);
     const destinationPathname = path.resolve(destinationDir, relativePathname);
 
@@ -130,6 +130,7 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
  * the file content into destination dir
  */
 export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+  const { TRAVERSE_IGNORE_REGEXP, TEMPLATE_FILE_PREFIX } = context.constants;
   /**
    * it is mentioned as above
    * the dir storing all of the scaffold content on the physical file system
@@ -159,7 +160,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
      * still need get rid of `__template.` at the beginning of each file's filename
      */
 
-    const absolutePathname = parseFilePathname(pathname);
+    const absolutePathname = parseFilePathname(pathname, TEMPLATE_FILE_PREFIX);
     const relativePathname = path.relative(scaffoldSourceDir, absolutePathname);
     /**
      * get the action from relations as below:
@@ -272,6 +273,7 @@ export const parseScaffolds = async (
   mode: DollieAppMode = 'interactive',
 ) => {
   if (!scaffold) { return; }
+  const { DEPENDS_ON_KEY } = context.constants;
   const { uuid: scaffoldUuid, scaffoldName } = scaffold;
 
   if (!scaffold.dependencies) {
@@ -291,7 +293,7 @@ export const parseScaffolds = async (
     repoDescription = parseExtendScaffoldName(scaffoldName);
   }
 
-  context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription).repo}`);
+  context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription, context.constants).repo}`);
   /**
    * download scaffold from GitHub repository and count the duration
    */

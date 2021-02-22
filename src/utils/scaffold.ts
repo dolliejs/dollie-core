@@ -1,5 +1,6 @@
 import path from 'path';
 import ejs from 'ejs';
+import _ from 'lodash';
 import { isBinaryFileSync } from 'isbinaryfile';
 import {
   DollieScaffoldNameParser,
@@ -8,13 +9,78 @@ import {
   ConflictSolveTable,
   ScaffoldRepoDescription,
   RepoOrigin,
+  ScaffoldRepoUrls,
+  Constants,
 } from '../interfaces';
-import {
+import * as appConstants from '../constants';
+const {
   APP_SCAFFOLD_DEFAULT_OWNER,
   APP_SCAFFOLD_PREFIX,
   APP_EXTEND_SCAFFOLD_PREFIX,
   TEMPLATE_FILE_PREFIX,
-} from '../constants';
+} = appConstants;
+
+const parseStringWithSlot = (input: string): Array<{ type: 'text' | 'slot', value: string }> => {
+  if (typeof input !== 'string') { return; }
+
+  const findMatches = (regex, currentStr, matches = []) => {
+    const res = regex.exec(currentStr);
+    res && matches.push(res) && findMatches(regex, currentStr, matches);
+    return matches;
+  };
+
+  const matches = findMatches(/{{.+?}}/g, input);
+  let currentString = input;
+  let cursor = 0;
+  const result = [];
+
+  for (const match of matches) {
+    const currentText = currentString.slice(0, match.index - cursor);
+    const currentSlot = match[0].slice(2, -2);
+
+    if (currentText.length > 0) {
+      result.push({
+        value: currentText,
+        type: 'text',
+      });
+    }
+
+    if (currentSlot.length > 0) {
+      result.push({
+        value: currentSlot,
+        type: 'slot',
+      });
+    }
+
+    const cutLength = currentText.length + currentSlot.length + 4;
+    currentString = currentString.slice(cutLength);
+    cursor += cutLength;
+  }
+
+  if (currentString.length > 0) {
+    result.push({
+      value: currentString,
+      type: 'text',
+    });
+  }
+
+  return result;
+};
+
+const parseUrl = <T extends object>(url: string, props: T) => {
+  if (!url || typeof url !== 'string') { return ''; }
+  return parseStringWithSlot(url).map((item) => {
+    if (item.type === 'text') {
+      return item.value;
+    } else {
+      const currentValue = _.get(props, item.value);
+      if (typeof currentValue !== 'string') {
+        return '';
+      }
+      return currentValue;
+    }
+  }).join('');
+};
 
 /**
  * parse scaffold name and return a function as parser, which can return a string that
@@ -72,53 +138,33 @@ const parseExtendScaffoldName = createScaffoldNameParser(APP_EXTEND_SCAFFOLD_PRE
 /**
  * parse scaffold repository description to strings
  * @param {ScaffoldRepoDescription} description
+ * @param {Constants} constants
  * @returns {object}
  */
 const parseRepoDescription = (
   description: ScaffoldRepoDescription,
-): { repo: string, zip: string, original: string } => {
+  constants: Constants = _.omit(appConstants, ['default']),
+): ScaffoldRepoUrls => {
   const { owner, name, origin, checkout } = description;
-  const urlMap = {
-    github: () => {
-      return {
-        zip: `https://github.com/${owner}/${name}/archive/${checkout}.zip`,
-        repo: `https://github.com/${owner}/${name}/tree/${checkout}`,
-      };
-    },
-    gitlab: () => {
-      return {
-        zip: `https://gitlab.com/${owner}/${name}/repository/archive.zip?ref=${checkout}`,
-        repo: `https://gitlab.com/${owner}/${name}/-/tree/${checkout}`,
-      };
-    },
-    bitbucket: () => {
-      return {
-        zip: `https://bitbucket.org/${owner}/${name}/get/${checkout}.zip`,
-        repo: `https://bitbucket.org/${owner}/${name}/src/${checkout}`,
-      };
-    },
+
+  return {
+    zip: parseUrl<ScaffoldRepoDescription>(constants[`${origin.toUpperCase()}_URL`], description),
+    repo: parseUrl<ScaffoldRepoDescription>(constants[`${origin.toUpperCase()}_REPO_URL`], description),
+    original: `${owner}/${name}#${checkout}@${origin}`,
   };
-  if (!urlMap[origin]) {
-    return {
-      zip: '',
-      original: '',
-      repo: '',
-    };
-  }
-  return { ...urlMap[origin](), original: `${owner}/${name}#${checkout}@${origin}` };
 };
 
 /**
  * parse template file pathname and return pathname without `__template.`
  * @param {string} pathname
  */
-const parseFilePathname = (pathname: string): string => {
+const parseFilePathname = (pathname: string, templateFilePrefix = TEMPLATE_FILE_PREFIX): string => {
   if (!pathname || pathname === '') {
     return '';
   }
   const pathnameGroup = pathname.split(path.sep);
   const filename = pathnameGroup.pop();
-  if (filename.startsWith(TEMPLATE_FILE_PREFIX)) {
+  if (filename.startsWith(templateFilePrefix)) {
     pathnameGroup.push(filename.slice(11));
   } else {
     pathnameGroup.push(filename);

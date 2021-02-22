@@ -33,4 +33,4 @@ const readJson = (filePath: string, fileSystem?: DollieMemoryFileSystem): Record
   }
 };
 
-export default readJson;
+export { readJson };
