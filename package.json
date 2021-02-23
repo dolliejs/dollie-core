@@ -26,11 +26,6 @@
     "Yeoman",
     "yeoman-generator"
   ],
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm i --package-lock-only; git add -A"
-    }
-  },
   "devDependencies": {
     "@types/chalk": "^2.2.0",
     "@types/decompress": "^4.2.3",
