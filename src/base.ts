@@ -14,7 +14,7 @@
  */
 
 import path from 'path';
-import Generator from 'yeoman-generator';
+import Generator, { GeneratorOptions } from 'yeoman-generator';
 import figlet from 'figlet';
 import fs from 'fs-extra';
 import _ from 'lodash';
@@ -28,19 +28,19 @@ import {
   writeCacheTable,
   writeToDestinationPath,
 } from './utils/generator';
-import readJson from './utils/read-json';
-import { HOME_DIR, CACHE_DIR, TEMP_DIR } from './constants';
+import { readJson } from './utils/files';
+import * as constants from './constants';
 import {
   CacheTable,
   DollieScaffold,
   Conflict,
   DollieMemoryFileSystem,
-  FileTable,
-  MergeResult,
   DollieAppMode,
+  Constants,
+  ExportedConstants,
+  BinaryTable,
 } from './interfaces';
 import { isPathnameInConfig } from './utils/scaffold';
-import { parseFileTextToMergeBlocks } from './utils/diff';
 import { DestinationExistsError, ModeInvalidError } from './errors';
 
 /**
@@ -74,6 +74,18 @@ class DollieBaseGenerator extends Generator {
    */
   public cacheTable: CacheTable = {};
   /**
+   * table for storing binary files
+   * @type {BinaryTable}
+   * @public
+   */
+  public binaryTable: BinaryTable = {};
+  /**
+   * constants for runtime
+   * @type {Constants}
+   * @public
+   */
+  public constants: Constants = _.omit(constants, ['default']);
+  /**
    * store temp files into `memfs`
    * @type {DollieMemoryFileSystem}
    * @public
@@ -101,13 +113,13 @@ class DollieBaseGenerator extends Generator {
    * @protected
    */
   protected cliName: string;
-  protected mode: DollieAppMode;
   /**
-   * file table for memory mode
-   * @type {FileTable}
+   * mode for dollie app
+   * `interactive | compose | container`
+   * @type {DollieAppMode}
    * @protected
    */
-  protected fileTable: FileTable = {};
+  protected mode: DollieAppMode;
   /**
    * keys of dependencies
    * @type {Array<string>}
@@ -115,8 +127,11 @@ class DollieBaseGenerator extends Generator {
    */
   private dependencyKeys: Array<string> = [];
 
-  public constructor(args: string | string[], options: Generator.GeneratorOptions) {
+  public constructor(args: string | string[], options: GeneratorOptions) {
     super(args, options);
+    const customConstantKeys = Object.keys(constants.default) as Array<keyof ExportedConstants>;
+    const customConstants = _.pick((_.get(this, 'options.constants') || {}) as ExportedConstants, customConstantKeys);
+    this.constants = _.merge(this.constants, customConstants);
   }
 
   /**
@@ -147,6 +162,7 @@ class DollieBaseGenerator extends Generator {
 
   public initializing() {
     this.initLog();
+    const { HOME_DIR, CACHE_DIR, TEMP_DIR } = this.constants;
     this.appBasePath = path.resolve(HOME_DIR, CACHE_DIR);
     this.appTempPath = path.resolve(HOME_DIR, TEMP_DIR);
     this.volume = new Volume();
@@ -202,7 +218,7 @@ class DollieBaseGenerator extends Generator {
      * get the installer from installerMap
      * when the installer is available, then invoke it
      */
-    const installers = _.uniq(getComposedArrayValue<string>(this.scaffold, 'installers'));
+    const installers = _.uniq(_.get(this.scaffold, 'configuration.installers') || []) as Array<string>;
     for (const installerName of installers) {
       const currentInstaller = installerMap[installerName.toLocaleLowerCase()];
       if (currentInstaller && typeof currentInstaller === 'function') {
@@ -213,11 +229,19 @@ class DollieBaseGenerator extends Generator {
   }
 
   public end() {
+    for (const binaryFileRelativePath of Object.keys(this.binaryTable)) {
+      const binaryFileAbsolutePath = this.binaryTable[binaryFileRelativePath];
+      if (binaryFileAbsolutePath) {
+        this.volume
+          .createReadStream(binaryFileAbsolutePath)
+          .pipe(fs.createWriteStream(this.destinationPath(binaryFileRelativePath)));
+      }
+    }
     /**
      * if there are items in `config.endScripts` options, then we should traverse
      * there are two types for `config.endScripts` option: `string` and `Function`
      */
-    const endScripts = getComposedArrayValue<Function | string>(this.scaffold, 'endScripts');
+    const endScripts = getComposedArrayValue<Function | string>(this.scaffold, 'endScripts') || [];
     for (const endScript of endScripts) {
       /**
        * if current end script value is a string, Dollie will recognize it as a
@@ -225,10 +249,8 @@ class DollieBaseGenerator extends Generator {
        * this script as a command
        */
       if (typeof endScript === 'string') {
-        if (this.mode !== 'memory') {
-          this.log.info(`Executing end script: \`${endScript}\``);
-          this.log(Buffer.from(execSync(endScript)).toString());
-        }
+        this.log.info(`Executing end script: \`${endScript}\``);
+        this.log(Buffer.from(execSync(endScript)).toString());
       /**
        * if current end script value is a function, Dollie will considering reading
        * the code from it, and call it with `context`
@@ -237,75 +259,40 @@ class DollieBaseGenerator extends Generator {
       } else if (typeof endScript === 'function') {
         const endScriptSource = Function.prototype.toString.call(endScript);
         const endScriptFunc = new Function(`return ${endScriptSource}`).call(null);
-        if (this.mode !== 'memory') {
-          endScriptFunc({
-            fs: {
-              read: (pathname: string): string => {
-                return fs.readFileSync(this.destinationPath(pathname), { encoding: 'utf-8' });
-              },
-              exists: (pathname: string): boolean => {
-                return fs.existsSync(this.destinationPath(pathname));
-              },
-              readJson: (pathname: string): object => {
-                return readJson(this.destinationPath(pathname));
-              },
-              remove: (pathname: string) => {
-                this.conflicts = this.conflicts.filter((conflict) => conflict.pathname !== pathname);
-                return fs.removeSync(pathname);
-              },
-              write: (pathname: string, content: string) => {
-                return fs.writeFileSync(pathname, content, { encoding: 'utf-8' });
-              },
+        endScriptFunc({
+          fs: {
+            read: (pathname: string): string => {
+              return fs.readFileSync(this.destinationPath(pathname), { encoding: 'utf-8' });
             },
-            scaffold: this.scaffold,
-          });
+            exists: (pathname: string): boolean => {
+              return fs.existsSync(this.destinationPath(pathname));
+            },
+            readJson: (pathname: string): object => {
+              return readJson(this.destinationPath(pathname));
+            },
+            remove: (pathname: string) => {
+              this.conflicts = this.conflicts.filter((conflict) => conflict.pathname !== pathname);
+              return fs.removeSync(pathname);
+            },
+            write: (pathname: string, content: string) => {
+              return fs.writeFileSync(pathname, content, { encoding: 'utf-8' });
+            },
+          },
+          scaffold: this.scaffold,
+        });
 
-          if (this.conflicts.length > 0) {
-            this.log(
-              'There ' +
-              (this.conflicts.length === 1 ? 'is' : 'are') +
-              ' still ' + this.conflicts.length +
-              ' file' + (this.conflicts.length === 1 ? ' ' : 's ') +
-              'contains several conflicts:',
-            );
-            this.conflicts.forEach((conflict) => {
-              if (fs.existsSync(this.destinationPath(conflict.pathname))) {
-                this.log(chalk.yellow(`\t- ${conflict.pathname}`));
-              }
-            });
-          }
-        } else {
-          endScriptFunc({
-            fs: {
-              read: (pathname: string): string => {
-                return this.fileTable[pathname].text;
-              },
-              exists: (pathname: string): boolean => {
-                return Boolean(this.fileTable[pathname]);
-              },
-              readJson: (pathname: string): object => {
-                try {
-                  return JSON.parse(this.fileTable[pathname].text || null);
-                } catch {
-                  return null;
-                }
-              },
-              remove: (pathname: string) => {
-                this.conflicts = this.conflicts.filter((conflict) => conflict.pathname !== pathname);
-                this.fileTable[pathname] = null;
-                return;
-              },
-              write: (pathname: string, content: string) => {
-                const fileTableItem: MergeResult = {
-                  conflicts: false,
-                  blocks: parseFileTextToMergeBlocks(content),
-                  text: content,
-                };
-                this.fileTable[pathname] = fileTableItem;
-                return;
-              },
-            },
-            scaffold: this.scaffold,
+        if (this.conflicts.length > 0) {
+          this.log(
+            'There ' +
+            (this.conflicts.length === 1 ? 'is' : 'are') +
+            ' still ' + this.conflicts.length +
+            ' file' + (this.conflicts.length === 1 ? ' ' : 's ') +
+            'contains several conflicts:',
+          );
+          this.conflicts.forEach((conflict) => {
+            if (fs.existsSync(this.destinationPath(conflict.pathname))) {
+              this.log(chalk.yellow(`\t- ${conflict.pathname}`));
+            }
           });
         }
       }
@@ -321,7 +308,7 @@ class DollieBaseGenerator extends Generator {
      * if there are items in `config.files.delete` options, then we should traverse
      * it and remove the items
      */
-    const deletionRegExps = getComposedArrayValue<string>(this.scaffold, 'files.delete');
+    const deletionRegExps = getComposedArrayValue<string>(this.scaffold, 'files.delete') || [];
     return Object.keys(this.cacheTable).filter((pathname) => {
       return (isPathnameInConfig(pathname, deletionRegExps));
     });
@@ -347,9 +334,7 @@ class DollieBaseGenerator extends Generator {
   protected deleteCachedFiles(deletions: Array<string>) {
     for (const deletion of deletions) {
       if (typeof deletion === 'string') {
-        if (this.mode !== 'memory') {
-          this.log.info(`Deleting scaffold item: ${deletion}`);
-        }
+        this.log.info(`Deleting scaffold item: ${deletion}`);
         this.cacheTable[deletion] = null;
       }
     }

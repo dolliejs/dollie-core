@@ -4,7 +4,7 @@ import _ from 'lodash';
 import requireFromString from 'require-from-string';
 import DollieBaseGenerator from '../base';
 import traverse from './traverse';
-import download from './download';
+import { downloadScaffold } from './download';
 import { diff, checkFileAction, parseDiffToMergeBlocks, parseMergeBlocksToText, merge } from './diff';
 import {
   parseExtendScaffoldName,
@@ -13,8 +13,7 @@ import {
   parseRepoDescription,
   parseScaffoldName,
 } from './scaffold';
-import readJson from './read-json';
-import { TRAVERSE_IGNORE_REGEXP, DEPENDS_ON_KEY, TEMPLATE_FILE_PREFIX } from '../constants';
+import { readJson } from './files';
 import {
   DollieAppMode,
   DollieScaffold,
@@ -22,8 +21,8 @@ import {
   DollieScaffoldProps,
   ScaffoldRepoDescription,
 } from '../interfaces';
-import DollieMemoryGenerator from '../generators/memory';
 import { ArgInvalidError } from '../errors';
+import { isBinaryFileSync } from 'isbinaryfile';
 
 /**
  * get extended props from parent scaffold
@@ -60,6 +59,7 @@ export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Re
  * which contain `__template.` as their filename at the beginning
  */
 export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+  const { TRAVERSE_IGNORE_REGEXP, TEMPLATE_FILE_PREFIX } = context.constants;
   /**
    * `context.appBasePath` usually is $HOME/.dollie/cache
    * `scaffold.uuid` is the UUID for current scaffold, e.g. 3f74b271-04ac-4e7b-a5c1-b24894c529d2
@@ -74,10 +74,11 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
    * invoke `traverse` function in `src/utils/traverse.ts`, set the ignore pattern
    * to avoid copying `.dollie.js` to temporary dir
    */
-  const files = await traverse(path.resolve(scaffoldSourceDir), TRAVERSE_IGNORE_REGEXP, context);
+  const items = await traverse(path.resolve(scaffoldSourceDir), TRAVERSE_IGNORE_REGEXP, context.volume);
 
-  for (const file of files) {
-    const { pathname, entity } = file;
+  for (const item of items) {
+    const { pathname, entity, stat } = item;
+    if (stat !== 'file') { continue; }
     /**
      * `pathname` is an absolute pathname of file against `scaffoldSourceDir` as above
      * we should get the relate pathname to concat with destination pathname
@@ -86,7 +87,7 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
      * if a `pathname` equals to `/home/lenconda/.dollie/cache/3f74b271-04ac-4e7b-a5c1-b24894c529d2/src/index.js`
      * the `relativePath` would become as `src/index.js`
      */
-    const absolutePathname = parseFilePathname(pathname);
+    const absolutePathname = parseFilePathname(pathname, TEMPLATE_FILE_PREFIX);
     const relativePathname = path.relative(scaffoldSourceDir, absolutePathname);
     const destinationPathname = path.resolve(destinationDir, relativePathname);
 
@@ -130,6 +131,7 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
  * the file content into destination dir
  */
 export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+  const { TRAVERSE_IGNORE_REGEXP, TEMPLATE_FILE_PREFIX } = context.constants;
   /**
    * it is mentioned as above
    * the dir storing all of the scaffold content on the physical file system
@@ -150,72 +152,77 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
    * get the folder structure from each nested scaffold
    */
 
-  const files = await traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP, context);
-  for (const file of files) {
-    const { pathname } = file;
+  const items = await traverse(scaffoldSourceDir, TRAVERSE_IGNORE_REGEXP, context.volume);
+  for (const item of items) {
+    const { pathname, stat } = item;
+    if (stat !== 'file') { continue; }
     /**
      * get the relative path with the start dir of current scaffold's temporary dir
      * still need get rid of `__template.` at the beginning of each file's filename
      */
 
-    const absolutePathname = parseFilePathname(pathname);
+    const absolutePathname = parseFilePathname(pathname, TEMPLATE_FILE_PREFIX);
     const relativePathname = path.relative(scaffoldSourceDir, absolutePathname);
-    /**
-     * get the action from relations as below:
-     * 1. parent scaffold's file content with the same name
-     * 2. file content in destination dir on mem-fs which has the same name as current one
-     * 3. current file that will be written into destination dir
-     */
-    const action = checkFileAction(scaffold, relativePathname, context.cacheTable);
     /**
      * read current file from temporary dir on mem-fs
      */
     const currentTempFileBuffer = context.volume.readFileSync(
       path.resolve(scaffoldTempDir, relativePathname),
     );
-    const currentTempFileContent = currentTempFileBuffer.toString();
 
-    switch (action) {
+    if (isBinaryFileSync(currentTempFileBuffer)) {
+      context.binaryTable[relativePathname] = absolutePathname;
+    } else {
+      const currentTempFileContent = currentTempFileBuffer.toString();
       /**
-       * if action for current file is `DIRECT`, which means we can directly write
-       * `currentTempFileContent` into destination file without worrying about previous content
-       * besides, we should add current content to `mergeTable` for comparing when this file
-       * will be merged
+       * get the action from relations as below:
+       * 1. parent scaffold's file content with the same name
+       * 2. file content in destination dir on mem-fs which has the same name as current one
+       * 3. current file that will be written into destination dir
        */
-      case 'DIRECT': {
-        if (!context.cacheTable[relativePathname]) {
-          context.cacheTable[relativePathname] = [];
-        }
-        context.cacheTable[relativePathname] = [diff(currentTempFileContent)];
-        break;
-      }
-      /**
-       * if action for current file is `MERGE`, which means we should take previous content
-       * into concern, so Dollie will do these things:
-       * 1. get diff between current file content and the original content
-       * 2. push the diff to cache table
-       */
-      case 'MERGE': {
-        const cacheTableItem = context.cacheTable[relativePathname];
+      const action = checkFileAction(scaffold, relativePathname, context.cacheTable);
 
-        if (!cacheTableItem) {
+      switch (action) {
+        /**
+         * if action for current file is `DIRECT`, which means we can directly write
+         * `currentTempFileContent` into destination file without worrying about previous content
+         * besides, we should add current content to `mergeTable` for comparing when this file
+         * will be merged
+         */
+        case 'DIRECT': {
+          if (!context.cacheTable[relativePathname]) {
+            context.cacheTable[relativePathname] = [];
+          }
+          context.cacheTable[relativePathname] = [diff(currentTempFileContent)];
           break;
         }
+        /**
+         * if action for current file is `MERGE`, which means we should take previous content
+         * into concern, so Dollie will do these things:
+         * 1. get diff between current file content and the original content
+         * 2. push the diff to cache table
+         */
+        case 'MERGE': {
+          const cacheTableItem = context.cacheTable[relativePathname];
 
-        const originalDiff = cacheTableItem[0];
-        const originalFileContent = parseMergeBlocksToText(parseDiffToMergeBlocks(originalDiff));
-        cacheTableItem.push(diff(originalFileContent, currentTempFileContent));
+          if (!cacheTableItem) {
+            break;
+          }
 
-        break;
+          const originalDiff = cacheTableItem[0];
+          const originalFileContent = parseMergeBlocksToText(parseDiffToMergeBlocks(originalDiff));
+          cacheTableItem.push(diff(originalFileContent, currentTempFileContent));
+          break;
+        }
+        /**
+         * if action for current file is `NIL`, which means we should not take any action with
+         * current file content and destination file, even if creating and overwriting, just do nothing
+         */
+        case 'NIL':
+          break;
+        default:
+          break;
       }
-      /**
-       * if action for current file is `NIL`, which means we should not take any action with
-       * current file content and destination file, even if creating and overwriting, just do nothing
-       */
-      case 'NIL':
-        break;
-      default:
-        break;
     }
   }
 
@@ -271,6 +278,7 @@ export const parseScaffolds = async (
   mode: DollieAppMode = 'interactive',
 ) => {
   if (!scaffold) { return; }
+  const { DEPENDS_ON_KEY } = context.constants;
   const { uuid: scaffoldUuid, scaffoldName } = scaffold;
 
   if (!scaffold.dependencies) {
@@ -290,17 +298,22 @@ export const parseScaffolds = async (
     repoDescription = parseExtendScaffoldName(scaffoldName);
   }
 
-  if (mode !== 'memory') {
-    context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription).repo}`);
-  }
+  context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription, context.constants).repo}`);
   /**
    * download scaffold from GitHub repository and count the duration
    */
-  const duration = await download(repoDescription, scaffoldDir, context.volume);
-  if (mode !== 'memory') {
-    context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
-    context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
-  }
+  const duration = await downloadScaffold(
+    repoDescription,
+    scaffoldDir,
+    context.volume,
+    0,
+    {
+      timeout: context.constants.SCAFFOLD_TIMEOUT,
+    },
+    context.constants,
+  );
+  context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
+  context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
 
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
   const dollieJsConfigPathname = path.resolve(scaffoldDir, '.dollie.js');
@@ -464,36 +477,43 @@ export const parseScaffolds = async (
  * an array and returns it
  * @param {DollieScaffold} scaffold
  * @param {string} key
+ * @param {boolean} lazyMode
  * @returns {Array<any>}
  *
  * since the `scaffold` is a nested structure, and every node could have its own configuration
  * value, but we supposed to get all of the values and make a aggregation (something just like
  * a flatten), for example: `installers`, `files.delete`, `endScripts` and so on
- *
- * @example
- * image there is a `scaffold` like:
- * ```
- * {
- *   ...,
- *   "installers": ["npm"],
- *   ...,
- *   "dependencies": [
- *     {
- *       "installers": ["yarn"]
- *     }
- *   ]
- * }
- * ```
- * then invoke `getComposedArrayValue<string>(scaffold, 'installers')`,
- * it will return `["npm", "yarn"]`
  */
-export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string): Array<T> => {
-  let result = scaffold.configuration &&
-    Array.isArray(_.get(scaffold.configuration, key)) &&
-    Array.from(_.get(scaffold.configuration, key)) || [];
-  scaffold.dependencies && Array.isArray(scaffold.dependencies) &&
-    scaffold.dependencies.forEach((dependence) => {
-      result = result.concat(getComposedArrayValue(dependence, key));
-    });
-  return result as Array<T>;
+export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string, lazyMode = false): Array<T> => {
+  const recursion = (scaffold: DollieScaffold, key: string, lazyMode: boolean): Array<Array<T>> => {
+    let results = [_.get(scaffold.configuration, key)];
+    const dependencies = _.get(scaffold, 'dependencies') || [];
+    for (const dependence of dependencies) {
+      const dependenceResult = recursion(dependence, key, lazyMode);
+      results = results.concat(dependenceResult);
+    }
+    return results;
+  };
+
+  const resultItems = recursion(scaffold, key, lazyMode);
+
+  if (
+    lazyMode &&
+    resultItems.filter(
+      (result) => Array.isArray(result) && result.length === 0,
+    ).length > 0
+  ) {
+    return [];
+  }
+
+  if (resultItems.filter((item) => item === undefined).length === resultItems.length) {
+    return undefined;
+  }
+
+  return resultItems.reduce((result: Array<T>, currentResult) => {
+    if (Array.isArray(currentResult)) {
+      return result.concat(currentResult);
+    }
+    return result;
+  }, [] as Array<T>);
 };

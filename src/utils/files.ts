@@ -1,9 +1,10 @@
 import fs from 'fs-extra';
-import { DollieMemoryFileSystem } from '../interfaces';
+import { DollieMemoryFileSystem, FileSystem } from '../interfaces';
 
 /**
  * get json file content and returns as a JavaScript object
  * @param {string} filePath
+ * @param {FileSystem | DollieMemoryFileSystem} fileSystem
  * @returns {object}
  *
  * @example
@@ -20,12 +21,14 @@ import { DollieMemoryFileSystem } from '../interfaces';
  * ```
  * however, if the file does not exist, the result from `readJson` will become `null`
  */
-const readJson = (filePath: string, fileSystem?: DollieMemoryFileSystem): Record<string, any> => {
-  const customFileSystem = fileSystem || fs;
-  if (!customFileSystem.existsSync(filePath) || !customFileSystem.statSync(filePath).isFile()) {
+const readJson = (
+  filePath: string,
+  fileSystem: FileSystem | DollieMemoryFileSystem = fs,
+): Record<string, any> => {
+  if (!fileSystem.existsSync(filePath) || !fileSystem.statSync(filePath).isFile()) {
     return null;
   }
-  const fileContentBuffer = customFileSystem.readFileSync(filePath);
+  const fileContentBuffer = fileSystem.readFileSync(filePath);
   try {
     return JSON.parse(fileContentBuffer.toString());
   } catch (e) {
@@ -33,4 +36,4 @@ const readJson = (filePath: string, fileSystem?: DollieMemoryFileSystem): Record
   }
 };
 
-export default readJson;
+export { readJson };

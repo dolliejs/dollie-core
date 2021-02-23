@@ -1,6 +1,12 @@
 import { Change } from 'diff';
 import { Question } from 'yeoman-generator';
 import { Volume } from 'memfs';
+import * as constants from './constants';
+import _ from 'lodash';
+import * as fs from 'fs-extra';
+const allConstants = _.omit(constants, ['default']);
+
+export type FileSystem = typeof fs;
 
 export interface DiffChange extends Change {
   conflicted?: boolean;
@@ -15,6 +21,7 @@ export interface PatchTableItem {
 
 export type PatchTable = Record<string, PatchTableItem>;
 export type CacheTable = Record<string, Array<Array<DiffChange>>>;
+export type BinaryTable = Record<string, string>;
 
 export interface DollieBasicProps {
   name: string;
@@ -86,6 +93,7 @@ export type ComposedConflictKeepsTable = Record<
 export interface TraverseResultItem {
   pathname: string;
   entity: string;
+  stat: 'file' | 'directory';
 }
 
 export type RepoOrigin = 'github' | 'gitlab' | 'bitbucket';
@@ -99,30 +107,40 @@ export interface ScaffoldRepoDescription {
 
 export type DollieMemoryFileSystem = typeof Volume.prototype;
 
-export type FileTable = Record<string, MergeResult>;
-
 interface DollieResponseData {
   conflicts?: Array<Conflict>;
-  gitIgnoredFiles?: Array<string>;
+  ignoredFiles?: Array<TraverseResultItem>;
 }
 
-export interface DollieWebResponseData extends DollieResponseData {
-  files: FileTable;
-}
-
-export interface DollieContainerResponseData extends DollieResponseData {
-  files: Array<string>;
+export interface DollieContainerManifest extends DollieResponseData {
+  files: Array<TraverseResultItem>;
   basePath: string;
 }
 
-export interface DollieAppCallbacks {
-  onFinish?: (data: DollieWebResponseData) => void;
+export interface DollieContainerFinishCallback {
+  onFinish?: (data: DollieContainerManifest) => void;
 }
 
-export interface DollieAppConfig {
+export type Constants = typeof allConstants;
+export type ExportedConstants = typeof constants.default;
+
+export interface DollieBaseAppConfig {
+  constants?: ExportedConstants;
+}
+
+export interface DollieContainerAppConfig extends DollieBaseAppConfig {
   projectName: string;
   dollieScaffoldConfig: ComposedDollieScaffold;
   outputPath?: string;
 }
 
-export type DollieAppMode = 'interactive' | 'compose' | 'container' | 'memory';
+export type DollieInteractiveAppConfig = DollieBaseAppConfig;
+export type DollieComposeAppConfig = DollieBaseAppConfig;
+
+export type DollieAppMode = 'interactive' | 'compose' | 'container';
+
+export interface ScaffoldRepoUrls {
+  repo: string;
+  zip: string;
+  original: string;
+}

@@ -1,10 +1,36 @@
 import os from 'os';
 
 /**
+ * configuration map under `compose` mode, used by:
+ * - `src/utils/compose.ts`
+ * - `src/generators/compose.ts`
+ */
+export const APP_COMPOSE_CONFIG_MAP = {
+  dollie_scaffold_config: 'dollieScaffoldConfig',
+  scaffold_name: 'scaffoldName',
+  conflict_keeps_table: 'keepsTable',
+  project_name: 'projectName',
+};
+/**
+ * extend scaffold prefix for `createParser`, used by:
+ * - `src/utils/scaffold.ts`
+ */
+export const APP_EXTEND_SCAFFOLD_PREFIX = 'extend-scaffold-';
+/**
  * name for this application, used by:
  * - `CACHE_DIR`
  */
 export const APP_NAME = 'dollie';
+/**
+ * default namespace for `createParser`, used by:
+ * - `src/utils/scaffold.ts`
+ */
+export const APP_SCAFFOLD_DEFAULT_OWNER = `${APP_NAME}js`;
+/**
+ * scaffold prefix for `createParser`, used by:
+ * - `src/utils/scaffold.ts`
+ */
+export const APP_SCAFFOLD_PREFIX = 'scaffold-';
 /**
  * home directory of current operating system, used by:
  * - `src/generators/base.ts`
@@ -17,17 +43,6 @@ export const HOME_DIR = os.homedir();
  */
 export const CACHE_DIR = `.${APP_NAME}/cache`;
 /**
- * the directory to save scaffold contents
- * it is a relative path with `HOME_DIR`, used by:
- * - `src/generator/base.ts`
- */
-export const TEMP_DIR = `.${APP_NAME}/temp`;
-/**
- * the ignore pattern when traversing files to copy, used by:
- * - `src/utils/generators`
- */
-export const TRAVERSE_IGNORE_REGEXP = new RegExp('^.dollie.(js|json)$');
-/**
  * a config name if current name is related to another scaffold
  *
  * @example
@@ -37,34 +52,42 @@ export const TRAVERSE_IGNORE_REGEXP = new RegExp('^.dollie.(js|json)$');
  */
 export const DEPENDS_ON_KEY = '$DEPENDS_ON$';
 /**
- * scaffold prefix for `createParser`, used by:
- * - `src/utils/scaffold.ts`
+ * the directory to save scaffold contents
+ * it is a relative path with `HOME_DIR`, used by:
+ * - `src/generator/base.ts`
  */
-export const APP_SCAFFOLD_PREFIX = 'scaffold-';
-/**
- * extend scaffold prefix for `createParser`, used by:
- * - `src/utils/scaffold.ts`
- */
-export const APP_EXTEND_SCAFFOLD_PREFIX = 'extend-scaffold-';
-/**
- * default namespace for `createParser`, used by:
- * - `src/utils/scaffold.ts`
- */
-export const APP_SCAFFOLD_DEFAULT_OWNER = `${APP_NAME}js`;
-/**
- * configuration map under `compose` mode, used by:
- * - `src/utils/compose.ts`
- * - `src/generators/compose.ts`
- */
-export const APP_COMPOSE_CONFIG_MAP = {
-  dollie_scaffold_config: 'dollieScaffoldConfig',
-  scaffold_name: 'scaffoldName',
-  conflict_keeps_table: 'keepsTable',
-  project_name: 'projectName',
-};
+export const TEMP_DIR = `.${APP_NAME}/temp`;
 /**
  * template file prefix for Dollie to read
  * if a filename is `__template.foo.txt`, it will be considered by Dollie as
  * a template file
  */
 export const TEMPLATE_FILE_PREFIX = '__template.';
+/**
+ * the ignore pattern when traversing files to copy, used by:
+ * - `src/utils/generators`
+ */
+export const TRAVERSE_IGNORE_REGEXP = new RegExp('.dollie.(js|json)$');
+
+export const GITHUB_URL = 'https://github.com/{{owner}}/{{name}}/archive/{{checkout}}.zip';
+export const GITLAB_URL = 'https://gitlab.com/{{owner}}/{{name}}/repository/archive.zip?ref={{checkout}}';
+export const BITBUCKET_URL = 'https://bitbucket.org/{{owner}}/{{name}}/get/{{checkout}}.zip';
+
+export const GITHUB_REPO_URL = 'https://github.com/{{owner}}/{{name}}/tree/{{checkout}}';
+export const GITLAB_REPO_URL = 'https://gitlab.com/{{owner}}/{{name}}/-/tree/{{checkout}}';
+export const BITBUCKET_REPO_URL = 'https://bitbucket.org/{{owner}}/{{name}}/src/{{checkout}}';
+
+export const SCAFFOLD_TIMEOUT = 10000;
+
+export default {
+  BITBUCKET_URL,
+  CACHE_DIR,
+  DEPENDS_ON_KEY,
+  GITHUB_URL,
+  GITLAB_URL,
+  HOME_DIR,
+  SCAFFOLD_TIMEOUT,
+  TEMP_DIR,
+  TEMPLATE_FILE_PREFIX,
+  TRAVERSE_IGNORE_REGEXP,
+};

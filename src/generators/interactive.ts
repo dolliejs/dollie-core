@@ -5,7 +5,6 @@
 
 import { Questions } from 'yeoman-generator';
 import { v4 as uuid } from 'uuid';
-import figlet from 'figlet';
 import path from 'path';
 import fs from 'fs';
 import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
@@ -19,7 +18,6 @@ import {
   MergeBlock,
 } from '../interfaces';
 import { parseMergeBlocksToText } from '../utils/diff';
-import readJson from '../utils/read-json';
 import { ArgInvalidError, DestinationExistsError } from '../errors';
 
 class DollieInteractiveGenerator extends DollieBaseGenerator {
@@ -62,7 +60,7 @@ class DollieInteractiveGenerator extends DollieBaseGenerator {
 
     const scaffold: DollieScaffold = {
       uuid: uuid(),
-      scaffoldName: parseRepoDescription(parseScaffoldName(props.scaffold)).original,
+      scaffoldName: parseRepoDescription(parseScaffoldName(props.scaffold), this.constants).original,
       dependencies: [],
     };
     await parseScaffolds(scaffold, this, null, this.mode);
