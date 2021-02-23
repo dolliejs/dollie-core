@@ -22,6 +22,7 @@ import {
   ScaffoldRepoDescription,
 } from '../interfaces';
 import { ArgInvalidError } from '../errors';
+import { isBinaryFileSync } from 'isbinaryfile';
 
 /**
  * get extended props from parent scaffold
@@ -163,61 +164,65 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
     const absolutePathname = parseFilePathname(pathname, TEMPLATE_FILE_PREFIX);
     const relativePathname = path.relative(scaffoldSourceDir, absolutePathname);
     /**
-     * get the action from relations as below:
-     * 1. parent scaffold's file content with the same name
-     * 2. file content in destination dir on mem-fs which has the same name as current one
-     * 3. current file that will be written into destination dir
-     */
-    const action = checkFileAction(scaffold, relativePathname, context.cacheTable);
-    /**
      * read current file from temporary dir on mem-fs
      */
     const currentTempFileBuffer = context.volume.readFileSync(
       path.resolve(scaffoldTempDir, relativePathname),
     );
-    const currentTempFileContent = currentTempFileBuffer.toString();
 
-    switch (action) {
+    if (isBinaryFileSync(currentTempFileBuffer)) {
+      context.binaryTable[relativePathname] = absolutePathname;
+    } else {
+      const currentTempFileContent = currentTempFileBuffer.toString();
       /**
-       * if action for current file is `DIRECT`, which means we can directly write
-       * `currentTempFileContent` into destination file without worrying about previous content
-       * besides, we should add current content to `mergeTable` for comparing when this file
-       * will be merged
+       * get the action from relations as below:
+       * 1. parent scaffold's file content with the same name
+       * 2. file content in destination dir on mem-fs which has the same name as current one
+       * 3. current file that will be written into destination dir
        */
-      case 'DIRECT': {
-        if (!context.cacheTable[relativePathname]) {
-          context.cacheTable[relativePathname] = [];
-        }
-        context.cacheTable[relativePathname] = [diff(currentTempFileContent)];
-        break;
-      }
-      /**
-       * if action for current file is `MERGE`, which means we should take previous content
-       * into concern, so Dollie will do these things:
-       * 1. get diff between current file content and the original content
-       * 2. push the diff to cache table
-       */
-      case 'MERGE': {
-        const cacheTableItem = context.cacheTable[relativePathname];
+      const action = checkFileAction(scaffold, relativePathname, context.cacheTable);
 
-        if (!cacheTableItem) {
+      switch (action) {
+        /**
+         * if action for current file is `DIRECT`, which means we can directly write
+         * `currentTempFileContent` into destination file without worrying about previous content
+         * besides, we should add current content to `mergeTable` for comparing when this file
+         * will be merged
+         */
+        case 'DIRECT': {
+          if (!context.cacheTable[relativePathname]) {
+            context.cacheTable[relativePathname] = [];
+          }
+          context.cacheTable[relativePathname] = [diff(currentTempFileContent)];
           break;
         }
+        /**
+         * if action for current file is `MERGE`, which means we should take previous content
+         * into concern, so Dollie will do these things:
+         * 1. get diff between current file content and the original content
+         * 2. push the diff to cache table
+         */
+        case 'MERGE': {
+          const cacheTableItem = context.cacheTable[relativePathname];
 
-        const originalDiff = cacheTableItem[0];
-        const originalFileContent = parseMergeBlocksToText(parseDiffToMergeBlocks(originalDiff));
-        cacheTableItem.push(diff(originalFileContent, currentTempFileContent));
+          if (!cacheTableItem) {
+            break;
+          }
 
-        break;
+          const originalDiff = cacheTableItem[0];
+          const originalFileContent = parseMergeBlocksToText(parseDiffToMergeBlocks(originalDiff));
+          cacheTableItem.push(diff(originalFileContent, currentTempFileContent));
+          break;
+        }
+        /**
+         * if action for current file is `NIL`, which means we should not take any action with
+         * current file content and destination file, even if creating and overwriting, just do nothing
+         */
+        case 'NIL':
+          break;
+        default:
+          break;
       }
-      /**
-       * if action for current file is `NIL`, which means we should not take any action with
-       * current file content and destination file, even if creating and overwriting, just do nothing
-       */
-      case 'NIL':
-        break;
-      default:
-        break;
     }
   }
 

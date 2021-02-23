@@ -57,12 +57,15 @@ import {
 import constants from './constants';
 
 const {
-  HOME_DIR,
+  BITBUCKET_URL,
   CACHE_DIR,
-  TEMP_DIR,
-  TRAVERSE_IGNORE_REGEXP,
   DEPENDS_ON_KEY,
+  GITHUB_URL,
+  GITLAB_URL,
+  HOME_DIR,
+  TEMP_DIR,
   TEMPLATE_FILE_PREFIX,
+  TRAVERSE_IGNORE_REGEXP,
 } = constants;
 
 export {
@@ -123,8 +126,11 @@ export {
   TraverseResultItem,
 
   // constants
+  BITBUCKET_URL,
   CACHE_DIR,
   DEPENDS_ON_KEY,
+  GITHUB_URL,
+  GITLAB_URL,
   HOME_DIR,
   TEMP_DIR,
   TEMPLATE_FILE_PREFIX,
@@ -169,8 +175,11 @@ export default {
   ScaffoldTimeoutError,
 
   // constants
+  BITBUCKET_URL,
   CACHE_DIR,
   DEPENDS_ON_KEY,
+  GITHUB_URL,
+  GITLAB_URL,
   HOME_DIR,
   TEMP_DIR,
   TEMPLATE_FILE_PREFIX,
