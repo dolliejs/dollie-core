@@ -7,50 +7,52 @@
 
 Dollie.js is a generator for generating everything, based on [Yeoman](http://yeoman.io). Dollie core is the essential components for Dollie.js.
 
-## Installation
+## Usage
+
+### CLI
+
+#### Installation
 
 ```bash
-npm install -g @dollie/core
+npm i @dollie/cli -g
 ```
 
-## Usage
+#### Run Dollie
+
+```bash
+# Interactive mode
+dollie
+
+# Compose mode
+dollie compose ./config.yml
+```
+
+### Programmatic API
+
+#### Installation
+
+```bash
+npm i @dollie/core -S
+```
+
+#### Set up Environment
 
 ```javascript
 // by CommonJS
 const dollie = require('@dollie/core').default;
-// by ES6
+// or by ES6
 import dollie from '@dollie/core';
-```
-
-### By Using Yeoman Generator
-
-`@dollie/core` exposes generator configuration for Yeoman, you can install `yeoman-environment` and run this generator:
-
-
-```javascript
-const { DollieInteractiveGenerator } = require('@dollie/core');
-const Environment = require('yeoman-environment');
-
-const env = Environment.createEnv();
-env.registerStub(DollieInteractiveGenerator, 'dollie:interactive');
-env.run('dollie:interactive', () => console.log('dollie generator started'));
-```
-
-see <https://github.com/dolliejs/dollie-cli#readme> for details.
-
-### By API functions
-
-```js
-const { run, log } = require('@dollie/core');
 
 const app = async () => {
   try {
-    await run('interactive');
+    await dollie.interactive();
   } catch (e) {
     log.error(e.toString());
     process.exit(1);
   }
 };
+
+app();
 ```
 
 ## License
