@@ -8,7 +8,7 @@ title: '基础用法'
 
 ## 术语规范
 
-- 生成器：包含 Dollie 的所有生命周期，以及其中的业务逻辑。Dollie 目前包含两种生成器：`DollieInteractiveGenerator` 和 `DollieComposeGenerator`
+- 生成器：包含 Dollie 的所有生命周期，以及其中的业务逻辑。Dollie 目前提供三种生成器：`DollieInteractiveGenerator`、`DollieComposeGenerator` 和 `DollieContainerGenerator`
 - 主脚手架：又称为「模板」，定义一个项目的目录结构和模板的实体。可以通过一定的文件命名规则被生成器解析，并被复制到用户指定的目标目录中。此外，它还可以通过约定的配置文件决定生成器在解析脚手架中的某个或某些文件时的行为
 - 扩展脚手架：又称为「增量脚手架」，只能被脚手架依赖而不能单独被生成器读取运行。在每个项目生成器中的脚手架可以指定多个依赖，并根据一定的规则将依赖中的文件覆盖或合并到已有的文件中。依赖也可以指定多个依赖。Dollie 通过扩展脚手架实现可扩展性和扩展层级的可复用性
 
@@ -16,13 +16,14 @@ title: '基础用法'
 
 ### 命名规范
 
-Dollie 根据用户输入的脚手架名称确定脚手架在 GitHub 上的 URL。主脚手架命名格式为 `$NAMESPACE/scaffold-$SCAFFOLD_NAME#$BRANCH`。其中变量的含义如下：
+Dollie 根据用户输入的脚手架名称确定脚手架在 GitHub 上的 URL。主脚手架命名格式为 `$OWNER/scaffold-$SCAFFOLD_NAME#$CHECKOUT@$ORIGIN`。其中变量的含义如下：
 
-- `$NAMESPACE`：脚手架所在的 GitHub 命名空间，可以映射到 `https://github.com/$NAMESPACE`。其默认值为 `dolliejs`
+- `$OWNER`：脚手架所在的 GitHub 命名空间，可以映射到 `https://github.com/$OWNER`。其默认值为 `dolliejs`
 - `$SCAFFOLD_NAME`：脚手架名称，例如 `react`、`react-ts`
-- `$BRANCH`：脚手架所在的分支 ID（可以是某一次提交的 Commit ID，也可以是别名，如 `master`、`dev`）。默认值为 `master`
+- `$CHECKOUT`：脚手架所在的分支 ID（可以是某一次提交的 Commit ID，也可以是别名，如 `master`、`dev`）。默认值为 `master`
+- `$ORIGIN`：脚手架采用的远程 Git 服务，目前支持的服务有 `github`、`gitlab` 和 `bitbucket`
 
-> 受 [BLM](https://blacklivesmatter.com/) 运动影响，GitHub 已将（在其平台上创建的）仓库的默认主分支名更改为 `main`。为了规避可能由此引起的 404 问题，在解析脚手架 URL 时，如果 `$BRANCH` 为 `master` 或者未指定（即使用默认值）并且使用 `master` 作为分支名会得到 404，Dollie 会将 `$BRANCH` 切换至 `main` 再尝试拉取，如果再次得到 404，才会最终向用户报错
+> 受 [BLM](https://blacklivesmatter.com/) 运动影响，GitHub 已将（在其平台上创建的）仓库的默认主分支名更改为 `main`。为了规避可能由此引起的 404 问题，在解析脚手架 URL 时，如果 `$CHECKOUT` 为 `master` 或者未指定（即使用默认值）并且使用 `master` 作为分支名会得到 404 错误，Dollie 会将 `$CHECKOUT` 切换至 `main` 再尝试拉取，如果再次得到 404 错误，Dollie 才会最终向用户抛出错误
 
 用户在使用 Dollie 时可以仅输入 `$SCAFFOLD_NAME`，也可以输入完整的脚手架名称，Dollie 均可将其映射到正确的 URL 上（在脚手架仓库存在并且具有 `public` 权限的前提下）。
 
@@ -33,6 +34,7 @@ react                   -> https://github.com/dolliejs/scaffold-react/tree/maste
 dolliejs/scaffold-react -> https://github.com/dolliejs/scaffold-react/tree/master
 lenconda/vue            -> https://github.com/lenconda/scaffold-vue/tree/master
 angular#dev             -> https://github.com/dolliejs/scaffold-angular/tree/dev
+lenconda/vue#dev@gitlab -> https://gitlab.com/lenconda/scaffold-vue/-/tree/dev
 ```
 
 ### 建立仓库
