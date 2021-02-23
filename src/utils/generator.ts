@@ -310,6 +310,7 @@ export const parseScaffolds = async (
     {
       timeout: context.constants.SCAFFOLD_TIMEOUT,
     },
+    context.constants,
   );
   context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
   context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
