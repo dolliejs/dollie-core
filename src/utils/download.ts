@@ -110,7 +110,7 @@ const downloadScaffold = async (
     return await downloadCompressedFile(zip, fileSystem, destination, options);
   } catch (error) {
     if (error.code === 'E_SCAFFOLD_TIMEOUT' || error instanceof ScaffoldTimeoutError) {
-      if (retries < 3) {
+      if (retries < constants.SCAFFOLD_RETRIES) {
         return await downloadScaffold(
           repoDescription,
           destination,

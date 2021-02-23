@@ -78,6 +78,7 @@ export const GITLAB_REPO_URL = 'https://gitlab.com/{{owner}}/{{name}}/-/tree/{{c
 export const BITBUCKET_REPO_URL = 'https://bitbucket.org/{{owner}}/{{name}}/src/{{checkout}}';
 
 export const SCAFFOLD_TIMEOUT = 10000;
+export const SCAFFOLD_RETRIES = 3;
 
 export default {
   BITBUCKET_URL,
@@ -86,6 +87,7 @@ export default {
   GITHUB_URL,
   GITLAB_URL,
   HOME_DIR,
+  SCAFFOLD_RETRIES,
   SCAFFOLD_TIMEOUT,
   TEMP_DIR,
   TEMPLATE_FILE_PREFIX,
