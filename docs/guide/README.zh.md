@@ -33,8 +33,6 @@ v10.18.0
 
 ### 生成项目工程
 
-#### Interactive 模式
-
 在 Shell 中执行
 
 ```bash

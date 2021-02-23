@@ -16,9 +16,10 @@ title: '进阶用法'
 
 扩展脚手架命名格式为 `$NAMESPACE/extend-scaffold-$EXTEND_SCAFFOLD_NAME#$BRANCH`。其中变量的含义如下：
 
-- `$NAMESPACE`：脚手架所在的 GitHub 命名空间，可以映射到 `https://github.com/$NAMESPACE`。其默认值为 `dolliejs`
-- `$EXTEND_SCAFFOLD_NAME`：脚手架名称，例如 `react-sass`、`react-ts`
-- `$BRANCH`：脚手架所在的分支 ID（可以是某一次提交的 Commit ID，也可以是别名，如 `master`、`dev`）。默认值为 `master`
+- `$OWNER`：脚手架所在的 GitHub 命名空间，可以映射到 `https://github.com/$OWNER`。其默认值为 `dolliejs`
+- `$EXTEND_SCAFFOLD_NAME`：脚手架名称，例如 `react-ts`、`react-sass`
+- `$CHECKOUT`：脚手架所在的分支 ID（可以是某一次提交的 Commit ID，也可以是别名，如 `master`、`dev`）。默认值为 `master`
+- `$ORIGIN`：脚手架采用的远程 Git 服务，目前支持的服务有 `github`、`gitlab` 和 `bitbucket`
 
 用户在使用 Dollie 时可以仅输入 `$EXTEND_SCAFFOLD_NAME`，也可以输入完整的脚手架名称，Dollie 均可将其映射到正确的 URL 上（在脚手架仓库存在并且具有 `public` 权限的前提下）。
 
