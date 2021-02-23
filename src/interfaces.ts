@@ -3,7 +3,10 @@ import { Question } from 'yeoman-generator';
 import { Volume } from 'memfs';
 import * as constants from './constants';
 import _ from 'lodash';
+import * as fs from 'fs-extra';
 const allConstants = _.omit(constants, ['default']);
+
+export type FileSystem = typeof fs;
 
 export interface DiffChange extends Change {
   conflicted?: boolean;

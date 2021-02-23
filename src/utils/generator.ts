@@ -4,7 +4,7 @@ import _ from 'lodash';
 import requireFromString from 'require-from-string';
 import DollieBaseGenerator from '../base';
 import traverse from './traverse';
-import download from './download';
+import { downloadScaffold } from './download';
 import { diff, checkFileAction, parseDiffToMergeBlocks, parseMergeBlocksToText, merge } from './diff';
 import {
   parseExtendScaffoldName,
@@ -302,7 +302,15 @@ export const parseScaffolds = async (
   /**
    * download scaffold from GitHub repository and count the duration
    */
-  const duration = await download(repoDescription, scaffoldDir, context.volume);
+  const duration = await downloadScaffold(
+    repoDescription,
+    scaffoldDir,
+    context.volume,
+    0,
+    {
+      timeout: context.constants.SCAFFOLD_TIMEOUT,
+    },
+  );
   context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
   context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
 

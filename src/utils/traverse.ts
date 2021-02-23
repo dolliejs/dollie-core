@@ -1,13 +1,13 @@
 import path from 'path';
 import * as fs from 'fs-extra';
-import { TraverseResultItem } from '../interfaces';
+import { FileSystem, TraverseResultItem } from '../interfaces';
 import { IgnoreMatcher } from './ignore';
 import { Volume } from 'memfs/lib/volume';
 
 /**
  * @param {string} startPath
  * @param {RegExp | IgnoreMatcher} matcher
- * @param {typeof fs | Volume} fileSystem
+ * @param {FileSystem | Volume} fileSystem
  * @param {boolean} ignoreMode
  * @returns {Promise<Array<TraverseResultItem>>}
  *
@@ -19,7 +19,7 @@ const traverse = async (
   startPath: string,
   // passed to match a file to invoke callback
   matcher: RegExp | IgnoreMatcher,
-  fileSystem: typeof fs | Volume = fs,
+  fileSystem: FileSystem | Volume = fs,
   ignoreMode = true,
 ): Promise<Array<TraverseResultItem>> => {
   if (!matcher) { return []; }

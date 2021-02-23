@@ -7,31 +7,34 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import decompress from 'decompress';
 import _ from 'lodash';
+import fs from 'fs-extra';
 import got, { Options as GotOptions, RequestError } from 'got';
 import { parseRepoDescription } from './scaffold';
 import {
   ScaffoldRepoDescription,
   DollieMemoryFileSystem,
+  FileSystem,
 } from '../interfaces';
 import { DollieError, ScaffoldNotFoundError, ScaffoldTimeoutError } from '../errors';
+import { SCAFFOLD_TIMEOUT } from '../constants';
 
 /**
- * download and extract zip file into a memfs volume
+ * download and extract compressed file into a memfs volume
  * @function
  * @param {string} url - url for request and download
- * @param {DollieMemoryFileSystem} volume - a `memfs.Volume` instance
- * @param {string} destination - destination pathname for zip file's output
+ * @param {FileSystem | DollieMemoryFileSystem} fileSystem - a `memfs.Volume` instance
+ * @param {string} destination - destination pathname for compressed file's output
  * @returns {Promise<number>}
  */
-const downloadZipFile = async (
+const downloadCompressedFile = async (
   url: string,
-  volume: DollieMemoryFileSystem,
+  fileSystem: FileSystem | DollieMemoryFileSystem,
   destination: string,
   options?: GotOptions,
 ): Promise<number> => {
   const startTimestamp = Date.now();
   return new Promise((resolve, reject) => {
-    volume.mkdirpSync(destination);
+    fileSystem.mkdirpSync(destination);
     const filename = `/${uuidv4()}.zip`;
 
     const getAbsolutePath = (filePath: string) => {
@@ -39,7 +42,7 @@ const downloadZipFile = async (
       return path.resolve(destination, relativePathname);
     };
 
-    const downloaderOptions = _.merge({ timeout: 10000 }, options || {}, { isStream: true });
+    const downloaderOptions = _.merge({ timeout: SCAFFOLD_TIMEOUT }, options || {}, { isStream: true });
 
     const downloader = got.stream(
       url,
@@ -62,20 +65,20 @@ const downloadZipFile = async (
     /**
      * pipe download stream to memfs volume
      */
-    downloader.pipe(volume.createWriteStream(filename)).on('finish', () => {
-      const fileBuffer = volume.readFileSync(filename);
+    downloader.pipe(fileSystem.createWriteStream(filename)).on('finish', () => {
+      const fileBuffer = fileSystem.readFileSync(filename);
       decompress(fileBuffer).then((files) => {
         for (const file of files) {
           const { type, path: filePath, data } = file;
           if (type === 'directory') {
-            volume.mkdirpSync(getAbsolutePath(filePath));
+            fileSystem.mkdirpSync(getAbsolutePath(filePath));
           } else if (type === 'file') {
-            volume.writeFileSync(getAbsolutePath(filePath), data, { encoding: 'utf8' });
+            fileSystem.writeFileSync(getAbsolutePath(filePath), data, { encoding: 'utf8' });
           }
         }
         return;
       }).then(() => {
-        volume.unlinkSync(filename);
+        fileSystem.unlinkSync(filename);
         resolve(Date.now() - startTimestamp);
       });
     });
@@ -87,22 +90,24 @@ const downloadZipFile = async (
  * @function
  * @param {ScaffoldRepoDescription} repoDescription - scaffold repository description
  * @param {string} destination - destination pathname in memfs volume
- * @param {DollieMemoryFileSystem} volume - memfs volume instance
+ * @param {FileSystem | DollieMemoryFileSystem} fileSystem - memfs volume instance
+ * @param {GotOptions} options - got options
  * @param {number} retries - retry times count
  */
 const downloadScaffold = async (
   repoDescription: ScaffoldRepoDescription,
   destination: string,
-  volume,
+  fileSystem: FileSystem | DollieMemoryFileSystem = fs,
   retries = 0,
+  options: GotOptions = {},
 ): Promise<number> => {
   const { zip } = parseRepoDescription(repoDescription);
   try {
-    return await downloadZipFile(zip, volume, destination);
+    return await downloadCompressedFile(zip, fileSystem, destination, options);
   } catch (error) {
     if (error.code === 'E_SCAFFOLD_TIMEOUT' || error instanceof ScaffoldTimeoutError) {
       if (retries < 3) {
-        return await downloadScaffold(repoDescription, destination, volume, retries + 1);
+        return await downloadScaffold(repoDescription, destination, fileSystem, retries + 1, options);
       } else {
         throw new Error(error?.message || 'download scaffold timed out');
       }
@@ -111,8 +116,9 @@ const downloadScaffold = async (
         return await downloadScaffold(
           { ...repoDescription, checkout: 'main' },
           destination,
-          volume,
+          fileSystem,
           0,
+          options,
         );
       } else {
         throw error;
@@ -123,4 +129,4 @@ const downloadScaffold = async (
   }
 };
 
-export default downloadScaffold;
+export { downloadScaffold, downloadCompressedFile };
