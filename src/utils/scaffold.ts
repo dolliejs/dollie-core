@@ -2,6 +2,7 @@ import path from 'path';
 import ejs from 'ejs';
 import _ from 'lodash';
 import { isBinaryFileSync } from 'isbinaryfile';
+import minimatch from 'minimatch';
 import {
   DollieScaffoldNameParser,
   MergeBlock,
@@ -182,7 +183,11 @@ const isPathnameInConfig = (
   configItems: Array<string>,
 ): boolean => {
   for (const item of configItems) {
-    if (item && new RegExp(item).test(pathname)) {
+    if (
+      item && typeof item === 'string' && (
+        (minimatch(pathname, item))
+      )
+    ) {
       return true;
     }
   }
