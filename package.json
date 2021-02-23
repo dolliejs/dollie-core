@@ -116,7 +116,8 @@
     "build": "npm run clean:build && tsc",
     "docs:start": "dumi dev",
     "docs:build": "dumi build",
-    "docs:deploy": "node scripts/docs.js"
+    "docs:deploy": "node scripts/docs.js",
+    "postinstall": "husky install"
   },
   "repository": "https://github.com/dolliejs/dollie-core.git",
   "license": "MIT"
