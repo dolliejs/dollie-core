@@ -5,7 +5,6 @@ import {
   solveConflicts,
   parseRepoDescription,
   parseFilePathname,
-  isPathnameInConfig,
 } from './utils/scaffold';
 import {
   getComposedArrayValue,
@@ -24,6 +23,7 @@ import {
 } from './utils/diff';
 import { container, interactive, compose } from './dollie';
 import log from './utils/log';
+import { downloadCompressedFile } from './utils/download';
 import { getGitIgnoredFiles } from './utils/ignore';
 import {
   ArgInvalidError,
@@ -63,6 +63,7 @@ const {
   GITHUB_URL,
   GITLAB_URL,
   HOME_DIR,
+  SCAFFOLD_TIMEOUT,
   TEMP_DIR,
   TEMPLATE_FILE_PREFIX,
   TRAVERSE_IGNORE_REGEXP,
@@ -77,10 +78,10 @@ export {
   // functions
   checkConflictBlockCount,
   diff,
+  downloadCompressedFile,
   getComposedArrayValue,
   getExtendedPropsFromParentScaffold,
   getGitIgnoredFiles,
-  isPathnameInConfig,
   merge,
   parseComposeConfig,
   parseDiffToMergeBlocks,
@@ -132,6 +133,7 @@ export {
   GITHUB_URL,
   GITLAB_URL,
   HOME_DIR,
+  SCAFFOLD_TIMEOUT,
   TEMP_DIR,
   TEMPLATE_FILE_PREFIX,
   TRAVERSE_IGNORE_REGEXP,
@@ -146,10 +148,10 @@ export default {
   // functions
   checkConflictBlockCount,
   diff,
+  downloadCompressedFile,
   getComposedArrayValue,
   getExtendedPropsFromParentScaffold,
   getGitIgnoredFiles,
-  isPathnameInConfig,
   merge,
   parseComposeConfig,
   parseDiffToMergeBlocks,
@@ -181,6 +183,7 @@ export default {
   GITHUB_URL,
   GITLAB_URL,
   HOME_DIR,
+  SCAFFOLD_TIMEOUT,
   TEMP_DIR,
   TEMPLATE_FILE_PREFIX,
   TRAVERSE_IGNORE_REGEXP,
