@@ -1,6 +1,6 @@
 {
   "name": "@dollie/core",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Core engine for Dollie.js",
   "homepage": "https://github.com/dolliejs/dollie-core#readme",
   "author": {
@@ -46,7 +46,7 @@
     "dumi": "^1.1.4",
     "eslint": "^7.12.1",
     "eslint-config-alloy": "^3.10.0",
-    "husky": "^3.0.1",
+    "husky": "^5.1.1",
     "jest": "^24.8.0",
     "lint-staged": "^9.2.0",
     "md5-file": "^5.0.0",
@@ -59,7 +59,8 @@
     "yeoman-test": "^1.7.0"
   },
   "engines": {
-    "npm": ">= 10.0.0"
+    "npm": ">= 6.0.0",
+    "node": ">= 10.0.0"
   },
   "dependencies": {
     "chalk": "^4.1.0",
@@ -116,7 +117,8 @@
     "build": "npm run clean:build && tsc",
     "docs:start": "dumi dev",
     "docs:build": "dumi build",
-    "docs:deploy": "node scripts/docs.js"
+    "docs:deploy": "node scripts/docs.js",
+    "postinstall": "husky install"
   },
   "repository": "https://github.com/dolliejs/dollie-core.git",
   "license": "MIT"
