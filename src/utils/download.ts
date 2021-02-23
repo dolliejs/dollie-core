@@ -14,9 +14,12 @@ import {
   ScaffoldRepoDescription,
   DollieMemoryFileSystem,
   FileSystem,
+  Constants,
 } from '../interfaces';
 import { DollieError, ScaffoldNotFoundError, ScaffoldTimeoutError } from '../errors';
-import { SCAFFOLD_TIMEOUT } from '../constants';
+import * as appConstants from '../constants';
+
+const { SCAFFOLD_TIMEOUT } = appConstants;
 
 /**
  * download and extract compressed file into a memfs volume
@@ -91,8 +94,8 @@ const downloadCompressedFile = async (
  * @param {ScaffoldRepoDescription} repoDescription - scaffold repository description
  * @param {string} destination - destination pathname in memfs volume
  * @param {FileSystem | DollieMemoryFileSystem} fileSystem - memfs volume instance
- * @param {GotOptions} options - got options
  * @param {number} retries - retry times count
+ * @param {GotOptions} options - got options
  */
 const downloadScaffold = async (
   repoDescription: ScaffoldRepoDescription,
@@ -100,14 +103,22 @@ const downloadScaffold = async (
   fileSystem: FileSystem | DollieMemoryFileSystem = fs,
   retries = 0,
   options: GotOptions = {},
+  constants: Constants = _.omit(appConstants, ['default']),
 ): Promise<number> => {
-  const { zip } = parseRepoDescription(repoDescription);
+  const { zip } = parseRepoDescription(repoDescription, constants);
   try {
     return await downloadCompressedFile(zip, fileSystem, destination, options);
   } catch (error) {
     if (error.code === 'E_SCAFFOLD_TIMEOUT' || error instanceof ScaffoldTimeoutError) {
       if (retries < 3) {
-        return await downloadScaffold(repoDescription, destination, fileSystem, retries + 1, options);
+        return await downloadScaffold(
+          repoDescription,
+          destination,
+          fileSystem,
+          retries + 1,
+          options,
+          constants,
+        );
       } else {
         throw new Error(error?.message || 'download scaffold timed out');
       }
@@ -119,6 +130,7 @@ const downloadScaffold = async (
           fileSystem,
           0,
           options,
+          constants,
         );
       } else {
         throw error;
