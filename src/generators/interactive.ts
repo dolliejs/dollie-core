@@ -60,7 +60,7 @@ class DollieInteractiveGenerator extends DollieBaseGenerator {
 
     const scaffold: DollieScaffold = {
       uuid: uuid(),
-      scaffoldName: parseRepoDescription(await parseScaffoldName(props.scaffold), this.constants).original,
+      scaffoldName: (await parseRepoDescription(parseScaffoldName(props.scaffold), this)).original,
       dependencies: [],
     };
     await parseScaffolds(scaffold, this, null, this.mode);

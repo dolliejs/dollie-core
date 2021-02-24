@@ -59,7 +59,7 @@ export interface DollieScaffold {
   parent?: DollieScaffold;
 }
 
-export type DollieScaffoldNameParser = (name: string) => Promise<ScaffoldRepoDescription>;
+export type DollieScaffoldNameParser = (name: string) => ScaffoldRepoDescription;
 
 export type FileAction = 'DIRECT' | 'MERGE' | 'NIL';
 
@@ -143,3 +143,11 @@ export interface ScaffoldRepoUrls {
   zip: string;
   original: string;
 }
+
+export type ScaffoldOriginServiceGenerator = (description: ScaffoldRepoDescription) => Promise<string>;
+
+export interface PluginContext {
+  scaffoldOrigins: Record<string, ScaffoldOriginServiceGenerator>;
+}
+
+export type Plugin = Partial<PluginContext>;

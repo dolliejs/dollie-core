@@ -39,8 +39,9 @@ import {
   Constants,
   ExportedConstants,
   BinaryTable,
+  PluginContext,
 } from './interfaces';
-import { isPathnameInConfig } from './utils/scaffold';
+import { isPathnameInConfig, parseUrl } from './utils/scaffold';
 import { DestinationExistsError, ModeInvalidError } from './errors';
 
 /**
@@ -100,6 +101,14 @@ class DollieBaseGenerator extends Generator {
    * @public
    */
   public conflicts: Array<Conflict> = [];
+  /**
+   * plugins
+   * @type {PluginContext}
+   * @public
+   */
+  public plugin: PluginContext = {
+    scaffoldOrigins: {},
+  };
   /**
    * the nested tree structure of all scaffolds used during one lifecycle
    * the main scaffold is on the top level, which is supposed to be unique
@@ -171,6 +180,17 @@ class DollieBaseGenerator extends Generator {
     if (!this.mode) {
       throw new ModeInvalidError(this.mode);
     }
+    this.log.info('Initializing plugin system...');
+    this.plugin = {
+      scaffoldOrigins: {
+        github: async (description) => {
+          return parseUrl(this.constants.GITHUB_URL, description);
+        },
+        gitlab: async (description) => {
+          return parseUrl(this.constants.GITLAB_URL, description);
+        },
+      },
+    };
   }
 
   public default() {

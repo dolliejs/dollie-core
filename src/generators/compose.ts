@@ -37,7 +37,7 @@ class DollieComposeGenerator extends DollieBaseGenerator {
       throw new ArgInvalidError(['scaffold_name']);
     }
     scaffold.scaffoldName
-      = parseRepoDescription(await parseScaffoldName(scaffold.scaffoldName), this.constants).original;
+      = (await parseRepoDescription(parseScaffoldName(scaffold.scaffoldName), this)).original;
     const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
       const result: DollieScaffold = scaffold;
       result.uuid = uuid();

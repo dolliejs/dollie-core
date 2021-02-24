@@ -11,10 +11,10 @@ import {
   ScaffoldRepoDescription,
   RepoOrigin,
   ScaffoldRepoUrls,
-  Constants,
 } from '../interfaces';
 import * as appConstants from '../constants';
 import { DollieError } from '../errors';
+import DollieBaseGenerator from '../base';
 const {
   APP_SCAFFOLD_DEFAULT_OWNER,
   APP_SCAFFOLD_PREFIX,
@@ -103,7 +103,7 @@ const createScaffoldNameParser = (
   scaffoldPrefix: string,
   defaultOwner = APP_SCAFFOLD_DEFAULT_OWNER,
 ): DollieScaffoldNameParser => {
-  return async (repo: string) => {
+  return (repo: string) => {
     let origin: RepoOrigin = 'github';
     let owner = defaultOwner;
     let name = '';
@@ -151,17 +151,25 @@ const parseExtendScaffoldName = createScaffoldNameParser(APP_EXTEND_SCAFFOLD_PRE
 /**
  * parse scaffold repository description to strings
  * @param {ScaffoldRepoDescription} description
- * @param {Constants} constants
+ * @param {DollieBaseGenerator} context
  * @returns {object}
  */
-const parseRepoDescription = (
+const parseRepoDescription = async (
   description: ScaffoldRepoDescription,
-  constants: Constants = _.omit(appConstants, ['default']),
-): ScaffoldRepoUrls => {
+  context: DollieBaseGenerator,
+): Promise<ScaffoldRepoUrls> => {
   const { owner, name, origin, checkout } = description;
 
+  const originServiceGenerator = context.plugin.scaffoldOrigins[origin];
+
+  if (!originServiceGenerator || typeof originServiceGenerator !== 'function') {
+    throw new DollieError(`Cannot find origin generator \`${origin}\``);
+  }
+
+  const zip = await originServiceGenerator(description);
+
   return {
-    zip: parseUrl<ScaffoldRepoDescription>(constants[`${origin.toUpperCase()}_URL`], description),
+    zip,
     original: `${owner}/${name}#${checkout}@${origin}`,
   };
 };
@@ -354,4 +362,5 @@ export {
   parseFilePathname,
   parseRepoDescription,
   renderTemplate,
+  parseUrl,
 };

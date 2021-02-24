@@ -57,11 +57,10 @@ import {
 import constants from './constants';
 
 const {
-  BITBUCKET_URL,
   CACHE_DIR,
   DEPENDS_ON_KEY,
-  GITHUB_URL,
-  GITLAB_URL,
+  GITHUB_AUTH_TOKEN,
+  GITLAB_AUTH_TOKEN,
   HOME_DIR,
   SCAFFOLD_RETRIES,
   SCAFFOLD_TIMEOUT,
@@ -128,11 +127,10 @@ export {
   TraverseResultItem,
 
   // constants
-  BITBUCKET_URL,
   CACHE_DIR,
   DEPENDS_ON_KEY,
-  GITHUB_URL,
-  GITLAB_URL,
+  GITHUB_AUTH_TOKEN,
+  GITLAB_AUTH_TOKEN,
   HOME_DIR,
   SCAFFOLD_RETRIES,
   SCAFFOLD_TIMEOUT,
@@ -179,11 +177,10 @@ export default {
   ScaffoldTimeoutError,
 
   // constants
-  BITBUCKET_URL,
   CACHE_DIR,
   DEPENDS_ON_KEY,
-  GITHUB_URL,
-  GITLAB_URL,
+  GITHUB_AUTH_TOKEN,
+  GITLAB_AUTH_TOKEN,
   HOME_DIR,
   SCAFFOLD_RETRIES,
   SCAFFOLD_TIMEOUT,
