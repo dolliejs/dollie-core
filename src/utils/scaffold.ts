@@ -162,7 +162,6 @@ const parseRepoDescription = (
 
   return {
     zip: parseUrl<ScaffoldRepoDescription>(constants[`${origin.toUpperCase()}_URL`], description),
-    repo: parseUrl<ScaffoldRepoDescription>(constants[`${origin.toUpperCase()}_REPO_URL`], description),
     original: `${owner}/${name}#${checkout}@${origin}`,
   };
 };

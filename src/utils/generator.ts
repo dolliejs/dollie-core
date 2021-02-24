@@ -298,7 +298,9 @@ export const parseScaffolds = async (
     repoDescription = await parseExtendScaffoldName(scaffoldName);
   }
 
-  context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription, context.constants).repo}`);
+  const scaffoldRepoUrls = parseRepoDescription(repoDescription, context.constants);
+
+  context.log.info(`Pulling scaffold from ${scaffoldRepoUrls.original}`);
   /**
    * download scaffold from GitHub repository and count the duration
    */
@@ -312,8 +314,8 @@ export const parseScaffolds = async (
     },
     context.constants,
   );
-  context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
-  context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
+  context.log.info(`Template pulled in ${duration}ms`);
+  context.log.info(`Reading scaffold configuration from ${scaffoldRepoUrls.original}...`);
 
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
   const dollieJsConfigPathname = path.resolve(scaffoldDir, '.dollie.js');

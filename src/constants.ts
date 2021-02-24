@@ -76,10 +76,6 @@ export const BITBUCKET_URL = 'https://bitbucket.org/{{owner}}/{{name}}/get/{{che
 export const GITHUB_AUTH_HEADER = 'Authorization';
 export const GITHUB_AUTH_TOKEN = '';
 
-export const GITHUB_REPO_URL = 'https://github.com/{{owner}}/{{name}}/tree/{{checkout}}';
-export const GITLAB_REPO_URL = 'https://gitlab.com/{{owner}}/{{name}}/-/tree/{{checkout}}';
-export const BITBUCKET_REPO_URL = 'https://bitbucket.org/{{owner}}/{{name}}/src/{{checkout}}';
-
 export const SCAFFOLD_TIMEOUT = 10000;
 export const SCAFFOLD_RETRIES = 3;
 
