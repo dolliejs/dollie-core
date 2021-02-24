@@ -4,7 +4,6 @@
  */
 
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import decompress from 'decompress';
 import _ from 'lodash';
 import fs from 'fs-extra';
@@ -38,7 +37,6 @@ const downloadCompressedFile = async (
   const startTimestamp = Date.now();
   return new Promise((resolve, reject) => {
     fileSystem.mkdirpSync(destination);
-    const filename = `/${uuidv4()}.zip`;
 
     const getAbsolutePath = (filePath: string) => {
       const relativePathname = filePath.split('/').slice(1).join('/');
@@ -51,6 +49,8 @@ const downloadCompressedFile = async (
       url,
       downloaderOptions as GotOptions & { isStream: true },
     );
+
+    const fileBufferChunks = [];
 
     downloader.on('error', (error: RequestError) => {
       const errorMessage = error.toString() as string;
@@ -65,11 +65,13 @@ const downloadCompressedFile = async (
       reject(new DollieError(errorMessage));
     });
 
-    /**
-     * pipe download stream to memfs volume
-     */
-    downloader.pipe(fileSystem.createWriteStream(filename)).on('finish', () => {
-      const fileBuffer = fileSystem.readFileSync(filename);
+    downloader.on('data', (chunk) => {
+      fileBufferChunks.push(chunk);
+    });
+
+    downloader.on('end', () => {
+      const fileBuffer = Buffer.concat(fileBufferChunks);
+
       decompress(fileBuffer).then((files) => {
         for (const file of files) {
           const { type, path: filePath, data } = file;
@@ -81,7 +83,6 @@ const downloadCompressedFile = async (
         }
         return;
       }).then(() => {
-        fileSystem.unlinkSync(filename);
         resolve(Date.now() - startTimestamp);
       });
     });
