@@ -32,7 +32,7 @@ const downloadCompressedFile = async (
   url: string,
   fileSystem: FileSystem | DollieMemoryFileSystem,
   destination: string,
-  options?: GotOptions,
+  options: GotOptions = {},
 ): Promise<number> => {
   const startTimestamp = Date.now();
   return new Promise((resolve, reject) => {

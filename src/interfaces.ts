@@ -140,7 +140,6 @@ export type DollieComposeAppConfig = DollieBaseAppConfig;
 export type DollieAppMode = 'interactive' | 'compose' | 'container';
 
 export interface ScaffoldRepoUrls {
-  repo: string;
   zip: string;
   original: string;
 }
