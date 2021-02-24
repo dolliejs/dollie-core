@@ -126,6 +126,7 @@ export type ExportedConstants = typeof constants.default;
 
 export interface DollieBaseAppConfig {
   constants?: ExportedConstants;
+  plugins?: Array<Plugin>;
 }
 
 export interface DollieContainerAppConfig extends DollieBaseAppConfig {
@@ -150,4 +151,8 @@ export interface PluginContext {
   scaffoldOrigins: Record<string, ScaffoldOriginServiceGenerator>;
 }
 
-export type Plugin = Partial<PluginContext>;
+export type PluginFunction = (context: PluginContext) => Partial<PluginContext>;
+export interface Plugin {
+  pathname: string,
+  executor: PluginFunction,
+}

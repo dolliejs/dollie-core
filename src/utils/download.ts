@@ -26,6 +26,7 @@ const { SCAFFOLD_TIMEOUT } = appConstants;
  * @param {string} url - url for request and download
  * @param {FileSystem | DollieMemoryFileSystem} fileSystem - a `memfs.Volume` instance
  * @param {string} destination - destination pathname for compressed file's output
+ * @param {GotOptions} options - options for `got`
  * @returns {Promise<number>}
  */
 const downloadCompressedFile = async (

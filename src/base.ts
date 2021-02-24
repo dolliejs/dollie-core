@@ -40,6 +40,7 @@ import {
   ExportedConstants,
   BinaryTable,
   PluginContext,
+  Plugin,
 } from './interfaces';
 import { isPathnameInConfig, parseUrl } from './utils/scaffold';
 import { DestinationExistsError, ModeInvalidError } from './errors';
@@ -191,6 +192,14 @@ class DollieBaseGenerator extends Generator {
         },
       },
     };
+    const customPlugins = (_.get(this, 'options.plugins') || []) as Array<Plugin>;
+    const defaultPluginContext = _.cloneDeep(this.plugin);
+    for (const plugin of customPlugins) {
+      if (plugin.executor && typeof plugin.executor === 'function') {
+        this.log.info(`Loading plugin ${plugin.pathname}`);
+        this.plugin = _.merge(this.plugin, plugin.executor.call(null, defaultPluginContext));
+      }
+    }
   }
 
   public default() {

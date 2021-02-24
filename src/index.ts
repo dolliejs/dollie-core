@@ -4,7 +4,7 @@ import {
   checkConflictBlockCount,
   solveConflicts,
   parseRepoDescription,
-  parseFilePathname,
+  parseUrl,
 } from './utils/scaffold';
 import {
   getComposedArrayValue,
@@ -15,8 +15,6 @@ import {
   stringifyComposeConfig,
 } from './utils/compose';
 import {
-  diff,
-  merge,
   parseMergeBlocksToText,
   parseDiffToMergeBlocks,
   parseFileTextToMergeBlocks,
@@ -24,7 +22,11 @@ import {
 import { container, interactive, compose } from './dollie';
 import log from './utils/log';
 import { downloadCompressedFile } from './utils/download';
-import { getGitIgnoredFiles } from './utils/ignore';
+import {
+  IgnoreMatcher,
+  GitIgnoreMatcher,
+  getGitIgnoredFiles,
+} from './utils/ignore';
 import {
   ArgInvalidError,
   ComposeScaffoldConfigInvalidError,
@@ -50,6 +52,10 @@ import {
   MergeResult,
   PatchTableItem,
   PatchTable,
+  Plugin,
+  PluginContext,
+  PluginFunction,
+  ScaffoldOriginServiceGenerator,
   ScaffoldRepoDescription,
   ScaffoldRepoUrls,
   TraverseResultItem,
@@ -77,25 +83,27 @@ export {
 
   // functions
   checkConflictBlockCount,
-  diff,
   downloadCompressedFile,
   getComposedArrayValue,
   getExtendedPropsFromParentScaffold,
   getGitIgnoredFiles,
-  merge,
   parseComposeConfig,
   parseDiffToMergeBlocks,
-  parseFilePathname,
+  parseExtendScaffoldName,
   parseFileTextToMergeBlocks,
   parseMergeBlocksToText,
   parseRepoDescription,
   parseScaffoldName,
-  parseExtendScaffoldName,
+  parseUrl,
   solveConflicts,
   stringifyComposeConfig,
 
   // objects
   log,
+
+  // classes
+  GitIgnoreMatcher,
+  IgnoreMatcher,
 
   // errors
   ArgInvalidError,
@@ -122,6 +130,10 @@ export {
   MergeResult,
   PatchTableItem,
   PatchTable,
+  Plugin,
+  PluginContext,
+  PluginFunction,
+  ScaffoldOriginServiceGenerator,
   ScaffoldRepoDescription,
   ScaffoldRepoUrls,
   TraverseResultItem,
@@ -147,25 +159,27 @@ export default {
 
   // functions
   checkConflictBlockCount,
-  diff,
   downloadCompressedFile,
   getComposedArrayValue,
   getExtendedPropsFromParentScaffold,
   getGitIgnoredFiles,
-  merge,
   parseComposeConfig,
   parseDiffToMergeBlocks,
-  parseFilePathname,
+  parseExtendScaffoldName,
   parseFileTextToMergeBlocks,
   parseMergeBlocksToText,
   parseRepoDescription,
   parseScaffoldName,
-  parseExtendScaffoldName,
+  parseUrl,
   solveConflicts,
   stringifyComposeConfig,
 
   // objects
   log,
+
+  // classes
+  GitIgnoreMatcher,
+  IgnoreMatcher,
 
   // errors
   ArgInvalidError,
