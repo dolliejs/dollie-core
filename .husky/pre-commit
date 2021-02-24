@@ -1,2 +1,2 @@
 npm i --package-lock-only
-git add -A
+git add package-lock.json

@@ -14,6 +14,7 @@ import {
   Constants,
 } from '../interfaces';
 import * as appConstants from '../constants';
+import { DollieError } from '../errors';
 const {
   APP_SCAFFOLD_DEFAULT_OWNER,
   APP_SCAFFOLD_PREFIX,
@@ -104,29 +105,40 @@ const createScaffoldNameParser = (
 ): DollieScaffoldNameParser => {
   return (repo: string) => {
     let origin: RepoOrigin = 'github';
-    let owner = '';
+    let owner = defaultOwner;
     let name = '';
     let checkout = '';
+    let repoString = repo;
 
-    if (repo.split('/').length === 2) {
-      [owner, name] = repo.split('/');
+    if (repoString.split('@').length === 2) {
+      [repoString, origin] = repoString.split('@') as [string, RepoOrigin];
     } else {
-      name = repo;
-      owner = defaultOwner;
+      origin = 'github';
     }
 
-    if (!name.startsWith(scaffoldPrefix)) {
-      name = `${scaffoldPrefix}${name}`;
-    }
-
-    if (name.split('#').length === 2) {
-      [name, checkout] = name.split('#');
+    if (repoString.split('#').length === 2) {
+      [repoString, checkout] = repoString.split('#');
     } else {
       checkout = 'master';
     }
 
-    if (checkout.split('@').length === 2) {
-      [checkout, origin] = checkout.split('@') as [string, RepoOrigin];
+    if (repoString.split('/').length === 2) {
+      [repoString, name] = repoString.split('/');
+      owner = repoString;
+    } else {
+      name = repoString;
+    }
+
+    if (!owner) {
+      owner = defaultOwner;
+    }
+
+    if (!name || !owner || !origin || !checkout) {
+      throw new DollieError('Scaffold ID invalid');
+    }
+
+    if (!name.startsWith(scaffoldPrefix)) {
+      name = `${scaffoldPrefix}${name}`;
     }
 
     return { origin, owner, name, checkout };
