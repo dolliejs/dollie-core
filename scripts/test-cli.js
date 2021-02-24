@@ -34,11 +34,7 @@ async function test() {
   try {
     switch (type) {
       case 'interactive': {
-        await dollie.interactive({
-          constants: {
-            GITHUB_AUTH_TOKEN: '7d67ee8feac912b07e85ff5dcdcb7928431a05a4',
-          },
-        });
+        await dollie.interactive();
         break;
       }
       case 'compose': {
