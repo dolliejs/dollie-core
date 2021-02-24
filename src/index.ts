@@ -57,7 +57,7 @@ import {
   PluginFunction,
   ScaffoldOriginServiceGenerator,
   ScaffoldRepoDescription,
-  ScaffoldRepoUrls,
+  ScaffoldConfig,
   TraverseResultItem,
 } from './interfaces';
 import constants from './constants';
@@ -135,7 +135,7 @@ export {
   PluginFunction,
   ScaffoldOriginServiceGenerator,
   ScaffoldRepoDescription,
-  ScaffoldRepoUrls,
+  ScaffoldConfig,
   TraverseResultItem,
 
   // constants

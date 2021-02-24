@@ -3,6 +3,7 @@ import { Question } from 'yeoman-generator';
 import { Volume } from 'memfs';
 import * as constants from './constants';
 import _ from 'lodash';
+import { Options as GotOptions } from 'got';
 import * as fs from 'fs-extra';
 const allConstants = _.omit(constants, ['default']);
 
@@ -140,12 +141,18 @@ export type DollieComposeAppConfig = DollieBaseAppConfig;
 
 export type DollieAppMode = 'interactive' | 'compose' | 'container';
 
-export interface ScaffoldRepoUrls {
-  zip: string;
+export interface ScaffoldConfig {
+  url: string;
   original: string;
+  options: GotOptions;
 }
 
-export type ScaffoldOriginServiceGenerator = (description: ScaffoldRepoDescription) => Promise<string>;
+export type ScaffoldOriginServiceGenerator = (
+  description: ScaffoldRepoDescription,
+) => Promise<{
+  url: string,
+  options?: GotOptions;
+}>;
 
 export interface PluginContext {
   scaffoldOrigins: Record<string, ScaffoldOriginServiceGenerator>;

@@ -22,6 +22,7 @@ import chalk from 'chalk';
 import { execSync } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { Volume } from 'memfs';
+import { Options as GotOptions } from 'got';
 import {
   writeTempFiles,
   getComposedArrayValue,
@@ -185,10 +186,20 @@ class DollieBaseGenerator extends Generator {
     this.plugin = {
       scaffoldOrigins: {
         github: async (description) => {
-          return parseUrl(this.constants.GITHUB_URL, description);
+          const { GITHUB_AUTH_TOKEN } = this.constants;
+          const options = GITHUB_AUTH_TOKEN ? {
+            headers: {
+              Authorization: GITHUB_AUTH_TOKEN,
+            },
+          } as GotOptions : {};
+          return _.merge({
+            url: parseUrl(this.constants.GITHUB_URL, description),
+          }, options);
         },
         gitlab: async (description) => {
-          return parseUrl(this.constants.GITLAB_URL, description);
+          return {
+            url: parseUrl(this.constants.GITLAB_URL, description),
+          };
         },
       },
     };

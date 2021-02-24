@@ -76,7 +76,7 @@ export const GITHUB_AUTH_TOKEN = '';
 export const GITLAB_AUTH_TOKEN = '';
 
 export const SCAFFOLD_TIMEOUT = 10000;
-export const SCAFFOLD_RETRIES = 3;
+export const SCAFFOLD_RETRIES = 9;
 
 export default {
   CACHE_DIR,

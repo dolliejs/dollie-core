@@ -108,9 +108,9 @@ const downloadScaffold = async (
   options: GotOptions = {},
   context: DollieBaseGenerator,
 ): Promise<number> => {
-  const { zip } = await parseRepoDescription(repoDescription, context);
+  const { url, options: repoConfigOptions = {} } = await parseRepoDescription(repoDescription, context);
   try {
-    return await downloadCompressedFile(zip, fileSystem, destination, options);
+    return await downloadCompressedFile(url, fileSystem, destination, options);
   } catch (error) {
     if (error.code === 'E_SCAFFOLD_TIMEOUT' || error instanceof ScaffoldTimeoutError) {
       if (retries < context.constants.SCAFFOLD_RETRIES) {

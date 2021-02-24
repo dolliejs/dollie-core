@@ -10,7 +10,7 @@ import {
   ConflictSolveTable,
   ScaffoldRepoDescription,
   RepoOrigin,
-  ScaffoldRepoUrls,
+  ScaffoldConfig,
 } from '../interfaces';
 import * as appConstants from '../constants';
 import { DollieError } from '../errors';
@@ -157,7 +157,7 @@ const parseExtendScaffoldName = createScaffoldNameParser(APP_EXTEND_SCAFFOLD_PRE
 const parseRepoDescription = async (
   description: ScaffoldRepoDescription,
   context: DollieBaseGenerator,
-): Promise<ScaffoldRepoUrls> => {
+): Promise<ScaffoldConfig> => {
   const { owner, name, origin, checkout } = description;
 
   const originServiceGenerator = context.plugin.scaffoldOrigins[origin];
@@ -166,10 +166,11 @@ const parseRepoDescription = async (
     throw new DollieError(`Cannot find origin generator \`${origin}\``);
   }
 
-  const zip = await originServiceGenerator(description);
+  const { url, options = {} } = await originServiceGenerator(description);
 
   return {
-    zip,
+    url,
+    options,
     original: `${owner}/${name}#${checkout}@${origin}`,
   };
 };
