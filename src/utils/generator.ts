@@ -293,9 +293,9 @@ export const parseScaffolds = async (
    */
   let repoDescription: ScaffoldRepoDescription;
   if (!parentScaffold) {
-    repoDescription = parseScaffoldName(scaffoldName);
+    repoDescription = await parseScaffoldName(scaffoldName);
   } else {
-    repoDescription = parseExtendScaffoldName(scaffoldName);
+    repoDescription = await parseExtendScaffoldName(scaffoldName);
   }
 
   context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription, context.constants).repo}`);
@@ -419,7 +419,7 @@ export const parseScaffolds = async (
          * to parse the scaffold's name
          */
         dependence.scaffoldName
-          = parseRepoDescription(parseExtendScaffoldName(dependence.scaffoldName)).original;
+          = parseRepoDescription(await parseExtendScaffoldName(dependence.scaffoldName)).original;
         await parseScaffolds(dependence, context, scaffold, mode);
       }
     }
@@ -464,7 +464,7 @@ export const parseScaffolds = async (
     const dependenceUuid = uuid();
     const currentDependence: DollieScaffold = {
       uuid: dependenceUuid,
-      scaffoldName: parseRepoDescription(parseExtendScaffoldName(dependencies[dependenceKey])).original,
+      scaffoldName: parseRepoDescription(await parseExtendScaffoldName(dependencies[dependenceKey])).original,
       dependencies: [],
     };
     scaffold.dependencies.push(currentDependence);

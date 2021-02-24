@@ -59,7 +59,7 @@ export interface DollieScaffold {
   parent?: DollieScaffold;
 }
 
-export type DollieScaffoldNameParser = (name: string) => ScaffoldRepoDescription;
+export type DollieScaffoldNameParser = (name: string) => Promise<ScaffoldRepoDescription>;
 
 export type FileAction = 'DIRECT' | 'MERGE' | 'NIL';
 

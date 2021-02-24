@@ -103,7 +103,7 @@ const createScaffoldNameParser = (
   scaffoldPrefix: string,
   defaultOwner = APP_SCAFFOLD_DEFAULT_OWNER,
 ): DollieScaffoldNameParser => {
-  return (repo: string) => {
+  return async (repo: string) => {
     let origin: RepoOrigin = 'github';
     let owner = defaultOwner;
     let name = '';
