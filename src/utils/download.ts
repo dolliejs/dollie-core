@@ -110,7 +110,12 @@ const downloadScaffold = async (
 ): Promise<number> => {
   const { url, options: repoConfigOptions = {} } = await parseRepoDescription(repoDescription, context);
   try {
-    return await downloadCompressedFile(url, fileSystem, destination, options);
+    return await downloadCompressedFile(
+      url,
+      fileSystem,
+      destination,
+      _.merge(options, repoConfigOptions),
+    );
   } catch (error) {
     if (error.code === 'E_SCAFFOLD_TIMEOUT' || error instanceof ScaffoldTimeoutError) {
       if (retries < context.constants.SCAFFOLD_RETRIES) {

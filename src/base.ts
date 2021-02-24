@@ -189,12 +189,12 @@ class DollieBaseGenerator extends Generator {
           const { GITHUB_AUTH_TOKEN } = this.constants;
           const options = GITHUB_AUTH_TOKEN ? {
             headers: {
-              Authorization: GITHUB_AUTH_TOKEN,
+              Authorization: `token ${GITHUB_AUTH_TOKEN}`,
             },
           } as GotOptions : {};
           return _.merge({
             url: parseUrl(this.constants.GITHUB_URL, description),
-          }, options);
+          }, { options });
         },
         gitlab: async (description) => {
           return {
