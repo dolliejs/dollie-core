@@ -7,7 +7,7 @@ import { Questions } from 'yeoman-generator';
 import { v4 as uuid } from 'uuid';
 import path from 'path';
 import fs from 'fs';
-import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
+import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
 import { parseScaffolds } from '../utils/generator';
 import DollieBaseGenerator from '../base';
 import {
@@ -58,9 +58,12 @@ class DollieInteractiveGenerator extends DollieBaseGenerator {
       throw new DestinationExistsError(this.getDestinationRoot());
     }
 
+    const description = parseScaffoldName(props.scaffold);
+    const { owner, name, checkout, origin } = description;
+
     const scaffold: DollieScaffold = {
       uuid: uuid(),
-      scaffoldName: parseRepoDescription(parseScaffoldName(props.scaffold), this.constants).original,
+      scaffoldName: `${owner}/${name}#${checkout}@${origin}`,
       dependencies: [],
     };
     await parseScaffolds(scaffold, this, null, this.mode);

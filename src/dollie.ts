@@ -8,7 +8,6 @@ import {
   DollieContainerFinishCallback,
   DollieInteractiveAppConfig,
   DollieComposeAppConfig,
-  DollieBaseAppConfig,
 } from './interfaces';
 import { DollieError } from './errors';
 import DollieComposeGenerator from './generators/compose';
@@ -39,9 +38,9 @@ const container = async (config: DollieContainerAppConfig, cb?: Callback): Promi
 
 const run = async (
   mode: DollieAppMode,
-  config: DollieBaseAppConfig,
+  config: DollieInteractiveAppConfig & DollieComposeAppConfig,
   cb?: Callback,
-): Promise<null | DollieContainerManifest> => {
+): Promise<void> => {
   switch (mode) {
     case 'interactive': {
       const env = Environment.createEnv();

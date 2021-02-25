@@ -13,10 +13,10 @@ import {
   ScaffoldRepoDescription,
   DollieMemoryFileSystem,
   FileSystem,
-  Constants,
 } from '../interfaces';
 import { DollieError, ScaffoldNotFoundError, ScaffoldTimeoutError } from '../errors';
 import * as appConstants from '../constants';
+import DollieBaseGenerator from '../base';
 
 const { SCAFFOLD_TIMEOUT } = appConstants;
 
@@ -26,6 +26,7 @@ const { SCAFFOLD_TIMEOUT } = appConstants;
  * @param {string} url - url for request and download
  * @param {FileSystem | DollieMemoryFileSystem} fileSystem - a `memfs.Volume` instance
  * @param {string} destination - destination pathname for compressed file's output
+ * @param {GotOptions} options - options for `got`
  * @returns {Promise<number>}
  */
 const downloadCompressedFile = async (
@@ -97,6 +98,7 @@ const downloadCompressedFile = async (
  * @param {FileSystem | DollieMemoryFileSystem} fileSystem - memfs volume instance
  * @param {number} retries - retry times count
  * @param {GotOptions} options - got options
+ * @param {DollieBaseGenerator} context - app context
  */
 const downloadScaffold = async (
   repoDescription: ScaffoldRepoDescription,
@@ -104,21 +106,26 @@ const downloadScaffold = async (
   fileSystem: FileSystem | DollieMemoryFileSystem = fs,
   retries = 0,
   options: GotOptions = {},
-  constants: Constants = _.omit(appConstants, ['default']),
+  context: DollieBaseGenerator,
 ): Promise<number> => {
-  const { zip } = parseRepoDescription(repoDescription, constants);
+  const { url, options: repoConfigOptions = {} } = await parseRepoDescription(repoDescription, context);
   try {
-    return await downloadCompressedFile(zip, fileSystem, destination, options);
+    return await downloadCompressedFile(
+      url,
+      fileSystem,
+      destination,
+      _.merge(options, repoConfigOptions),
+    );
   } catch (error) {
     if (error.code === 'E_SCAFFOLD_TIMEOUT' || error instanceof ScaffoldTimeoutError) {
-      if (retries < constants.SCAFFOLD_RETRIES) {
+      if (retries < context.constants.SCAFFOLD_RETRIES) {
         return await downloadScaffold(
           repoDescription,
           destination,
           fileSystem,
           retries + 1,
           options,
-          constants,
+          context,
         );
       } else {
         throw new Error(error?.message || 'download scaffold timed out');
@@ -131,7 +138,7 @@ const downloadScaffold = async (
           fileSystem,
           0,
           options,
-          constants,
+          context,
         );
       } else {
         throw error;

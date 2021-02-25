@@ -10,10 +10,11 @@ import {
   ConflictSolveTable,
   ScaffoldRepoDescription,
   RepoOrigin,
-  ScaffoldRepoUrls,
-  Constants,
+  ScaffoldConfig,
 } from '../interfaces';
 import * as appConstants from '../constants';
+import { DollieError } from '../errors';
+import DollieBaseGenerator from '../base';
 const {
   APP_SCAFFOLD_DEFAULT_OWNER,
   APP_SCAFFOLD_PREFIX,
@@ -75,9 +76,6 @@ const parseUrl = <T extends object>(url: string, props: T) => {
       return item.value;
     } else {
       const currentValue = _.get(props, item.value);
-      if (typeof currentValue !== 'string') {
-        return '';
-      }
       return currentValue;
     }
   }).join('');
@@ -104,29 +102,40 @@ const createScaffoldNameParser = (
 ): DollieScaffoldNameParser => {
   return (repo: string) => {
     let origin: RepoOrigin = 'github';
-    let owner = '';
+    let owner = defaultOwner;
     let name = '';
     let checkout = '';
+    let repoString = repo;
 
-    if (repo.split('/').length === 2) {
-      [owner, name] = repo.split('/');
+    if (repoString.split('@').length === 2) {
+      [repoString, origin] = repoString.split('@') as [string, RepoOrigin];
     } else {
-      name = repo;
-      owner = defaultOwner;
+      origin = 'github';
     }
 
-    if (!name.startsWith(scaffoldPrefix)) {
-      name = `${scaffoldPrefix}${name}`;
-    }
-
-    if (name.split('#').length === 2) {
-      [name, checkout] = name.split('#');
+    if (repoString.split('#').length === 2) {
+      [repoString, checkout] = repoString.split('#');
     } else {
       checkout = 'master';
     }
 
-    if (checkout.split('@').length === 2) {
-      [checkout, origin] = checkout.split('@') as [string, RepoOrigin];
+    if (repoString.split('/').length === 2) {
+      [repoString, name] = repoString.split('/');
+      owner = repoString;
+    } else {
+      name = repoString;
+    }
+
+    if (!owner) {
+      owner = defaultOwner;
+    }
+
+    if (!name || !owner || !origin || !checkout) {
+      throw new DollieError('Scaffold ID invalid');
+    }
+
+    if (!name.startsWith(scaffoldPrefix)) {
+      name = `${scaffoldPrefix}${name}`;
     }
 
     return { origin, owner, name, checkout };
@@ -139,17 +148,26 @@ const parseExtendScaffoldName = createScaffoldNameParser(APP_EXTEND_SCAFFOLD_PRE
 /**
  * parse scaffold repository description to strings
  * @param {ScaffoldRepoDescription} description
- * @param {Constants} constants
+ * @param {DollieBaseGenerator} context
  * @returns {object}
  */
-const parseRepoDescription = (
+const parseRepoDescription = async (
   description: ScaffoldRepoDescription,
-  constants: Constants = _.omit(appConstants, ['default']),
-): ScaffoldRepoUrls => {
+  context: DollieBaseGenerator,
+): Promise<ScaffoldConfig> => {
   const { owner, name, origin, checkout } = description;
 
+  const originServiceGenerator = context.plugin.scaffoldOrigins[origin];
+
+  if (!originServiceGenerator || typeof originServiceGenerator !== 'function') {
+    throw new DollieError(`Cannot find origin generator \`${origin}\``);
+  }
+
+  const { url, options = {} } = await originServiceGenerator(description);
+
   return {
-    zip: parseUrl<ScaffoldRepoDescription>(constants[`${origin.toUpperCase()}_URL`], description),
+    url,
+    options,
     original: `${owner}/${name}#${checkout}@${origin}`,
   };
 };
@@ -342,4 +360,5 @@ export {
   parseFilePathname,
   parseRepoDescription,
   renderTemplate,
+  parseUrl,
 };

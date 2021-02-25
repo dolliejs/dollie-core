@@ -9,7 +9,7 @@ import _ from 'lodash';
 import DollieBaseGenerator from '../base';
 import { DollieScaffold, ComposedConflictKeepsTable, ConflictSolveTable } from '../interfaces';
 import { parseScaffolds } from '../utils/generator';
-import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
+import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
 import { parseMergeBlocksToText } from '../utils/diff';
 import { ArgInvalidError, ComposeScaffoldConfigInvalidError } from '../errors';
 
@@ -36,8 +36,9 @@ class DollieComposeGenerator extends DollieBaseGenerator {
     if (!scaffold.scaffoldName) {
       throw new ArgInvalidError(['scaffold_name']);
     }
-    scaffold.scaffoldName
-      = parseRepoDescription(parseScaffoldName(scaffold.scaffoldName), this.constants).original;
+    const description = parseScaffoldName(scaffold.scaffoldName);
+    const { owner, name, checkout, origin } = description;
+    scaffold.scaffoldName = `${owner}/${name}#${checkout}@${origin}`;
     const createDetailedScaffold = async (scaffold: DollieScaffold): Promise<DollieScaffold> => {
       const result: DollieScaffold = scaffold;
       result.uuid = uuid();

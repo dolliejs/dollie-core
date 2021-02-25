@@ -69,18 +69,20 @@ export const TEMPLATE_FILE_PREFIX = '__template.';
  */
 export const TRAVERSE_IGNORE_REGEXP = new RegExp('.dollie.(js|json)$');
 
-export const GITHUB_URL = 'https://github.com/{{owner}}/{{name}}/archive/{{checkout}}.zip';
-export const GITLAB_URL = 'https://gitlab.com/{{owner}}/{{name}}/repository/archive.zip?ref={{checkout}}';
-export const BITBUCKET_URL = 'https://bitbucket.org/{{owner}}/{{name}}/get/{{checkout}}.zip';
+export const GITHUB_URL = 'https://api.github.com/repos/{{owner}}/{{name}}/zipball/{{checkout}}';
+export const GITLAB_URL = 'https://gitlab.com/api/v4/projects/{{id}}/repository/archive.zip?sha={{checkout}}';
+
+export const GITHUB_AUTH_TOKEN = '';
+export const GITLAB_AUTH_TOKEN = '';
 
 export const SCAFFOLD_TIMEOUT = 10000;
-export const SCAFFOLD_RETRIES = 3;
+export const SCAFFOLD_RETRIES = 9;
 
 export default {
-  BITBUCKET_URL,
   CACHE_DIR,
   DEPENDS_ON_KEY,
-  GITHUB_URL,
+  GITHUB_AUTH_TOKEN,
+  GITLAB_AUTH_TOKEN,
   GITLAB_URL,
   HOME_DIR,
   SCAFFOLD_RETRIES,
