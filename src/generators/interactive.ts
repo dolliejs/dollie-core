@@ -58,9 +58,12 @@ class DollieInteractiveGenerator extends DollieBaseGenerator {
       throw new DestinationExistsError(this.getDestinationRoot());
     }
 
+    const description = parseScaffoldName(props.scaffold);
+    const { owner, name, checkout, origin } = description;
+
     const scaffold: DollieScaffold = {
       uuid: uuid(),
-      scaffoldName: (await parseRepoDescription(parseScaffoldName(props.scaffold), this)).original,
+      scaffoldName: `${owner}/${name}#${checkout}@${origin}`,
       dependencies: [],
     };
     await parseScaffolds(scaffold, this, null, this.mode);

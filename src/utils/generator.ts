@@ -298,9 +298,10 @@ export const parseScaffolds = async (
     repoDescription = parseExtendScaffoldName(scaffoldName);
   }
 
-  const scaffoldRepoUrls = await parseRepoDescription(repoDescription, context);
+  const { owner, name, checkout, origin } = repoDescription;
+  const parsedScaffoldName = `${owner}/${name}#${checkout}@${origin}`;
 
-  context.log.info(`Pulling scaffold from ${scaffoldRepoUrls.original}`);
+  context.log.info(`Pulling scaffold from ${parsedScaffoldName}`);
   /**
    * download scaffold from GitHub repository and count the duration
    */
@@ -315,7 +316,7 @@ export const parseScaffolds = async (
     context,
   );
   context.log.info(`Template pulled in ${duration}ms`);
-  context.log.info(`Reading scaffold configuration from ${scaffoldRepoUrls.original}...`);
+  context.log.info(`Reading scaffold configuration from ${parsedScaffoldName}...`);
 
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
   const dollieJsConfigPathname = path.resolve(scaffoldDir, '.dollie.js');
@@ -420,8 +421,9 @@ export const parseScaffolds = async (
          * cause current scaffold is a dependency, so we should invoke `parseExtendScaffoldName`
          * to parse the scaffold's name
          */
-        dependence.scaffoldName
-          = (await parseRepoDescription(parseExtendScaffoldName(dependence.scaffoldName), context)).original;
+        const description = parseExtendScaffoldName(dependence.scaffoldName);
+        const { owner, name, checkout, origin } = description;
+        dependence.scaffoldName = `${owner}/${name}#${checkout}@${origin}`;
         await parseScaffolds(dependence, context, scaffold, mode);
       }
     }
@@ -464,9 +466,11 @@ export const parseScaffolds = async (
   );
   for (const dependenceKey of Object.keys(dependencies)) {
     const dependenceUuid = uuid();
+    const description = parseExtendScaffoldName(dependencies[dependenceKey]);
+    const { owner, name, checkout, origin } = description;
     const currentDependence: DollieScaffold = {
       uuid: dependenceUuid,
-      scaffoldName: (await parseRepoDescription(parseExtendScaffoldName(dependencies[dependenceKey]), context)).original,
+      scaffoldName: `${owner}/${name}#${checkout}@${origin}`,
       dependencies: [],
     };
     scaffold.dependencies.push(currentDependence);

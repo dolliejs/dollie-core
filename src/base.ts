@@ -14,6 +14,7 @@
  */
 
 import path from 'path';
+import Url from 'url';
 import Generator, { GeneratorOptions } from 'yeoman-generator';
 import figlet from 'figlet';
 import fs from 'fs-extra';
@@ -22,7 +23,7 @@ import chalk from 'chalk';
 import { execSync } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { Volume } from 'memfs';
-import { Options as GotOptions } from 'got';
+import got, { Options as GotOptions } from 'got';
 import {
   writeTempFiles,
   getComposedArrayValue,
@@ -44,7 +45,7 @@ import {
   Plugin,
 } from './interfaces';
 import { isPathnameInConfig, parseUrl } from './utils/scaffold';
-import { DestinationExistsError, ModeInvalidError } from './errors';
+import { DestinationExistsError, ModeInvalidError, ScaffoldNotFoundError } from './errors';
 
 /**
  * @class
@@ -186,19 +187,37 @@ class DollieBaseGenerator extends Generator {
     this.plugin = {
       scaffoldOrigins: {
         github: async (description) => {
-          const { GITHUB_AUTH_TOKEN } = this.constants;
+          const { GITHUB_AUTH_TOKEN, GITHUB_URL } = this.constants;
           const options = GITHUB_AUTH_TOKEN ? {
             headers: {
               Authorization: `token ${GITHUB_AUTH_TOKEN}`,
             },
           } as GotOptions : {};
           return _.merge({
-            url: parseUrl(this.constants.GITHUB_URL, description),
+            url: parseUrl(GITHUB_URL, description),
           }, { options });
         },
         gitlab: async (description) => {
+          const { owner, name, checkout } = description;
+          const { GITLAB_AUTH_TOKEN, GITLAB_URL } = this.constants;
+          const parsedUrl = Url.parse(GITLAB_URL);
+          const { protocol, host } = parsedUrl;
+          const headers = GITLAB_AUTH_TOKEN ? {
+            'Private-Token': GITLAB_AUTH_TOKEN,
+          } : {};
+          const res = await got(`${protocol}//${host}/api/v4/users/${owner}/projects`, {
+            timeout: 10000,
+            retry: 3,
+            headers,
+          });
+          const projects = (JSON.parse(res.body || '[]') || []) as Array<Record<string, any>>;
+          const targetProject = projects.filter((project) => project.path_with_namespace === `${owner}/${name}`)[0];
+          if (!targetProject) {
+            throw new ScaffoldNotFoundError();
+          }
           return {
-            url: parseUrl(this.constants.GITLAB_URL, description),
+            url: parseUrl(GITLAB_URL, { id: targetProject.id, checkout }),
+            options: { headers },
           };
         },
       },

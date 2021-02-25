@@ -76,9 +76,6 @@ const parseUrl = <T extends object>(url: string, props: T) => {
       return item.value;
     } else {
       const currentValue = _.get(props, item.value);
-      if (typeof currentValue !== 'string') {
-        return '';
-      }
       return currentValue;
     }
   }).join('');
