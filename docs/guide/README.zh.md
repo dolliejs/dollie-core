@@ -42,4 +42,4 @@ $ dollie
 
 根据提示回答完所有交互问题即可：
 
-![dollie_guide_quickstart.gif](https://i.loli.net/2021/02/23/6C1gY32NwkZ45d9.gif)
+![dollie_guide_quickstart.gif](https://i.loli.net/2021/02/25/9Ahid6ZvHP74JbR.gif)

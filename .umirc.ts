@@ -53,12 +53,20 @@ export default defineConfig({
     en: [
       null,
       {
+        title: 'Change Logs',
+        path: 'https://github.com/dolliejs/dollie-core/releases',
+      },
+      {
         title: 'GitHub',
         path: 'https://github.com/dolliejs/dollie-core',
       },
     ],
     zh: [
       null,
+      {
+        title: '发行注记',
+        path: 'https://github.com/dolliejs/dollie-core/releases',
+      },
       {
         title: 'GitHub',
         path: 'https://github.com/dolliejs/dollie-core',
