@@ -78,6 +78,9 @@ export const GITLAB_AUTH_TOKEN = '';
 export const SCAFFOLD_TIMEOUT = 10000;
 export const SCAFFOLD_RETRIES = 9;
 
+export const HTTP_PROXY = '';
+export const HTTP_PROXY_AUTH = '';
+
 export default {
   CACHE_DIR,
   DEPENDS_ON_KEY,
@@ -85,6 +88,8 @@ export default {
   GITLAB_AUTH_TOKEN,
   GITLAB_URL,
   HOME_DIR,
+  HTTP_PROXY,
+  HTTP_PROXY_AUTH,
   SCAFFOLD_RETRIES,
   SCAFFOLD_TIMEOUT,
   TEMP_DIR,
