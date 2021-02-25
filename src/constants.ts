@@ -1,4 +1,5 @@
 import os from 'os';
+import { parseSnakeToCamel } from './utils/format';
 
 /**
  * configuration map under `compose` mode, used by:
@@ -69,8 +70,8 @@ export const TEMPLATE_FILE_PREFIX = '__template.';
  */
 export const TRAVERSE_IGNORE_REGEXP = new RegExp('.dollie.(js|json)$');
 
-export const GITHUB_URL = 'https://api.github.com/repos/{{owner}}/{{name}}/zipball/{{checkout}}';
-export const GITLAB_URL = 'https://gitlab.com/api/v4/projects/{{id}}/repository/archive.zip?sha={{checkout}}';
+export const GITHUB_URL_SCHEMA = 'https://api.github.com/repos/{{owner}}/{{name}}/zipball/{{checkout}}';
+export const GITLAB_URL_SCHEMA = 'https://gitlab.com/api/v4/projects/{{id}}/repository/archive.zip?sha={{checkout}}';
 
 export const GITHUB_AUTH_TOKEN = '';
 export const GITLAB_AUTH_TOKEN = '';
@@ -81,12 +82,12 @@ export const SCAFFOLD_RETRIES = 9;
 export const HTTP_PROXY = '';
 export const HTTP_PROXY_AUTH = '';
 
-export default {
+const defaultExportConstants = {
   CACHE_DIR,
   DEPENDS_ON_KEY,
   GITHUB_AUTH_TOKEN,
   GITLAB_AUTH_TOKEN,
-  GITLAB_URL,
+  GITLAB_URL_SCHEMA,
   HOME_DIR,
   HTTP_PROXY,
   HTTP_PROXY_AUTH,
@@ -96,3 +97,21 @@ export default {
   TEMPLATE_FILE_PREFIX,
   TRAVERSE_IGNORE_REGEXP,
 };
+
+export const CONFIG_OPTIONS = {
+  cacheDir: CACHE_DIR,
+  dependsOnKey: DEPENDS_ON_KEY,
+  githubAuthToken: GITHUB_AUTH_TOKEN,
+  gitlabAuthToken: GITLAB_AUTH_TOKEN,
+  gitlabUrlSchema: GITLAB_URL_SCHEMA,
+  homeDir: HOME_DIR,
+  httpProxy: HTTP_PROXY,
+  httpProxyAuth: HTTP_PROXY_AUTH,
+  scaffoldRetries: SCAFFOLD_RETRIES,
+  scaffoldTimeout: SCAFFOLD_TIMEOUT,
+  tempDir: TEMP_DIR,
+  templateFilePrefix: TEMPLATE_FILE_PREFIX,
+  traverseIgnoreRegexp: TRAVERSE_IGNORE_REGEXP,
+};
+
+export default { ...defaultExportConstants };

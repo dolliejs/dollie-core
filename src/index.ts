@@ -60,6 +60,11 @@ import {
   ScaffoldConfig,
   TraverseResultItem,
 } from './interfaces';
+import {
+  parseCamelToSnake,
+  parseSnakeToCamel,
+  parseSnakeToKebab,
+} from './utils/format';
 import constants from './constants';
 
 const {
@@ -67,7 +72,7 @@ const {
   DEPENDS_ON_KEY,
   GITHUB_AUTH_TOKEN,
   GITLAB_AUTH_TOKEN,
-  GITLAB_URL,
+  GITLAB_URL_SCHEMA,
   HOME_DIR,
   HTTP_PROXY,
   HTTP_PROXY_AUTH,
@@ -90,6 +95,7 @@ export {
   getComposedArrayValue,
   getExtendedPropsFromParentScaffold,
   getGitIgnoredFiles,
+  parseCamelToSnake,
   parseComposeConfig,
   parseDiffToMergeBlocks,
   parseExtendScaffoldName,
@@ -97,6 +103,8 @@ export {
   parseMergeBlocksToText,
   parseRepoDescription,
   parseScaffoldName,
+  parseSnakeToCamel,
+  parseSnakeToKebab,
   parseUrl,
   solveConflicts,
   stringifyComposeConfig,
@@ -146,7 +154,7 @@ export {
   DEPENDS_ON_KEY,
   GITHUB_AUTH_TOKEN,
   GITLAB_AUTH_TOKEN,
-  GITLAB_URL,
+  GITLAB_URL_SCHEMA,
   HOME_DIR,
   HTTP_PROXY,
   HTTP_PROXY_AUTH,
@@ -169,6 +177,7 @@ export default {
   getComposedArrayValue,
   getExtendedPropsFromParentScaffold,
   getGitIgnoredFiles,
+  parseCamelToSnake,
   parseComposeConfig,
   parseDiffToMergeBlocks,
   parseExtendScaffoldName,
@@ -176,6 +185,8 @@ export default {
   parseMergeBlocksToText,
   parseRepoDescription,
   parseScaffoldName,
+  parseSnakeToCamel,
+  parseSnakeToKebab,
   parseUrl,
   solveConflicts,
   stringifyComposeConfig,
@@ -201,7 +212,7 @@ export default {
   DEPENDS_ON_KEY,
   GITHUB_AUTH_TOKEN,
   GITLAB_AUTH_TOKEN,
-  GITLAB_URL,
+  GITLAB_URL_SCHEMA,
   HOME_DIR,
   HTTP_PROXY,
   HTTP_PROXY_AUTH,
