@@ -8,6 +8,9 @@ import decompress from 'decompress';
 import _ from 'lodash';
 import fs from 'fs-extra';
 import got, { Options as GotOptions, RequestError } from 'got';
+import tunnel from 'tunnel';
+import https from 'https';
+import Url from 'url';
 import { parseRepoDescription } from './scaffold';
 import {
   ScaffoldRepoDescription,
@@ -108,17 +111,34 @@ const downloadScaffold = async (
   options: GotOptions = {},
   context: DollieBaseGenerator,
 ): Promise<number> => {
-  const { url, options: repoConfigOptions = {} } = await parseRepoDescription(repoDescription, context);
+  const {
+    url,
+    options: repoConfigOptions = {},
+  } = await parseRepoDescription(repoDescription, context);
+  const { SCAFFOLD_RETRIES, HTTP_PROXY, HTTP_PROXY_AUTH  } = context.constants;
+  const gotOptions = _.merge(options, repoConfigOptions) as GotOptions;
+  if (HTTP_PROXY) {
+    const { hostname: host, port } = Url.parse(HTTP_PROXY);
+    const proxy: tunnel.ProxyOptions = {
+      host,
+      port: parseInt(port, 10),
+    };
+    if (HTTP_PROXY_AUTH) { proxy.proxyAuth = HTTP_PROXY_AUTH; }
+    gotOptions.agent = {
+      http: tunnel.httpOverHttp({ proxy }),
+      https: tunnel.httpsOverHttp({ proxy }) as https.Agent,
+    };
+  }
   try {
     return await downloadCompressedFile(
       url,
       fileSystem,
       destination,
-      _.merge(options, repoConfigOptions),
+      gotOptions,
     );
   } catch (error) {
     if (error.code === 'E_SCAFFOLD_TIMEOUT' || error instanceof ScaffoldTimeoutError) {
-      if (retries < context.constants.SCAFFOLD_RETRIES) {
+      if (retries < SCAFFOLD_RETRIES) {
         return await downloadScaffold(
           repoDescription,
           destination,
