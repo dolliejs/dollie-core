@@ -48,6 +48,7 @@ import {
 import { isPathnameInConfig, parseUrl } from './utils/scaffold';
 import { DestinationExistsError, ModeInvalidError, ScaffoldNotFoundError } from './errors';
 import { parseCamelToSnake } from './utils/format';
+import { DollieError } from '.';
 
 /**
  * @class
@@ -230,13 +231,18 @@ class DollieBaseGenerator extends Generator {
         },
       },
     };
-    const customPlugins = (_.get(this, 'options.plugins') || []) as Array<Plugin>;
+    const customPluginPaths = (_.get(this, 'options.plugins') || []) as Array<string>;
     const defaultPluginContext = _.cloneDeep(this.plugin);
-    for (const plugin of customPlugins) {
-      if (plugin.executor && typeof plugin.executor === 'function') {
-        this.log.info(`Loading plugin ${plugin.pathname}`);
-        this.plugin = _.merge(this.plugin, plugin.executor.call(null, defaultPluginContext));
+    for (const plugin of customPluginPaths) {
+      const pluginPath = typeof plugin === 'string' ? plugin : (plugin as Plugin).pathname;
+      const pluginFunc = typeof plugin === 'string'
+        ? require(path.resolve(plugin))
+        : (plugin as Plugin).executor;
+      if (!_.isFunction(pluginFunc)) {
+        throw new DollieError(`Plugin ${pluginPath} is not a valid plugin`);
       }
+      this.log.info(`Loading plugin ${pluginPath}`);
+      this.plugin = _.merge(this.plugin, pluginFunc.call(null, defaultPluginContext));
     }
   }
 
