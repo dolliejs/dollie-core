@@ -10,7 +10,6 @@ import {
   parseExtendScaffoldName,
   parseFilePathname,
   renderTemplate,
-  parseRepoDescription,
   parseScaffoldName,
 } from './scaffold';
 import { readJson } from './files';
@@ -298,7 +297,10 @@ export const parseScaffolds = async (
     repoDescription = parseExtendScaffoldName(scaffoldName);
   }
 
-  context.log.info(`Downloading scaffold from ${parseRepoDescription(repoDescription, context.constants).repo}`);
+  const { owner, name, checkout, origin } = repoDescription;
+  const parsedScaffoldName = `${owner}/${name}#${checkout}@${origin}`;
+
+  context.log.info(`Pulling scaffold from ${parsedScaffoldName}`);
   /**
    * download scaffold from GitHub repository and count the duration
    */
@@ -310,10 +312,10 @@ export const parseScaffolds = async (
     {
       timeout: context.constants.SCAFFOLD_TIMEOUT,
     },
-    context.constants,
+    context,
   );
-  context.log.info(`Template downloaded at ${scaffoldDir} in ${duration}ms`);
-  context.log.info(`Reading scaffold configuration from ${scaffoldName}...`);
+  context.log.info(`Template pulled in ${duration}ms`);
+  context.log.info(`Reading scaffold configuration from ${parsedScaffoldName}...`);
 
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
   const dollieJsConfigPathname = path.resolve(scaffoldDir, '.dollie.js');
@@ -418,8 +420,9 @@ export const parseScaffolds = async (
          * cause current scaffold is a dependency, so we should invoke `parseExtendScaffoldName`
          * to parse the scaffold's name
          */
-        dependence.scaffoldName
-          = parseRepoDescription(parseExtendScaffoldName(dependence.scaffoldName)).original;
+        const description = parseExtendScaffoldName(dependence.scaffoldName);
+        const { owner, name, checkout, origin } = description;
+        dependence.scaffoldName = `${owner}/${name}#${checkout}@${origin}`;
         await parseScaffolds(dependence, context, scaffold, mode);
       }
     }
@@ -462,9 +465,11 @@ export const parseScaffolds = async (
   );
   for (const dependenceKey of Object.keys(dependencies)) {
     const dependenceUuid = uuid();
+    const description = parseExtendScaffoldName(dependencies[dependenceKey]);
+    const { owner, name, checkout, origin } = description;
     const currentDependence: DollieScaffold = {
       uuid: dependenceUuid,
-      scaffoldName: parseRepoDescription(parseExtendScaffoldName(dependencies[dependenceKey])).original,
+      scaffoldName: `${owner}/${name}#${checkout}@${origin}`,
       dependencies: [],
     };
     scaffold.dependencies.push(currentDependence);

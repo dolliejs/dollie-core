@@ -2,43 +2,61 @@
 title: Dollie
 hero:
   title: Dollie
-  desc: 📦 快速、通用的项目生成工具。
+  desc: Accelerate the process of project creation and initialization with such set of utilities
   actions:
-    - text: 用户文档
-      link: /zh/guide
+    - text: Documentation
+      link: /guide
 footer:
-  遵循 MIT 开源协议
-  <br />版权所有 © 2021 至今 Dollie.js 及其贡献者
-  <br />由 [dumi](https://d.umijs.org) 提供支持
+  Open-Source Licensed By MIT
+  <br />Copyright © 2021 to today, Dollie.js and its contributors
+  <br />Powered by [dumi](https://d.umijs.org)
 ---
 
 <div style="height: 20px;"></div>
 
-## 安装
+# Installation
+
+```bash
+$ npm i @dollie/cli -g
+```
+
+# Usage
+
+## Use CLI
+
+In the shell, run
+
+```bash
+$ dollie
+```
+
+or
+
+```bash
+$ dollie compose ./config.yml
+```
+
+## Use API
+
+Install the NPM dependency which contains the Dollie APIs in your project
 
 ```bash
 $ npm i @dollie/core -S
-# 或者
-$ yarn add @dollie/core
 ```
 
-## 使用
+import dependency, and invoke appropriate API to run the core functionality of Dollie
 
-安装 `yeoman-environment` 依赖：
+```js
+const dollie = require('@dollie/core');
 
-```bash
-$ npm i yeoman-environment -S
-# 或者
-$ yarn add yeoman-environment
-```
+async function app() {
+	try {
+		await dollie.interactive();
+	} catch (e) {
+		dollie.log(e.toString());
+		process.exit(1);
+	}
+}
 
-运行 Dollie Generator：
-
-```ts
-const { DollieInteractiveGenerator } = require('@dollie/core');
-const Environment = require('yeoman-environment');
-
-const env = Environment.createEnv();
-env.registerStub(DollieInteractiveGenerator, 'dollie:interactive');
-env.run('dollie:interactive', () => console.log('dollie generator started'));
+app();
 ```

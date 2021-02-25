@@ -4,20 +4,22 @@
  */
 
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import decompress from 'decompress';
 import _ from 'lodash';
 import fs from 'fs-extra';
 import got, { Options as GotOptions, RequestError } from 'got';
+import tunnel from 'tunnel';
+import https from 'https';
+import Url from 'url';
 import { parseRepoDescription } from './scaffold';
 import {
   ScaffoldRepoDescription,
   DollieMemoryFileSystem,
   FileSystem,
-  Constants,
 } from '../interfaces';
 import { DollieError, ScaffoldNotFoundError, ScaffoldTimeoutError } from '../errors';
 import * as appConstants from '../constants';
+import DollieBaseGenerator from '../base';
 
 const { SCAFFOLD_TIMEOUT } = appConstants;
 
@@ -27,18 +29,18 @@ const { SCAFFOLD_TIMEOUT } = appConstants;
  * @param {string} url - url for request and download
  * @param {FileSystem | DollieMemoryFileSystem} fileSystem - a `memfs.Volume` instance
  * @param {string} destination - destination pathname for compressed file's output
+ * @param {GotOptions} options - options for `got`
  * @returns {Promise<number>}
  */
 const downloadCompressedFile = async (
   url: string,
   fileSystem: FileSystem | DollieMemoryFileSystem,
   destination: string,
-  options?: GotOptions,
+  options: GotOptions = {},
 ): Promise<number> => {
   const startTimestamp = Date.now();
   return new Promise((resolve, reject) => {
     fileSystem.mkdirpSync(destination);
-    const filename = `/${uuidv4()}.zip`;
 
     const getAbsolutePath = (filePath: string) => {
       const relativePathname = filePath.split('/').slice(1).join('/');
@@ -51,6 +53,8 @@ const downloadCompressedFile = async (
       url,
       downloaderOptions as GotOptions & { isStream: true },
     );
+
+    const fileBufferChunks = [];
 
     downloader.on('error', (error: RequestError) => {
       const errorMessage = error.toString() as string;
@@ -65,11 +69,13 @@ const downloadCompressedFile = async (
       reject(new DollieError(errorMessage));
     });
 
-    /**
-     * pipe download stream to memfs volume
-     */
-    downloader.pipe(fileSystem.createWriteStream(filename)).on('finish', () => {
-      const fileBuffer = fileSystem.readFileSync(filename);
+    downloader.on('data', (chunk) => {
+      fileBufferChunks.push(chunk);
+    });
+
+    downloader.on('end', () => {
+      const fileBuffer = Buffer.concat(fileBufferChunks);
+
       decompress(fileBuffer).then((files) => {
         for (const file of files) {
           const { type, path: filePath, data } = file;
@@ -81,7 +87,6 @@ const downloadCompressedFile = async (
         }
         return;
       }).then(() => {
-        fileSystem.unlinkSync(filename);
         resolve(Date.now() - startTimestamp);
       });
     });
@@ -96,6 +101,7 @@ const downloadCompressedFile = async (
  * @param {FileSystem | DollieMemoryFileSystem} fileSystem - memfs volume instance
  * @param {number} retries - retry times count
  * @param {GotOptions} options - got options
+ * @param {DollieBaseGenerator} context - app context
  */
 const downloadScaffold = async (
   repoDescription: ScaffoldRepoDescription,
@@ -103,21 +109,43 @@ const downloadScaffold = async (
   fileSystem: FileSystem | DollieMemoryFileSystem = fs,
   retries = 0,
   options: GotOptions = {},
-  constants: Constants = _.omit(appConstants, ['default']),
+  context: DollieBaseGenerator,
 ): Promise<number> => {
-  const { zip } = parseRepoDescription(repoDescription, constants);
+  const {
+    url,
+    options: repoConfigOptions = {},
+  } = await parseRepoDescription(repoDescription, context);
+  const { SCAFFOLD_RETRIES, HTTP_PROXY, HTTP_PROXY_AUTH  } = context.constants;
+  const gotOptions = _.merge(options, repoConfigOptions) as GotOptions;
+  if (HTTP_PROXY) {
+    const { hostname: host, port } = Url.parse(HTTP_PROXY);
+    const proxy: tunnel.ProxyOptions = {
+      host,
+      port: parseInt(port, 10),
+    };
+    if (HTTP_PROXY_AUTH) { proxy.proxyAuth = HTTP_PROXY_AUTH; }
+    gotOptions.agent = {
+      http: tunnel.httpOverHttp({ proxy }),
+      https: tunnel.httpsOverHttp({ proxy }) as https.Agent,
+    };
+  }
   try {
-    return await downloadCompressedFile(zip, fileSystem, destination, options);
+    return await downloadCompressedFile(
+      url,
+      fileSystem,
+      destination,
+      gotOptions,
+    );
   } catch (error) {
     if (error.code === 'E_SCAFFOLD_TIMEOUT' || error instanceof ScaffoldTimeoutError) {
-      if (retries < constants.SCAFFOLD_RETRIES) {
+      if (retries < SCAFFOLD_RETRIES) {
         return await downloadScaffold(
           repoDescription,
           destination,
           fileSystem,
           retries + 1,
           options,
-          constants,
+          context,
         );
       } else {
         throw new Error(error?.message || 'download scaffold timed out');
@@ -130,7 +158,7 @@ const downloadScaffold = async (
           fileSystem,
           0,
           options,
-          constants,
+          context,
         );
       } else {
         throw error;
