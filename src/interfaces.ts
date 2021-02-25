@@ -128,7 +128,7 @@ export type ExportedConstants = typeof constants.default;
 export type DollieAppConfigOptions = typeof constants.CONFIG_OPTIONS;
 
 export interface DollieBaseAppConfig extends Partial<DollieAppConfigOptions> {
-  plugins?: Array<Plugin>;
+  plugins?: Array<string | Plugin>;
 }
 
 export interface DollieContainerAppConfig extends DollieBaseAppConfig {
