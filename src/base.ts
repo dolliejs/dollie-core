@@ -43,9 +43,11 @@ import {
   BinaryTable,
   PluginContext,
   Plugin,
+  DollieAppConfigOptions,
 } from './interfaces';
 import { isPathnameInConfig, parseUrl } from './utils/scaffold';
 import { DestinationExistsError, ModeInvalidError, ScaffoldNotFoundError } from './errors';
+import { parseCamelToSnake } from './utils/format';
 
 /**
  * @class
@@ -88,7 +90,7 @@ class DollieBaseGenerator extends Generator {
    * @type {Constants}
    * @public
    */
-  public constants: Constants = _.omit(constants, ['default']);
+  public constants: Constants = _.omit(constants, ['default', 'CONFIG_OPTIONS']);
   /**
    * store temp files into `memfs`
    * @type {DollieMemoryFileSystem}
@@ -141,8 +143,14 @@ class DollieBaseGenerator extends Generator {
 
   public constructor(args: string | string[], options: GeneratorOptions) {
     super(args, options);
-    const customConstantKeys = Object.keys(constants.default) as Array<keyof ExportedConstants>;
-    const customConstants = _.pick((_.get(this, 'options.constants') || {}) as ExportedConstants, customConstantKeys);
+    const customConstantKeys = Object.keys(constants.CONFIG_OPTIONS) as Array<keyof DollieAppConfigOptions>;
+    const rawCustomConstants = _.pick((_.get(this, 'options') || {}) as DollieAppConfigOptions, customConstantKeys);
+    const customConstants = Object
+      .keys(rawCustomConstants)
+      .reduce((result, currentKey) => {
+        result[parseCamelToSnake(currentKey).toUpperCase()] = rawCustomConstants[currentKey];
+        return result;
+      }, {}) as Partial<ExportedConstants>;
     this.constants = _.merge(this.constants, customConstants);
   }
 
@@ -187,20 +195,20 @@ class DollieBaseGenerator extends Generator {
     this.plugin = {
       scaffoldOrigins: {
         github: async (description) => {
-          const { GITHUB_AUTH_TOKEN, GITHUB_URL } = this.constants;
+          const { GITHUB_AUTH_TOKEN, GITHUB_URL_SCHEMA } = this.constants;
           const options = GITHUB_AUTH_TOKEN ? {
             headers: {
               Authorization: `token ${GITHUB_AUTH_TOKEN}`,
             },
           } as GotOptions : {};
           return _.merge({
-            url: parseUrl(GITHUB_URL, description),
+            url: parseUrl(GITHUB_URL_SCHEMA, description),
           }, { options });
         },
         gitlab: async (description) => {
           const { owner, name, checkout } = description;
-          const { GITLAB_AUTH_TOKEN, GITLAB_URL } = this.constants;
-          const parsedUrl = Url.parse(GITLAB_URL);
+          const { GITLAB_AUTH_TOKEN, GITLAB_URL_SCHEMA } = this.constants;
+          const parsedUrl = Url.parse(GITLAB_URL_SCHEMA);
           const { protocol, host } = parsedUrl;
           const headers = GITLAB_AUTH_TOKEN ? {
             'Private-Token': GITLAB_AUTH_TOKEN,
@@ -216,7 +224,7 @@ class DollieBaseGenerator extends Generator {
             throw new ScaffoldNotFoundError();
           }
           return {
-            url: parseUrl(GITLAB_URL, { id: targetProject.id, checkout }),
+            url: parseUrl(GITLAB_URL_SCHEMA, { id: targetProject.id, checkout }),
             options: { headers },
           };
         },

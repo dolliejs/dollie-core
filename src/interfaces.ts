@@ -5,7 +5,7 @@ import * as constants from './constants';
 import _ from 'lodash';
 import { Options as GotOptions } from 'got';
 import * as fs from 'fs-extra';
-const allConstants = _.omit(constants, ['default']);
+const allConstants = _.omit(constants, ['default', 'CONFIG_OPTIONS']);
 
 export type FileSystem = typeof fs;
 
@@ -125,8 +125,9 @@ export interface DollieContainerFinishCallback {
 export type Constants = typeof allConstants;
 export type ExportedConstants = typeof constants.default;
 
-export interface DollieBaseAppConfig {
-  constants?: ExportedConstants;
+export type DollieAppConfigOptions = typeof constants.CONFIG_OPTIONS;
+
+export interface DollieBaseAppConfig extends Partial<DollieAppConfigOptions> {
   plugins?: Array<Plugin>;
 }
 
