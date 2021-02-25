@@ -131,13 +131,13 @@ export interface DollieBaseAppConfig {
 }
 
 export interface DollieContainerAppConfig extends DollieBaseAppConfig {
-  projectName: string;
-  dollieScaffoldConfig: ComposedDollieScaffold;
+  projectName?: string;
+  dollieScaffoldConfig?: ComposedDollieScaffold;
   outputPath?: string;
 }
 
 export type DollieInteractiveAppConfig = DollieBaseAppConfig;
-export type DollieComposeAppConfig = DollieBaseAppConfig;
+export type DollieComposeAppConfig = DollieContainerAppConfig;
 
 export type DollieAppMode = 'interactive' | 'compose' | 'container';
 

@@ -7,7 +7,7 @@ import { Questions } from 'yeoman-generator';
 import { v4 as uuid } from 'uuid';
 import path from 'path';
 import fs from 'fs';
-import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
+import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
 import { parseScaffolds } from '../utils/generator';
 import DollieBaseGenerator from '../base';
 import {

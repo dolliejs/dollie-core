@@ -10,7 +10,6 @@ import {
   parseExtendScaffoldName,
   parseFilePathname,
   renderTemplate,
-  parseRepoDescription,
   parseScaffoldName,
 } from './scaffold';
 import { readJson } from './files';

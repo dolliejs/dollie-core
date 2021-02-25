@@ -9,7 +9,7 @@ import _ from 'lodash';
 import DollieBaseGenerator from '../base';
 import { DollieScaffold, ComposedConflictKeepsTable, ConflictSolveTable } from '../interfaces';
 import { parseScaffolds } from '../utils/generator';
-import { parseScaffoldName, solveConflicts, parseRepoDescription } from '../utils/scaffold';
+import { parseScaffoldName, solveConflicts } from '../utils/scaffold';
 import { parseMergeBlocksToText } from '../utils/diff';
 import { ArgInvalidError, ComposeScaffoldConfigInvalidError } from '../errors';
 
