@@ -1,0 +1,14 @@
+project_name: project
+
+scaffold_config:
+  scaffold_name: react
+  dependencies:
+    - scaffold_name: react-ts
+    - scaffold_name: react-less
+    - scaffold_name: react-dva
+
+conflict_keeps:
+  package.json:
+    - |
+      "dep1": "^1.0.0",
+      "dep2": "^2.0.0",
