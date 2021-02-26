@@ -159,10 +159,10 @@ class DollieBaseGenerator extends Generator {
    * create a unique dependency key and push to `this.dependencyKeys`
    * @returns {string}
    */
-  public createDependencyKey(): string {
+  public createDependencyKey(name?: string): string {
     const uuid = uuidv4();
     const randomString = Math.random().toString(32).slice(2);
-    const key = `$dep_${uuid.split('-').join('')}_${randomString}`;
+    const key = `$dep_${uuid.split('-').join('')}_${randomString}${name && `:${name}` || ''}`;
     if (this.dependencyKeys.indexOf(key) === -1) {
       this.dependencyKeys.push(key);
       return key;
