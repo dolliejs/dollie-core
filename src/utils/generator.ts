@@ -377,10 +377,12 @@ export const parseScaffolds = async (
   }
 
   scaffoldConfiguration.questions = scaffoldConfiguration.questions.map((question) => {
-    if (question.name === DEPENDS_ON_KEY) {
+    const match = DEPENDS_ON_KEY.exec(question.name);
+    if (match) {
+      const scaffoldName = match[1];
       return {
         ...question,
-        name: context.createDependencyKey(),
+        name: context.createDependencyKey(scaffoldName?.slice(1) || ''),
       };
     }
     return question;
@@ -464,8 +466,19 @@ export const parseScaffolds = async (
     (value, key) => context.isDependencyKeyRegistered(key) && value !== 'null',
   );
   for (const dependenceKey of Object.keys(dependencies)) {
+    let dependedScaffoldName = '';
+    const currentDependenceValue = dependencies[dependenceKey];
+    const match = _.get(/\:(.*)$/.exec(dependenceKey), 1);
+    if (match) {
+      if (_.isBoolean(currentDependenceValue) && currentDependenceValue) {
+        dependedScaffoldName = match;
+      } else { continue; }
+    } else {
+      dependedScaffoldName = currentDependenceValue;
+    }
+    if (!dependedScaffoldName) { continue; }
     const dependenceUuid = uuid();
-    const description = parseExtendScaffoldName(dependencies[dependenceKey]);
+    const description = parseExtendScaffoldName(dependedScaffoldName);
     const { owner, name, checkout, origin } = description;
     const currentDependence: DollieScaffold = {
       uuid: dependenceUuid,

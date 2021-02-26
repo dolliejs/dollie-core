@@ -39,7 +39,7 @@ export const CACHE_DIR = `.${APP_NAME}/cache`;
  * `$DEPENDS_ON` -> false
  * `$depends_on$` -> false
  */
-export const DEPENDS_ON_KEY = '$DEPENDS_ON$';
+export const DEPENDS_ON_KEY = /^\$DEPENDS_ON(\:.*)?\$$/;
 /**
  * the directory to save scaffold contents
  * it is a relative path with `HOME_DIR`, used by:
