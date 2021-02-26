@@ -172,7 +172,7 @@ Dollie Compose 的配置文件采用 YAML 语法，用户需要在每个配置�
 # config.yml
 project_name: project
 
-dollie_scaffold_config:
+scaffold_config:
   scaffold_name: react
   dependencies:
     - scaffold_name: react-ts
@@ -197,7 +197,7 @@ Dollie 将会读取其中的内容并解析生成脚手架依赖关系树，随�
 # config.yml
 project_name: project
 
-dollie_scaffold_config:
+scaffold_config:
   scaffold_name: react
   props:
     license: mit
@@ -209,10 +209,10 @@ dollie_scaffold_config:
 
 ### 处理冲突
 
-在 YAML 配置文件最顶层指定 `conflict_keeps_table` 字段：
+在 YAML 配置文件最顶层指定 `conflict_keeps` 字段：
 
 ```yml
-conflict_keeps_table:
+conflict_keeps:
   package.json:
     -
       all
@@ -221,7 +221,7 @@ conflict_keeps_table:
 此处代表保留冲突双方所有的行
 
 ```yml
-conflict_keeps_table:
+conflict_keeps:
   package.json:
     -
       former
@@ -230,7 +230,7 @@ conflict_keeps_table:
 此处代表保留冲突双方中属于 `former` 的行
 
 ```yml
-conflict_keeps_table:
+conflict_keeps:
   package.json:
     -
       former:
@@ -244,7 +244,7 @@ conflict_keeps_table:
 此处代表保留 `former` 的第一行以及 `current` 的前三行
 
 ```yml
-conflict_keeps_table:
+conflict_keeps:
   package.json:
     - |
       "dep1": "^1.0.0",

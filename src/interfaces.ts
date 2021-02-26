@@ -133,12 +133,15 @@ export interface DollieBaseAppConfig extends Partial<DollieAppConfigOptions> {
 
 export interface DollieContainerAppConfig extends DollieBaseAppConfig {
   projectName?: string;
-  dollieScaffoldConfig?: ComposedDollieScaffold;
+  scaffoldConfig?: ComposedDollieScaffold;
   outputPath?: string;
 }
 
 export type DollieInteractiveAppConfig = DollieBaseAppConfig;
-export type DollieComposeAppConfig = DollieContainerAppConfig;
+
+export interface DollieComposeAppConfig extends DollieContainerAppConfig {
+  conflictKeeps?: ConflictSolveTable;
+}
 
 export type DollieAppMode = 'interactive' | 'compose' | 'container';
 

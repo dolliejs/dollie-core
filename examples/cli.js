@@ -11,7 +11,7 @@ async function test() {
   let config = {};
 
   if (type === 'compose') {
-    const content = fs.readFileSync(path.resolve(__dirname, './test.yml'), {
+    const content = fs.readFileSync(path.resolve(__dirname, './config.yml'), {
       encoding: 'utf-8',
     });
     config = parseComposeConfig(content);
@@ -20,7 +20,7 @@ async function test() {
   if (type === 'container') {
     config = {
       projectName: 'project',
-      dollieScaffoldConfig: {
+      scaffoldConfig: {
         scaffoldName: 'react',
         dependencies: [
           { scaffoldName: 'react-ts' },

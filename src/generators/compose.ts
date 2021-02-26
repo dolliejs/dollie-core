@@ -17,7 +17,7 @@ class DollieComposeGenerator extends DollieBaseGenerator {
   public initializing() {
     this.mode = 'compose';
     super.initializing.call(this);
-    const scaffold = _.get(this, 'options.dollieScaffoldConfig') as DollieScaffold;
+    const scaffold = _.get(this, 'options.scaffoldConfig') as DollieScaffold;
     if (!scaffold) {
       throw new ComposeScaffoldConfigInvalidError();
     }
@@ -32,7 +32,7 @@ class DollieComposeGenerator extends DollieBaseGenerator {
   public async default() {
     super.default.call(this);
     const scaffold
-      = _.get(this.options, this.constants.APP_COMPOSE_CONFIG_MAP.dollie_scaffold_config) as DollieScaffold;
+      = _.get(this, 'options.scaffoldConfig') as DollieScaffold;
     if (!scaffold.scaffoldName) {
       throw new ArgInvalidError(['scaffold_name']);
     }
@@ -56,7 +56,7 @@ class DollieComposeGenerator extends DollieBaseGenerator {
      * get keeps table from user's yaml config and parse it into the format that Dollie can understand
      */
     const composedKeepsTable =
-      _.get(this.options, this.constants.APP_COMPOSE_CONFIG_MAP.conflict_keeps_table) as ComposedConflictKeepsTable || {};
+      _.get(this, 'options.conflictKeeps') as ComposedConflictKeepsTable || {};
     const keepsTable = Object
       .keys(composedKeepsTable)
       .reduce((result, currentPathname) => {
