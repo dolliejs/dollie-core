@@ -444,9 +444,6 @@ export const parseScaffolds = async (
 
   /**
    * omit those slot question key-value pairs, cause they are only used by `parseScaffolds`
-   *
-   * @example
-   * it will ignore a key-value pair like `{ $CSS_PREPROCESSOR$: 'less' }`
    */
   scaffold.props = _.merge(
     projectNameProp,
