@@ -19,7 +19,7 @@ import {
   parseDiffToMergeBlocks,
   parseFileTextToMergeBlocks,
 } from './utils/diff';
-import dollie from './dollie';
+import * as dollie from './dollie';
 import log from './utils/log';
 import { downloadCompressedFile } from './utils/download';
 import {
@@ -167,4 +167,8 @@ export {
   TRAVERSE_IGNORE_REGEXP,
 };
 
-export default dollie;
+export default {
+  compose,
+  container,
+  interactive,
+};

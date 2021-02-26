@@ -3,8 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 const { parseComposeConfig } = require('../src/utils/compose');
-const dollie = require('../src/dollie').default;
-const log = require('../src/utils/log').default;
+const dollie = require('../src').default;
+const { log } = require('../src');
 
 async function test() {
   const type = process.argv[2];
