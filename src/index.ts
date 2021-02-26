@@ -19,7 +19,7 @@ import {
   parseDiffToMergeBlocks,
   parseFileTextToMergeBlocks,
 } from './utils/diff';
-import { container, interactive, compose } from './dollie';
+import * as dollie from './dollie';
 import log from './utils/log';
 import { downloadCompressedFile } from './utils/download';
 import {
@@ -66,6 +66,8 @@ import {
   parseSnakeToKebab,
 } from './utils/format';
 import constants from './constants';
+
+const { compose, container, interactive } = dollie;
 
 const {
   CACHE_DIR,
@@ -166,59 +168,7 @@ export {
 };
 
 export default {
-  // runner functions
   compose,
   container,
   interactive,
-
-  // functions
-  checkConflictBlockCount,
-  downloadCompressedFile,
-  getComposedArrayValue,
-  getExtendedPropsFromParentScaffold,
-  getGitIgnoredFiles,
-  parseCamelToSnake,
-  parseComposeConfig,
-  parseDiffToMergeBlocks,
-  parseExtendScaffoldName,
-  parseFileTextToMergeBlocks,
-  parseMergeBlocksToText,
-  parseRepoDescription,
-  parseScaffoldName,
-  parseSnakeToCamel,
-  parseSnakeToKebab,
-  parseUrl,
-  solveConflicts,
-  stringifyComposeConfig,
-
-  // objects
-  log,
-
-  // classes
-  GitIgnoreMatcher,
-  IgnoreMatcher,
-
-  // errors
-  ArgInvalidError,
-  ComposeScaffoldConfigInvalidError,
-  DestinationExistsError,
-  DollieError,
-  ModeInvalidError,
-  ScaffoldNotFoundError,
-  ScaffoldTimeoutError,
-
-  // constants
-  CACHE_DIR,
-  DEPENDS_ON_KEY,
-  GITHUB_AUTH_TOKEN,
-  GITLAB_AUTH_TOKEN,
-  GITLAB_URL_SCHEMA,
-  HOME_DIR,
-  HTTP_PROXY,
-  HTTP_PROXY_AUTH,
-  SCAFFOLD_RETRIES,
-  SCAFFOLD_TIMEOUT,
-  TEMP_DIR,
-  TEMPLATE_FILE_PREFIX,
-  TRAVERSE_IGNORE_REGEXP,
 };

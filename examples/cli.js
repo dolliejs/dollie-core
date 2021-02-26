@@ -3,15 +3,15 @@
 const fs = require('fs');
 const path = require('path');
 const { parseComposeConfig } = require('../src/utils/compose');
-const dollie = require('../src/dollie');
-const log = require('../src/utils/log').default;
+const dollie = require('../src').default;
+const { log } = require('../src');
 
 async function test() {
   const type = process.argv[2];
   let config = {};
 
   if (type === 'compose') {
-    const content = fs.readFileSync(path.resolve(__dirname, './test.yml'), {
+    const content = fs.readFileSync(path.resolve(__dirname, './config.yml'), {
       encoding: 'utf-8',
     });
     config = parseComposeConfig(content);
@@ -20,7 +20,7 @@ async function test() {
   if (type === 'container') {
     config = {
       projectName: 'project',
-      dollieScaffoldConfig: {
+      scaffoldConfig: {
         scaffoldName: 'react',
         dependencies: [
           { scaffoldName: 'react-ts' },

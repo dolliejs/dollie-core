@@ -1,13 +1,13 @@
 project_name: project
 
-dollie_scaffold_config:
+scaffold_config:
   scaffold_name: react
   dependencies:
     - scaffold_name: react-ts
     - scaffold_name: react-less
     - scaffold_name: react-dva
 
-conflict_keeps_table:
+conflict_keeps:
   package.json:
     - |
       "dep1": "^1.0.0",
