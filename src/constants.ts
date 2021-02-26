@@ -1,17 +1,5 @@
 import os from 'os';
-import { parseSnakeToCamel } from './utils/format';
 
-/**
- * configuration map under `compose` mode, used by:
- * - `src/utils/compose.ts`
- * - `src/generators/compose.ts`
- */
-export const APP_COMPOSE_CONFIG_MAP = {
-  dollie_scaffold_config: 'dollieScaffoldConfig',
-  scaffold_name: 'scaffoldName',
-  conflict_keeps_table: 'keepsTable',
-  project_name: 'projectName',
-};
 /**
  * extend scaffold prefix for `createParser`, used by:
  * - `src/utils/scaffold.ts`
