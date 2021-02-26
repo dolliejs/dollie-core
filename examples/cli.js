@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseComposeConfig } = require('../src/utils/compose');
-const dollie = require('../src/dollie');
+const dollie = require('../src/dollie').default;
 const log = require('../src/utils/log').default;
 
 async function test() {

@@ -69,7 +69,7 @@ const compose = async (
   cb?: Callback,
 ) => await run('compose', config, cb);
 
-export {
+export default {
   container,
   interactive,
   compose,
