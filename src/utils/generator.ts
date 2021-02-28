@@ -463,27 +463,33 @@ export const parseScaffolds = async (
     (value, key) => context.isDependencyKeyRegistered(key) && value !== 'null',
   );
   for (const dependenceKey of Object.keys(dependencies)) {
-    let dependedScaffoldName = '';
+    let dependedScaffoldNames = [];
     const currentDependenceValue = dependencies[dependenceKey];
     const match = _.get(/\:(.*)$/.exec(dependenceKey), 1);
     if (match) {
       if (_.isBoolean(currentDependenceValue) && currentDependenceValue) {
-        dependedScaffoldName = match;
+        dependedScaffoldNames.push(match);
       } else { continue; }
     } else {
-      dependedScaffoldName = currentDependenceValue;
+      if (typeof currentDependenceValue === 'string') {
+        dependedScaffoldNames.push(currentDependenceValue);
+      } else if (_.isArray(currentDependenceValue)) {
+        dependedScaffoldNames = dependedScaffoldNames.concat(currentDependenceValue.filter((value) => typeof value === 'string'));
+      }
     }
-    if (!dependedScaffoldName) { continue; }
-    const dependenceUuid = uuid();
-    const description = parseExtendScaffoldName(dependedScaffoldName);
-    const { owner, name, checkout, origin } = description;
-    const currentDependence: DollieScaffold = {
-      uuid: dependenceUuid,
-      scaffoldName: `${owner}/${name}#${checkout}@${origin}`,
-      dependencies: [],
-    };
-    scaffold.dependencies.push(currentDependence);
-    await parseScaffolds(currentDependence, context, scaffold, mode);
+    if (!dependedScaffoldNames || dependedScaffoldNames.length === 0) { continue; }
+    for (const scaffoldName of dependedScaffoldNames) {
+      const dependenceUuid = uuid();
+      const description = parseExtendScaffoldName(scaffoldName);
+      const { owner, name, checkout, origin } = description;
+      const currentDependence: DollieScaffold = {
+        uuid: dependenceUuid,
+        scaffoldName: `${owner}/${name}#${checkout}@${origin}`,
+        dependencies: [],
+      };
+      scaffold.dependencies.push(currentDependence);
+      await parseScaffolds(currentDependence, context, scaffold, mode);
+    }
   }
 };
 
