@@ -117,8 +117,8 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
    * if there are dependencies in current scaffold, then we should traverse the array
    * and call `writeTempFiles` to process array items
    */
-  for (const dependence of scaffold.dependencies) {
-    await writeTempFiles(dependence, context);
+  for (const dependency of scaffold.dependencies) {
+    await writeTempFiles(dependency, context);
   }
 };
 
@@ -232,8 +232,8 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
    * if there are dependencies in current scaffold, then we should traverse the array
    * and call `writeCacheTable` to process array items
    */
-  for (const dependence of scaffold.dependencies) {
-    await writeCacheTable(dependence, context);
+  for (const dependency of scaffold.dependencies) {
+    await writeCacheTable(dependency, context);
   }
 };
 
@@ -417,20 +417,20 @@ export const parseScaffolds = async (
       scaffold.props,
     );
     if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
-      for (const dependence of scaffold.dependencies) {
-        if (!dependence.scaffoldName) {
+      for (const dependency of scaffold.dependencies) {
+        if (!dependency.scaffoldName) {
           throw new ArgInvalidError([mode !== 'compose' ? 'scaffoldName' : 'scaffold_name']);
         }
 
-        dependence.uuid = uuid();
+        dependency.uuid = uuid();
         /**
          * cause current scaffold is a dependency, so we should invoke `parseExtendScaffoldName`
          * to parse the scaffold's name
          */
-        const description = parseExtendScaffoldName(dependence.scaffoldName);
+        const description = parseExtendScaffoldName(dependency.scaffoldName);
         const { owner, name, checkout, origin } = description;
-        dependence.scaffoldName = `${owner}/${name}#${checkout}@${origin}`;
-        await parseScaffolds(dependence, context, scaffold, mode);
+        dependency.scaffoldName = `${owner}/${name}#${checkout}@${origin}`;
+        await parseScaffolds(dependency, context, scaffold, mode);
       }
     }
     return;
@@ -467,33 +467,33 @@ export const parseScaffolds = async (
     scaffoldProps,
     (value, key) => context.isDependencyKeyRegistered(key) && value !== 'null',
   );
-  for (const dependenceKey of Object.keys(dependencies)) {
+  for (const dependencyKey of Object.keys(dependencies)) {
     let dependedScaffoldNames = [];
-    const currentDependenceValue = dependencies[dependenceKey];
-    const match = _.get(/\:(.*)$/.exec(dependenceKey), 1);
+    const currentDependencyValue = dependencies[dependencyKey];
+    const match = _.get(/\:(.*)$/.exec(dependencyKey), 1);
     if (match) {
-      if (_.isBoolean(currentDependenceValue) && currentDependenceValue) {
+      if (_.isBoolean(currentDependencyValue) && currentDependencyValue) {
         dependedScaffoldNames.push(match);
       } else { continue; }
     } else {
-      if (typeof currentDependenceValue === 'string') {
-        dependedScaffoldNames.push(currentDependenceValue);
-      } else if (_.isArray(currentDependenceValue)) {
-        dependedScaffoldNames = dependedScaffoldNames.concat(currentDependenceValue.filter((value) => typeof value === 'string'));
+      if (typeof currentDependencyValue === 'string') {
+        dependedScaffoldNames.push(currentDependencyValue);
+      } else if (_.isArray(currentDependencyValue)) {
+        dependedScaffoldNames = dependedScaffoldNames.concat(currentDependencyValue.filter((value) => typeof value === 'string'));
       }
     }
     if (!dependedScaffoldNames || dependedScaffoldNames.length === 0) { continue; }
     for (const scaffoldName of dependedScaffoldNames) {
-      const dependenceUuid = uuid();
+      const dependencyUuid = uuid();
       const description = parseExtendScaffoldName(scaffoldName);
       const { owner, name, checkout, origin } = description;
-      const currentDependence: DollieScaffold = {
-        uuid: dependenceUuid,
+      const currentDependency: DollieScaffold = {
+        uuid: dependencyUuid,
         scaffoldName: `${owner}/${name}#${checkout}@${origin}`,
         dependencies: [],
       };
-      scaffold.dependencies.push(currentDependence);
-      await parseScaffolds(currentDependence, context, scaffold, mode);
+      scaffold.dependencies.push(currentDependency);
+      await parseScaffolds(currentDependency, context, scaffold, mode);
     }
   }
 };
@@ -514,9 +514,9 @@ export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string, 
   const recursion = (scaffold: DollieScaffold, key: string, lazyMode: boolean): Array<Array<T>> => {
     let results = [_.get(scaffold.configuration, key)];
     const dependencies = _.get(scaffold, 'dependencies') || [];
-    for (const dependence of dependencies) {
-      const dependenceResult = recursion(dependence, key, lazyMode);
-      results = results.concat(dependenceResult);
+    for (const dependency of dependencies) {
+      const dependencyResult = recursion(dependency, key, lazyMode);
+      results = results.concat(dependencyResult);
     }
     return results;
   };
