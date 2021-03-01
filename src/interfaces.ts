@@ -29,7 +29,7 @@ export interface DollieBasicProps {
   scaffold: string;
 }
 
-export type DollieScaffoldProps = Record<string, string>;
+export type DollieScaffoldProps = Record<string, any>;
 
 export interface DollieScaffoldFileConfiguration {
   merge?: Array<string>;
