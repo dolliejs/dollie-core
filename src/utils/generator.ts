@@ -5,7 +5,13 @@ import requireFromString from 'require-from-string';
 import DollieBaseGenerator from '../base';
 import traverse from './traverse';
 import { downloadScaffold } from './download';
-import { diff, checkFileAction, parseDiffToMergeBlocks, parseMergeBlocksToText, merge } from './diff';
+import {
+  diff,
+  checkFileAction,
+  parseDiffToMergeBlocks,
+  parseMergeBlocksToText,
+  merge,
+} from './diff';
 import {
   parseExtendScaffoldName,
   parseFilePathname,
@@ -33,7 +39,9 @@ const loadingPresets = presets as Preset;
  * @param {DollieScaffold} scaffold
  * @returns {object}
  */
-export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Record<string, any> => {
+export const getExtendedPropsFromParentScaffold = (
+  scaffold: DollieScaffold,
+): Record<string, any> => {
   if (!scaffold.parent) {
     return {};
   }
@@ -62,7 +70,10 @@ export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Re
  * it will ignore `.dollie.js`, and inject props into the files
  * which contain `__template.` as their filename at the beginning
  */
-export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+export const writeTempFiles = async (
+  scaffold: DollieScaffold,
+  context: DollieBaseGenerator,
+) => {
   const { TRAVERSE_IGNORE_REGEXP, TEMPLATE_FILE_PREFIX } = context.constants;
   /**
    * `context.appBasePath` usually is $HOME/.dollie/cache
@@ -134,7 +145,10 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
  * the files from each file in each temporary dir and use an appropriate action to write
  * the file content into destination dir
  */
-export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+export const writeCacheTable = async (
+  scaffold: DollieScaffold,
+  context: DollieBaseGenerator,
+) => {
   const { TRAVERSE_IGNORE_REGEXP, TEMPLATE_FILE_PREFIX } = context.constants;
   /**
    * it is mentioned as above
@@ -305,7 +319,10 @@ export const parseScaffolds = async (
   const { owner, name, checkout, origin } = repoDescription;
   const parsedScaffoldName = `${owner}/${name}#${checkout}@${origin}`;
 
-  const timer = loading.start(`Pulling scaffold: ${parsedScaffoldName}`, { frames: loadingPresets.dots });
+  const timer = loading.start(
+    `Pulling scaffold: ${parsedScaffoldName}`,
+    { frames: loadingPresets.dots },
+  );
 
   /**
    * download scaffold from GitHub repository and count the duration
@@ -481,7 +498,9 @@ export const parseScaffolds = async (
       if (typeof currentDependencyValue === 'string') {
         dependedScaffoldNames.push(currentDependencyValue);
       } else if (_.isArray(currentDependencyValue)) {
-        dependedScaffoldNames = dependedScaffoldNames.concat(currentDependencyValue.filter((value) => typeof value === 'string'));
+        dependedScaffoldNames = dependedScaffoldNames.concat(
+          currentDependencyValue.filter((value) => typeof value === 'string'),
+        );
       }
     }
     if (!dependedScaffoldNames || dependedScaffoldNames.length === 0) { continue; }
@@ -512,8 +531,16 @@ export const parseScaffolds = async (
  * value, but we supposed to get all of the values and make a aggregation (something just like
  * a flatten), for example: `installers`, `files.delete`, `endScripts` and so on
  */
-export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string, lazyMode = false): Array<T> => {
-  const recursion = (scaffold: DollieScaffold, key: string, lazyMode: boolean): Array<Array<T>> => {
+export const getComposedArrayValue = <T>(
+  scaffold: DollieScaffold,
+  key: string,
+  lazyMode = false,
+): Array<T> => {
+  const recursion = (
+    scaffold: DollieScaffold,
+    key: string,
+    lazyMode: boolean,
+  ): Array<Array<T>> => {
     let results = [_.get(scaffold.configuration, key)];
     const dependencies = _.get(scaffold, 'dependencies') || [];
     for (const dependency of dependencies) {
@@ -534,7 +561,9 @@ export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string, 
     return [];
   }
 
-  if (resultItems.filter((item) => item === undefined).length === resultItems.length) {
+  if (
+    resultItems.filter((item) => item === undefined).length === resultItems.length
+  ) {
     return undefined;
   }
 
