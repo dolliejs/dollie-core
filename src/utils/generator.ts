@@ -23,8 +23,10 @@ import {
 import { ArgInvalidError } from '../errors';
 import { isBinaryFileSync } from 'isbinaryfile';
 import symbols from 'log-symbols';
-import loading from 'loading-indicator';
-import loadingPresets from 'loading-indicator/presets';
+import loading, { Preset } from 'loading-indicator';
+import presets from 'loading-indicator/presets';
+
+const loadingPresets = presets as Preset;
 
 /**
  * get extended props from parent scaffold
