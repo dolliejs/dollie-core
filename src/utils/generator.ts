@@ -24,6 +24,7 @@ import {
   DollieScaffold,
   DollieScaffoldConfiguration,
   DollieScaffoldProps,
+  ReversedScaffoldChain,
   ScaffoldRepoDescription,
 } from '../interfaces';
 import { ArgInvalidError } from '../errors';
@@ -163,6 +164,8 @@ export const writeCacheTable = async (
    */
   const scaffoldTempDir = path.resolve(context.appTempPath, scaffold.uuid);
 
+  const reversedScaffold = getReversedScaffold(scaffold);
+
   /**
    * invoke `traverse` function in `src/utils/traverse.ts`
    * set the ignore pattern to avoid reading `.dollie.js` from temporary dir
@@ -198,7 +201,7 @@ export const writeCacheTable = async (
        * 2. file content in destination dir on mem-fs which has the same name as current one
        * 3. current file that will be written into destination dir
        */
-      const action = checkFileAction(scaffold, relativePathname, context.cacheTable);
+      const action = await checkFileAction(scaffold, relativePathname, context.cacheTable, reversedScaffold);
 
       switch (action) {
         /**
@@ -519,6 +522,14 @@ export const parseScaffolds = async (
   }
 };
 
+export const getReversedScaffold = (scaffold: DollieScaffold): ReversedScaffoldChain => {
+  if (!scaffold) { return null; }
+  return {
+    props: scaffold.props || {},
+    parent: getReversedScaffold(scaffold.parent),
+  };
+};
+
 /**
  * get configuration values from scaffold tree structure, compose recursively as
  * an array and returns it
@@ -531,46 +542,41 @@ export const parseScaffolds = async (
  * value, but we supposed to get all of the values and make a aggregation (something just like
  * a flatten), for example: `installers`, `files.delete`, `endScripts` and so on
  */
-export const getComposedArrayValue = <T>(
+export const getComposedArrayValue = async (
   scaffold: DollieScaffold,
   key: string,
-  lazyMode = false,
-): Array<T> => {
-  const recursion = (
-    scaffold: DollieScaffold,
-    key: string,
-    lazyMode: boolean,
-  ): Array<Array<T>> => {
-    let results = [_.get(scaffold.configuration, key)];
+  allowNonString = false,
+): Promise<Array<string>> => {
+  const recursion = async (scaffold: DollieScaffold, key: string): Promise<Array<string>> => {
+    const values = _.get(scaffold.configuration, key) || [];
     const dependencies = _.get(scaffold, 'dependencies') || [];
-    for (const dependency of dependencies) {
-      const dependencyResult = recursion(dependency, key, lazyMode);
-      results = results.concat(dependencyResult);
+    let result = [];
+    const reversedScaffold = getReversedScaffold(scaffold);
+
+    for (const value of values) {
+      if (typeof value === 'string') { result.push(value); }
+      else {
+        if (!allowNonString) {
+          if (_.isFunction(value)) {
+            const currentResult = await value.call(null, reversedScaffold);
+            if (typeof currentResult === 'string') {
+              result.push(currentResult);
+            } else if (_.isArray(currentResult)) {
+              result = result.concat(currentResult);
+            }
+            result.push(await value.call(null, reversedScaffold));
+          }
+        } else { result.push(value); }
+      }
     }
-    return results;
+
+    for (const dependency of dependencies) {
+      const dependencyResult = await recursion(dependency, key);
+      result = result.concat(dependencyResult);
+    }
+
+    return result;
   };
 
-  const resultItems = recursion(scaffold, key, lazyMode);
-
-  if (
-    lazyMode &&
-    resultItems.filter(
-      (result) => Array.isArray(result) && result.length === 0,
-    ).length > 0
-  ) {
-    return [];
-  }
-
-  if (
-    resultItems.filter((item) => item === undefined).length === resultItems.length
-  ) {
-    return undefined;
-  }
-
-  return resultItems.reduce((result: Array<T>, currentResult) => {
-    if (Array.isArray(currentResult)) {
-      return result.concat(currentResult);
-    }
-    return result;
-  }, [] as Array<T>);
+  return await recursion(scaffold, key);
 };

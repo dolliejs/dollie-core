@@ -8,6 +8,7 @@ import {
   PatchTable,
   CacheTable,
   DollieScaffoldFileConfiguration,
+  ReversedScaffoldChain,
 } from '../interfaces';
 import { isPathnameInConfig } from './scaffold';
 
@@ -243,11 +244,12 @@ const parseFileTextToMergeBlocks = (content: string): Array<MergeBlock> => {
  * @description `MERGE` push diff between current file and the original file content to cache table
  * @description `NIL` do nothing
  */
-const checkFileAction = (
+const checkFileAction = async (
   scaffold: DollieScaffold,
   relativePathname: string,
   cacheTable: CacheTable,
-): FileAction => {
+  reversedScaffold: ReversedScaffoldChain,
+): Promise<FileAction> => {
   const scaffoldFilesConfig = _.get(scaffold, 'configuration.files') as DollieScaffoldFileConfiguration;
 
   /**
@@ -271,7 +273,19 @@ const checkFileAction = (
   }
 
   const mergeConfig = _.get(scaffold, 'configuration.files.merge') || [];
-  const addConfig = _.get(scaffold, 'configuration.files.add') || [];
+
+  const addConfigItems = _.get(scaffold, 'configuration.files.add') || [];
+  let addConfig = [];
+
+  for (const addConfigItem of addConfigItems) {
+    if (typeof addConfigItem === 'string') { addConfig.push(addConfigItem); }
+    else if (_.isFunction(addConfigItem)) {
+      const result = await addConfigItem.call(null, reversedScaffold);
+      if (_.isArray(result)) {
+        addConfig = result.filter((item) => typeof item === 'string');
+      }
+    }
+  }
 
   /**
    * if current file pathname matches `config.files.merge`, which means scaffold's author hope

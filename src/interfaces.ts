@@ -31,10 +31,17 @@ export interface DollieBasicProps {
 
 export type DollieScaffoldProps = Record<string, any>;
 
+export interface ReversedScaffoldChain {
+  props: DollieScaffoldProps;
+  parent?: ReversedScaffoldChain;
+}
+
+export type FileItemsGenerator = (scaffold: ReversedScaffoldChain) => string | Array<string>;
+
 export interface DollieScaffoldFileConfiguration {
   merge?: Array<string>;
-  add?: Array<string>;
-  delete?: Array<string>;
+  add?: Array<string | Function>;
+  delete?: Array<string | Function>;
 }
 
 export interface DollieScaffoldConfiguration {

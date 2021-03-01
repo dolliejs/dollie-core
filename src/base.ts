@@ -266,7 +266,7 @@ class DollieBaseGenerator extends Generator {
      */
     await writeTempFiles(this.scaffold, this);
     await writeCacheTable(this.scaffold, this);
-    const deletions = this.getDeletions();
+    const deletions = await this.getDeletions();
     this.conflicts = this.getConflicts(deletions);
     this.deleteCachedFiles(deletions);
     writeToDestinationPath(this);
@@ -301,7 +301,7 @@ class DollieBaseGenerator extends Generator {
     }
   }
 
-  public end() {
+  public async end() {
     for (const binaryFileRelativePath of Object.keys(this.binaryTable)) {
       const binaryFileAbsolutePath = this.binaryTable[binaryFileRelativePath];
       if (binaryFileAbsolutePath) {
@@ -314,7 +314,7 @@ class DollieBaseGenerator extends Generator {
      * if there are items in `config.endScripts` options, then we should traverse
      * there are two types for `config.endScripts` option: `string` and `Function`
      */
-    const endScripts = getComposedArrayValue<Function | string>(this.scaffold, 'endScripts') || [];
+    const endScripts = (await getComposedArrayValue(this.scaffold, 'endScripts', true)) || [];
     for (const endScript of endScripts) {
       /**
        * if current end script value is a string, Dollie will recognize it as a
@@ -376,12 +376,12 @@ class DollieBaseGenerator extends Generator {
    * traverse files in destination dir and get the deletion pathname
    * @returns {Array<string>}
    */
-  protected getDeletions(): Array<string> {
+  protected async getDeletions(): Promise<Array<string>> {
     /**
      * if there are items in `config.files.delete` options, then we should traverse
      * it and remove the items
      */
-    const deletionRegExps = getComposedArrayValue<string>(this.scaffold, 'files.delete') || [];
+    const deletionRegExps = await getComposedArrayValue(this.scaffold, 'files.delete') || [];
     return Object.keys(this.cacheTable).filter((pathname) => {
       return (isPathnameInConfig(pathname, deletionRegExps));
     });
