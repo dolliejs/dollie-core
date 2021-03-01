@@ -22,6 +22,9 @@ import {
 } from '../interfaces';
 import { ArgInvalidError } from '../errors';
 import { isBinaryFileSync } from 'isbinaryfile';
+import symbols from 'log-symbols';
+import loading from 'loading-indicator';
+import loadingPresets from 'loading-indicator/presets';
 
 /**
  * get extended props from parent scaffold
@@ -300,7 +303,8 @@ export const parseScaffolds = async (
   const { owner, name, checkout, origin } = repoDescription;
   const parsedScaffoldName = `${owner}/${name}#${checkout}@${origin}`;
 
-  context.log.info(`Pulling scaffold from ${parsedScaffoldName}`);
+  const timer = loading.start(`Pulling scaffold: ${parsedScaffoldName}`, { frames: loadingPresets.dots });
+
   /**
    * download scaffold from GitHub repository and count the duration
    */
@@ -314,8 +318,9 @@ export const parseScaffolds = async (
     },
     context,
   );
-  context.log.info(`Template pulled in ${duration}ms`);
-  context.log.info(`Reading scaffold configuration from ${parsedScaffoldName}...`);
+
+  loading.stop(timer);
+  context.log(`${symbols.success} Scaffold ${parsedScaffoldName} pulled in ${duration}ms`);
 
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
   const dollieJsConfigPathname = path.resolve(scaffoldDir, '.dollie.js');
