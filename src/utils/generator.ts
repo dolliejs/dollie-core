@@ -562,7 +562,7 @@ export const getComposedArrayValue = async (
             if (typeof currentResult === 'string') {
               result.push(currentResult);
             } else if (_.isArray(currentResult)) {
-              result = result.concat(currentResult);
+              result = result.concat(currentResult.filter((result => typeof result === 'string')));
             }
             result.push(await value.call(null, reversedScaffold));
           }
