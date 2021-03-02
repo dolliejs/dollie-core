@@ -199,7 +199,7 @@ export const writeCacheTable = async (
        * 2. file content in destination dir on mem-fs which has the same name as current one
        * 3. current file that will be written into destination dir
        */
-      const action = await checkFileAction(scaffold, relativePathname, context.cacheTable);
+      const action = await checkFileAction(scaffold, context.scaffold, relativePathname, context.cacheTable);
 
       switch (action) {
         /**
@@ -542,7 +542,7 @@ export const getScaffoldContext = (scaffold: DollieScaffold): Array<ScaffoldCont
 /**
  * get configuration values from scaffold tree structure, compose recursively as
  * an array and returns it
- * @param {DollieScaffold} scaffold
+ * @param {DollieScaffold} currentScaffold
  * @param {string} key
  * @param {boolean} lazyMode
  * @returns {Array<any>}
@@ -552,17 +552,21 @@ export const getScaffoldContext = (scaffold: DollieScaffold): Array<ScaffoldCont
  * a flatten), for example: `installers`, `files.delete`, `endScripts` and so on
  */
 export const getComposedArrayValue = async (
-  scaffold: DollieScaffold,
+  currentScaffold: DollieScaffold,
   key: string,
-  options: { allowNonString?: boolean, recursively?: boolean } = {},
+  options: { allowNonString?: boolean, recursively?: boolean, scaffoldTree?: DollieScaffold } = {},
 ): Promise<Array<string>> => {
-  const { allowNonString = false, recursively = true } = options;
+  const {
+    allowNonString = false,
+    recursively = true,
+    scaffoldTree = currentScaffold,
+  } = options;
 
-  const recursion = async (scaffold: DollieScaffold, key: string): Promise<Array<string>> => {
-    const values = _.get(scaffold.configuration, key) || [];
-    const dependencies = _.get(scaffold, 'dependencies') || [];
+  const recursion = async (currentScaffold: DollieScaffold, key: string): Promise<Array<string>> => {
+    const values = _.get(currentScaffold.configuration, key) || [];
+    const dependencies = _.get(currentScaffold, 'dependencies') || [];
     let result = [];
-    const scaffoldContext = getScaffoldContext(scaffold);
+    const scaffoldContext = getScaffoldContext(scaffoldTree);
 
     for (const value of values) {
       if (typeof value === 'string') { result.push(value); }
@@ -591,5 +595,5 @@ export const getComposedArrayValue = async (
     return result;
   };
 
-  return await recursion(scaffold, key);
+  return await recursion(currentScaffold, key);
 };

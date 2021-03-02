@@ -121,7 +121,7 @@ class DollieBaseGenerator extends Generator {
    * @type {DollieScaffold}
    * @protected
    */
-  protected scaffold: DollieScaffold;
+  public scaffold: DollieScaffold;
   /**
    * the name to be shown as a prompt when CLI is initializing
    * @type {string}

@@ -236,7 +236,7 @@ const parseFileTextToMergeBlocks = (content: string): Array<MergeBlock> => {
 /**
  * parse scaffold tree, temp files of each scaffold and user's scaffold configuration
  * and return an appropriate file action strategy
- * @param {DollieScaffold} scaffold - scaffold configuration tree
+ * @param {DollieScaffold} currentScaffold - scaffold configuration tree
  * @param {string} relativePathname
  * @param {CacheTable} cacheTable
  *
@@ -245,17 +245,18 @@ const parseFileTextToMergeBlocks = (content: string): Array<MergeBlock> => {
  * @description `NIL` do nothing
  */
 const checkFileAction = async (
-  scaffold: DollieScaffold,
+  currentScaffold: DollieScaffold,
+  scaffoldTree: DollieScaffold,
   relativePathname: string,
   cacheTable: CacheTable,
 ): Promise<FileAction> => {
-  const scaffoldFilesConfig = _.get(scaffold, 'configuration.files') as DollieScaffoldFileConfiguration;
+  const scaffoldFilesConfig = _.get(currentScaffold, 'configuration.files') as DollieScaffoldFileConfiguration;
 
   /**
    * if current scaffold does not have parent scaffold, which means it is the top-level scaffold
    * so we just return `DIRECT`
    */
-  if (!scaffold.parent) {
+  if (!currentScaffold.parent) {
     return 'DIRECT';
   }
 
@@ -271,8 +272,12 @@ const checkFileAction = async (
     return cacheExistence ? 'DIRECT' : 'NIL';
   }
 
-  const mergeConfig = _.get(scaffold, 'configuration.files.merge') || [];
-  const addConfig = await getComposedArrayValue(scaffold, 'files.add', { recursively: false });
+  const mergeConfig = _.get(currentScaffold, 'configuration.files.merge') || [];
+  const addConfig = await getComposedArrayValue(currentScaffold, 'files.add', {
+    recursively: false,
+    scaffoldTree,
+  });
+  // console.log(scaffold.scaffoldName, addConfig);
 
   /**
    * if current file pathname matches `config.files.merge`, which means scaffold's author hope
