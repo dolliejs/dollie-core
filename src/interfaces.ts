@@ -31,12 +31,7 @@ export interface DollieBasicProps {
 
 export type DollieScaffoldProps = Record<string, any>;
 
-export interface ReversedScaffoldChain {
-  props: DollieScaffoldProps;
-  parent?: ReversedScaffoldChain;
-}
-
-export type FileItemsGenerator = (scaffold: ReversedScaffoldChain) => string | Array<string>;
+export type FileItemsGenerator = (context: Array<ScaffoldContextItem>) => string | Array<string>;
 
 export interface DollieScaffoldFileConfiguration {
   merge?: Array<string>;
@@ -56,6 +51,11 @@ export interface ComposedDollieScaffold {
   scaffoldName: string;
   dependencies?: Array<ComposedDollieScaffold>;
   props?: DollieScaffoldProps;
+}
+
+export interface ScaffoldContextItem {
+  scaffoldName: string;
+  props: object;
 }
 
 export interface DollieScaffold {

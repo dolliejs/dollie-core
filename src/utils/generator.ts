@@ -24,7 +24,7 @@ import {
   DollieScaffold,
   DollieScaffoldConfiguration,
   DollieScaffoldProps,
-  ReversedScaffoldChain,
+  ScaffoldContextItem,
   ScaffoldRepoDescription,
 } from '../interfaces';
 import { ArgInvalidError } from '../errors';
@@ -520,12 +520,23 @@ export const parseScaffolds = async (
   }
 };
 
-export const getReversedScaffold = (scaffold: DollieScaffold): ReversedScaffoldChain => {
+export const getScaffoldContext = (scaffold: DollieScaffold): Array<ScaffoldContextItem> => {
   if (!scaffold) { return null; }
-  return {
-    props: scaffold.props || {},
-    parent: getReversedScaffold(scaffold.parent),
+
+  const recursion = (scaffold: DollieScaffold) => {
+    let result: Array<ScaffoldContextItem> = [];
+    const { scaffoldName, props = {}, dependencies = [] } = scaffold;
+    const currentScaffold: ScaffoldContextItem = { scaffoldName, props };
+    result.push(currentScaffold);
+
+    for (const dependency of dependencies) {
+      result = result.concat(recursion(dependency));
+    }
+
+    return result;
   };
+
+  return recursion(scaffold);
 };
 
 /**
@@ -551,20 +562,20 @@ export const getComposedArrayValue = async (
     const values = _.get(scaffold.configuration, key) || [];
     const dependencies = _.get(scaffold, 'dependencies') || [];
     let result = [];
-    const reversedScaffold = getReversedScaffold(scaffold);
+    const scaffoldContext = getScaffoldContext(scaffold);
 
     for (const value of values) {
       if (typeof value === 'string') { result.push(value); }
       else {
         if (!allowNonString) {
           if (_.isFunction(value)) {
-            const currentResult = await value.call(null, reversedScaffold);
+            const currentResult = await value.call(null, scaffoldContext);
             if (typeof currentResult === 'string') {
               result.push(currentResult);
             } else if (_.isArray(currentResult)) {
               result = result.concat(currentResult.filter((result => typeof result === 'string')));
             }
-            result.push(await value.call(null, reversedScaffold));
+            result.push(await value.call(null, scaffoldContext));
           }
         } else { result.push(value); }
       }

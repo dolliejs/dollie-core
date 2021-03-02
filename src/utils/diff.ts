@@ -8,7 +8,6 @@ import {
   PatchTable,
   CacheTable,
   DollieScaffoldFileConfiguration,
-  ReversedScaffoldChain,
 } from '../interfaces';
 import { getComposedArrayValue } from './generator';
 import { isPathnameInConfig } from './scaffold';
