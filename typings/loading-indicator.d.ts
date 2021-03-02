@@ -1,18 +1,18 @@
 declare module 'loading-indicator' {
-  import * as frames from 'loading-indicator/presets';
   import logUpdate from 'log-update';
 
-  type NodeJSIntervalTimer = ReturnType<typeof setInterval>;
+  declare type PresetFrame = Array<string>;
 
-  interface Options {
+  declare type Preset = Record<'spinner' | 'circle' | 'dots' | 'bullets' | 'arrows' | 'clock', PresetFrame>;
+
+  declare type NodeJSIntervalTimer = ReturnType<typeof setInterval>;
+
+  declare interface Options {
     delay?: number;
-    frames?: typeof frames;
+    frames?: PresetFrame;
     render?: typeof logUpdate | Function;
   }
 
-  function start(text?: string, options?: Options): NodeJSIntervalTimer;
-  function stop(timer: NodeJSIntervalTimer, shouldKeepOutput?: boolean): void;
-
-  exports.start = start;
-  exports.stop = stop;
+  export function start(text?: string, options?: Options): NodeJSIntervalTimer;
+  export function stop(timer: NodeJSIntervalTimer, shouldKeepOutput?: boolean): void;
 }

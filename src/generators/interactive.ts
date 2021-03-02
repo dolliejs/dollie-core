@@ -264,8 +264,8 @@ class DollieInteractiveGenerator extends DollieBaseGenerator {
     super.install.call(this);
   }
 
-  public end() {
-    super.end.call(this);
+  public async end() {
+    await super.end.call(this);
   }
 
   protected getDestinationRoot() {

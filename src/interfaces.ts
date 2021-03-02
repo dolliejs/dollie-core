@@ -31,10 +31,12 @@ export interface DollieBasicProps {
 
 export type DollieScaffoldProps = Record<string, any>;
 
+export type FileItemsGenerator = (context: Array<ScaffoldContextItem>) => string | Array<string>;
+
 export interface DollieScaffoldFileConfiguration {
   merge?: Array<string>;
-  add?: Array<string>;
-  delete?: Array<string>;
+  add?: Array<string | Function>;
+  delete?: Array<string | Function>;
 }
 
 export interface DollieScaffoldConfiguration {
@@ -49,6 +51,11 @@ export interface ComposedDollieScaffold {
   scaffoldName: string;
   dependencies?: Array<ComposedDollieScaffold>;
   props?: DollieScaffoldProps;
+}
+
+export interface ScaffoldContextItem {
+  scaffoldName: string;
+  props: object;
 }
 
 export interface DollieScaffold {
