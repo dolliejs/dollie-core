@@ -10,6 +10,7 @@ import {
   DollieScaffoldFileConfiguration,
   ReversedScaffoldChain,
 } from '../interfaces';
+import { getComposedArrayValue } from './generator';
 import { isPathnameInConfig } from './scaffold';
 
 /**
@@ -248,7 +249,6 @@ const checkFileAction = async (
   scaffold: DollieScaffold,
   relativePathname: string,
   cacheTable: CacheTable,
-  reversedScaffold: ReversedScaffoldChain,
 ): Promise<FileAction> => {
   const scaffoldFilesConfig = _.get(scaffold, 'configuration.files') as DollieScaffoldFileConfiguration;
 
@@ -273,19 +273,7 @@ const checkFileAction = async (
   }
 
   const mergeConfig = _.get(scaffold, 'configuration.files.merge') || [];
-
-  const addConfigItems = _.get(scaffold, 'configuration.files.add') || [];
-  let addConfig = [];
-
-  for (const addConfigItem of addConfigItems) {
-    if (typeof addConfigItem === 'string') { addConfig.push(addConfigItem); }
-    else if (_.isFunction(addConfigItem)) {
-      const result = await addConfigItem.call(null, reversedScaffold);
-      if (_.isArray(result)) {
-        addConfig = result.filter((item) => typeof item === 'string');
-      }
-    }
-  }
+  const addConfig = await getComposedArrayValue(scaffold, 'files.add', { recursively: false });
 
   /**
    * if current file pathname matches `config.files.merge`, which means scaffold's author hope

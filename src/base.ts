@@ -314,7 +314,14 @@ class DollieBaseGenerator extends Generator {
      * if there are items in `config.endScripts` options, then we should traverse
      * there are two types for `config.endScripts` option: `string` and `Function`
      */
-    const endScripts = (await getComposedArrayValue(this.scaffold, 'endScripts', true)) || [];
+    const endScripts = (await getComposedArrayValue(this.scaffold, 'endScripts', { allowNonString: true })) || [];
+
+    const execute = (cmd: string): string => {
+      if (typeof cmd !== 'string') { return; }
+      this.log(`Executing: ${cmd}`);
+      return Buffer.from(execSync(cmd)).toString();
+    };
+
     for (const endScript of endScripts) {
       /**
        * if current end script value is a string, Dollie will recognize it as a
@@ -322,8 +329,7 @@ class DollieBaseGenerator extends Generator {
        * this script as a command
        */
       if (typeof endScript === 'string') {
-        this.log.info(`Executing end script: \`${endScript}\``);
-        this.log(Buffer.from(execSync(endScript)).toString());
+        this.log(execute(endScript));
       /**
        * if current end script value is a function, Dollie will considering reading
        * the code from it, and call it with `context`
@@ -332,7 +338,8 @@ class DollieBaseGenerator extends Generator {
       } else if (typeof endScript === 'function') {
         const endScriptSource = Function.prototype.toString.call(endScript);
         const endScriptFunc = new Function(`return ${endScriptSource}`).call(null);
-        endScriptFunc({
+
+        const result = endScriptFunc({
           fs: {
             read: (pathname: string): string => {
               return fs.readFileSync(this.destinationPath(pathname), { encoding: 'utf-8' });
@@ -353,6 +360,10 @@ class DollieBaseGenerator extends Generator {
           },
           scaffold: this.scaffold,
         });
+
+        if (typeof result === 'string') {
+          this.log(execute(result));
+        }
 
         if (this.conflicts.length > 0) {
           this.log(

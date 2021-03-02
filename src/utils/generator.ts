@@ -164,8 +164,6 @@ export const writeCacheTable = async (
    */
   const scaffoldTempDir = path.resolve(context.appTempPath, scaffold.uuid);
 
-  const reversedScaffold = getReversedScaffold(scaffold);
-
   /**
    * invoke `traverse` function in `src/utils/traverse.ts`
    * set the ignore pattern to avoid reading `.dollie.js` from temporary dir
@@ -201,7 +199,7 @@ export const writeCacheTable = async (
        * 2. file content in destination dir on mem-fs which has the same name as current one
        * 3. current file that will be written into destination dir
        */
-      const action = await checkFileAction(scaffold, relativePathname, context.cacheTable, reversedScaffold);
+      const action = await checkFileAction(scaffold, relativePathname, context.cacheTable);
 
       switch (action) {
         /**
@@ -545,8 +543,10 @@ export const getReversedScaffold = (scaffold: DollieScaffold): ReversedScaffoldC
 export const getComposedArrayValue = async (
   scaffold: DollieScaffold,
   key: string,
-  allowNonString = false,
+  options: { allowNonString?: boolean, recursively?: boolean } = {},
 ): Promise<Array<string>> => {
+  const { allowNonString = false, recursively = true } = options;
+
   const recursion = async (scaffold: DollieScaffold, key: string): Promise<Array<string>> => {
     const values = _.get(scaffold.configuration, key) || [];
     const dependencies = _.get(scaffold, 'dependencies') || [];
@@ -570,9 +570,11 @@ export const getComposedArrayValue = async (
       }
     }
 
-    for (const dependency of dependencies) {
-      const dependencyResult = await recursion(dependency, key);
-      result = result.concat(dependencyResult);
+    if (recursively) {
+      for (const dependency of dependencies) {
+        const dependencyResult = await recursion(dependency, key);
+        result = result.concat(dependencyResult);
+      }
     }
 
     return result;
