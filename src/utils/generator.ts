@@ -5,7 +5,13 @@ import requireFromString from 'require-from-string';
 import DollieBaseGenerator from '../base';
 import traverse from './traverse';
 import { downloadScaffold } from './download';
-import { diff, checkFileAction, parseDiffToMergeBlocks, parseMergeBlocksToText, merge } from './diff';
+import {
+  diff,
+  checkFileAction,
+  parseDiffToMergeBlocks,
+  parseMergeBlocksToText,
+  merge,
+} from './diff';
 import {
   parseExtendScaffoldName,
   parseFilePathname,
@@ -18,17 +24,25 @@ import {
   DollieScaffold,
   DollieScaffoldConfiguration,
   DollieScaffoldProps,
+  ScaffoldContextItem,
   ScaffoldRepoDescription,
 } from '../interfaces';
 import { ArgInvalidError } from '../errors';
 import { isBinaryFileSync } from 'isbinaryfile';
+import symbols from 'log-symbols';
+import loading, { Preset } from 'loading-indicator';
+import presets from 'loading-indicator/presets';
+
+const loadingPresets = presets as Preset;
 
 /**
  * get extended props from parent scaffold
  * @param {DollieScaffold} scaffold
  * @returns {object}
  */
-export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Record<string, any> => {
+export const getExtendedPropsFromParentScaffold = (
+  scaffold: DollieScaffold,
+): Record<string, any> => {
   if (!scaffold.parent) {
     return {};
   }
@@ -57,7 +71,10 @@ export const getExtendedPropsFromParentScaffold = (scaffold: DollieScaffold): Re
  * it will ignore `.dollie.js`, and inject props into the files
  * which contain `__template.` as their filename at the beginning
  */
-export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+export const writeTempFiles = async (
+  scaffold: DollieScaffold,
+  context: DollieBaseGenerator,
+) => {
   const { TRAVERSE_IGNORE_REGEXP, TEMPLATE_FILE_PREFIX } = context.constants;
   /**
    * `context.appBasePath` usually is $HOME/.dollie/cache
@@ -114,8 +131,8 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
    * if there are dependencies in current scaffold, then we should traverse the array
    * and call `writeTempFiles` to process array items
    */
-  for (const dependence of scaffold.dependencies) {
-    await writeTempFiles(dependence, context);
+  for (const dependency of scaffold.dependencies) {
+    await writeTempFiles(dependency, context);
   }
 };
 
@@ -129,7 +146,10 @@ export const writeTempFiles = async (scaffold: DollieScaffold, context: DollieBa
  * the files from each file in each temporary dir and use an appropriate action to write
  * the file content into destination dir
  */
-export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieBaseGenerator) => {
+export const writeCacheTable = async (
+  scaffold: DollieScaffold,
+  context: DollieBaseGenerator,
+) => {
   const { TRAVERSE_IGNORE_REGEXP, TEMPLATE_FILE_PREFIX } = context.constants;
   /**
    * it is mentioned as above
@@ -179,7 +199,7 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
        * 2. file content in destination dir on mem-fs which has the same name as current one
        * 3. current file that will be written into destination dir
        */
-      const action = checkFileAction(scaffold, relativePathname, context.cacheTable);
+      const action = await checkFileAction(scaffold, context.scaffold, relativePathname, context.cacheTable);
 
       switch (action) {
         /**
@@ -229,8 +249,8 @@ export const writeCacheTable = async (scaffold: DollieScaffold, context: DollieB
    * if there are dependencies in current scaffold, then we should traverse the array
    * and call `writeCacheTable` to process array items
    */
-  for (const dependence of scaffold.dependencies) {
-    await writeCacheTable(dependence, context);
+  for (const dependency of scaffold.dependencies) {
+    await writeCacheTable(dependency, context);
   }
 };
 
@@ -300,7 +320,11 @@ export const parseScaffolds = async (
   const { owner, name, checkout, origin } = repoDescription;
   const parsedScaffoldName = `${owner}/${name}#${checkout}@${origin}`;
 
-  context.log.info(`Pulling scaffold from ${parsedScaffoldName}`);
+  const timer = loading.start(
+    `Pulling scaffold: ${parsedScaffoldName}`,
+    { frames: loadingPresets.dots },
+  );
+
   /**
    * download scaffold from GitHub repository and count the duration
    */
@@ -314,8 +338,9 @@ export const parseScaffolds = async (
     },
     context,
   );
-  context.log.info(`Template pulled in ${duration}ms`);
-  context.log.info(`Reading scaffold configuration from ${parsedScaffoldName}...`);
+
+  loading.stop(timer);
+  context.log(`${symbols.success} Scaffold ${parsedScaffoldName} pulled in ${duration}ms`);
 
   let customScaffoldConfiguration: DollieScaffoldConfiguration;
   const dollieJsConfigPathname = path.resolve(scaffoldDir, '.dollie.js');
@@ -412,20 +437,20 @@ export const parseScaffolds = async (
       scaffold.props,
     );
     if (scaffold.dependencies && Array.isArray(scaffold.dependencies)) {
-      for (const dependence of scaffold.dependencies) {
-        if (!dependence.scaffoldName) {
+      for (const dependency of scaffold.dependencies) {
+        if (!dependency.scaffoldName) {
           throw new ArgInvalidError([mode !== 'compose' ? 'scaffoldName' : 'scaffold_name']);
         }
 
-        dependence.uuid = uuid();
+        dependency.uuid = uuid();
         /**
          * cause current scaffold is a dependency, so we should invoke `parseExtendScaffoldName`
          * to parse the scaffold's name
          */
-        const description = parseExtendScaffoldName(dependence.scaffoldName);
+        const description = parseExtendScaffoldName(dependency.scaffoldName);
         const { owner, name, checkout, origin } = description;
-        dependence.scaffoldName = `${owner}/${name}#${checkout}@${origin}`;
-        await parseScaffolds(dependence, context, scaffold, mode);
+        dependency.scaffoldName = `${owner}/${name}#${checkout}@${origin}`;
+        await parseScaffolds(dependency, context, scaffold, mode);
       }
     }
     return;
@@ -462,35 +487,62 @@ export const parseScaffolds = async (
     scaffoldProps,
     (value, key) => context.isDependencyKeyRegistered(key) && value !== 'null',
   );
-  for (const dependenceKey of Object.keys(dependencies)) {
-    let dependedScaffoldName = '';
-    const currentDependenceValue = dependencies[dependenceKey];
-    const match = _.get(/\:(.*)$/.exec(dependenceKey), 1);
+  for (const dependencyKey of Object.keys(dependencies)) {
+    let dependedScaffoldNames = [];
+    const currentDependencyValue = dependencies[dependencyKey];
+    const match = _.get(/\:(.*)$/.exec(dependencyKey), 1);
     if (match) {
-      if (_.isBoolean(currentDependenceValue) && currentDependenceValue) {
-        dependedScaffoldName = match;
+      if (_.isBoolean(currentDependencyValue) && currentDependencyValue) {
+        dependedScaffoldNames.push(match);
       } else { continue; }
     } else {
-      dependedScaffoldName = currentDependenceValue;
+      if (typeof currentDependencyValue === 'string') {
+        dependedScaffoldNames.push(currentDependencyValue);
+      } else if (_.isArray(currentDependencyValue)) {
+        dependedScaffoldNames = dependedScaffoldNames.concat(
+          currentDependencyValue.filter((value) => typeof value === 'string'),
+        );
+      }
     }
-    if (!dependedScaffoldName) { continue; }
-    const dependenceUuid = uuid();
-    const description = parseExtendScaffoldName(dependedScaffoldName);
-    const { owner, name, checkout, origin } = description;
-    const currentDependence: DollieScaffold = {
-      uuid: dependenceUuid,
-      scaffoldName: `${owner}/${name}#${checkout}@${origin}`,
-      dependencies: [],
-    };
-    scaffold.dependencies.push(currentDependence);
-    await parseScaffolds(currentDependence, context, scaffold, mode);
+    if (!dependedScaffoldNames || dependedScaffoldNames.length === 0) { continue; }
+    for (const scaffoldName of dependedScaffoldNames) {
+      const dependencyUuid = uuid();
+      const description = parseExtendScaffoldName(scaffoldName);
+      const { owner, name, checkout, origin } = description;
+      const currentDependency: DollieScaffold = {
+        uuid: dependencyUuid,
+        scaffoldName: `${owner}/${name}#${checkout}@${origin}`,
+        dependencies: [],
+      };
+      scaffold.dependencies.push(currentDependency);
+      await parseScaffolds(currentDependency, context, scaffold, mode);
+    }
   }
+};
+
+export const getScaffoldContext = (scaffold: DollieScaffold): Array<ScaffoldContextItem> => {
+  if (!scaffold) { return null; }
+
+  const recursion = (scaffold: DollieScaffold) => {
+    let result: Array<ScaffoldContextItem> = [];
+    const { scaffoldName, props = {}, dependencies = [] } = scaffold;
+    const currentScaffold: ScaffoldContextItem = { scaffoldName, props };
+    result.push(currentScaffold);
+
+    for (const dependency of dependencies) {
+      result = result.concat(recursion(dependency));
+    }
+
+    return result;
+  };
+
+  return recursion(scaffold);
 };
 
 /**
  * get configuration values from scaffold tree structure, compose recursively as
  * an array and returns it
- * @param {DollieScaffold} scaffold
+ * @param {DollieScaffold} currentScaffold
  * @param {string} key
  * @param {boolean} lazyMode
  * @returns {Array<any>}
@@ -499,36 +551,49 @@ export const parseScaffolds = async (
  * value, but we supposed to get all of the values and make a aggregation (something just like
  * a flatten), for example: `installers`, `files.delete`, `endScripts` and so on
  */
-export const getComposedArrayValue = <T>(scaffold: DollieScaffold, key: string, lazyMode = false): Array<T> => {
-  const recursion = (scaffold: DollieScaffold, key: string, lazyMode: boolean): Array<Array<T>> => {
-    let results = [_.get(scaffold.configuration, key)];
-    const dependencies = _.get(scaffold, 'dependencies') || [];
-    for (const dependence of dependencies) {
-      const dependenceResult = recursion(dependence, key, lazyMode);
-      results = results.concat(dependenceResult);
+export const getComposedArrayValue = async (
+  currentScaffold: DollieScaffold,
+  key: string,
+  options: { allowNonString?: boolean, recursively?: boolean, scaffoldTree?: DollieScaffold } = {},
+): Promise<Array<string>> => {
+  const {
+    allowNonString = false,
+    recursively = true,
+    scaffoldTree = currentScaffold,
+  } = options;
+
+  const recursion = async (currentScaffold: DollieScaffold, key: string): Promise<Array<string>> => {
+    const values = _.get(currentScaffold.configuration, key) || [];
+    const dependencies = _.get(currentScaffold, 'dependencies') || [];
+    let result = [];
+    const scaffoldContext = getScaffoldContext(scaffoldTree);
+
+    for (const value of values) {
+      if (typeof value === 'string') { result.push(value); }
+      else {
+        if (!allowNonString) {
+          if (_.isFunction(value)) {
+            const currentResult = await value.call(null, scaffoldContext);
+            if (typeof currentResult === 'string') {
+              result.push(currentResult);
+            } else if (_.isArray(currentResult)) {
+              result = result.concat(currentResult.filter((result => typeof result === 'string')));
+            }
+            result.push(await value.call(null, scaffoldContext));
+          }
+        } else { result.push(value); }
+      }
     }
-    return results;
+
+    if (recursively) {
+      for (const dependency of dependencies) {
+        const dependencyResult = await recursion(dependency, key);
+        result = result.concat(dependencyResult);
+      }
+    }
+
+    return result;
   };
 
-  const resultItems = recursion(scaffold, key, lazyMode);
-
-  if (
-    lazyMode &&
-    resultItems.filter(
-      (result) => Array.isArray(result) && result.length === 0,
-    ).length > 0
-  ) {
-    return [];
-  }
-
-  if (resultItems.filter((item) => item === undefined).length === resultItems.length) {
-    return undefined;
-  }
-
-  return resultItems.reduce((result: Array<T>, currentResult) => {
-    if (Array.isArray(currentResult)) {
-      return result.concat(currentResult);
-    }
-    return result;
-  }, [] as Array<T>);
+  return await recursion(currentScaffold, key);
 };

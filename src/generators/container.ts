@@ -43,7 +43,7 @@ class DollieContainerGenerator extends DollieComposeGenerator {
   }
 
   public async end() {
-    super.end.call(this);
+    await super.end.call(this);
     const gitIgnoreFileContent = fs.readFileSync(this.destinationPath('.gitignore')) || '';
     const matcher = new GitIgnoreMatcher(gitIgnoreFileContent.toString());
     const acceptedFiles = await traverse(this.destinationPath(), matcher);
